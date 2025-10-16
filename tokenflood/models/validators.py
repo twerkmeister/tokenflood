@@ -3,34 +3,41 @@ from typing import TypeVar, Sequence, Union
 T = TypeVar("T")
 Number = Union[int, float]
 
-def non_empty_list(l: Sequence[T]) -> Sequence[T]:
-    if len(l) == 0:
+
+def non_empty_list(seq: Sequence[T]) -> Sequence[T]:
+    if len(seq) == 0:
         raise ValueError("list must not be empty.")
-    return l
+    return seq
+
 
 def at_least_size(n: int):
-    def size_check(l: Sequence[T]) -> Sequence[T]:
-        if len(l) < n:
+    def size_check(seq: Sequence[T]) -> Sequence[T]:
+        if len(seq) < n:
             raise ValueError(f"list must have at least {n} elements.")
-        return l
+        return seq
+
     return size_check
 
-def all_non_empty_strings(l: Sequence[str]) -> Sequence[str]:
-    if not all(l):
+
+def all_non_empty_strings(seq: Sequence[str]) -> Sequence[str]:
+    if not all(seq):
         raise ValueError("all elements must be non-empty.")
-    return l
+    return seq
 
-def unique_elements(l: Sequence[T]) -> Sequence[T]:
-    if not len(list(set(l))) == len(l):
+
+def unique_elements(seq: Sequence[T]) -> Sequence[T]:
+    if not len(list(set(seq))) == len(seq):
         raise ValueError("elements must be unique.")
-    return l
+    return seq
 
-def all_strictly_positive(l: Sequence[Number]) -> Sequence[Number]:
-    if not all([x > 0 for x in l]):
+
+def all_strictly_positive(seq: Sequence[Number]) -> Sequence[Number]:
+    if not all([x > 0 for x in seq]):
         raise ValueError("all elements must be larger than 0.")
-    return l
+    return seq
 
-def all_positive(l: Sequence[Number]) -> Sequence[Number]:
-    if not all([x >= 0 for x in l]):
+
+def all_positive(seq: Sequence[Number]) -> Sequence[Number]:
+    if not all([x >= 0 for x in seq]):
         raise ValueError("all elements must be larger or equal 0.")
-    return l
+    return seq
