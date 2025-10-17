@@ -1,4 +1,4 @@
-from typing import List, Self, Tuple
+from typing import List, Self, Sequence, Tuple
 import random
 from pydantic import BaseModel, PositiveFloat, PositiveInt, model_validator
 
@@ -34,12 +34,14 @@ class HeuristicTestSpec(TestSpec, frozen=True):
     output_lengths: StrictlyPositiveIntegers
     prefix_lengths: NonNegativeIntegers = (0,)
 
-    def sample_n(self, n: int) -> Tuple[List[int], List[int], List[int]]:
-        return (
-            random.choices(self.prompt_lengths, k=n),
-            random.choices(self.prefix_lengths, k=n),
-            random.choices(self.output_lengths, k=n),
-        )
+    def sample_n_with(self, sequences: List[Sequence[int]], n: int) -> List[List[int]]:
+        return [random.choices(s, k=n) for s in sequences]
 
-    def sample(self) -> Tuple[List[int], List[int], List[int]]:
-        return self.sample_n(self.total_num_requests)
+    def sample_output_tokens(self) -> List[int]:
+        return self.sample_n_with([self.output_lengths],
+                                  self.total_num_requests)[0]
+
+    def sample_input_tokens(self) -> Tuple[List[int], List[int]]:
+        res = self.sample_n_with([self.prompt_lengths, self.prefix_lengths],
+                                 self.total_num_requests)
+        return res[0], res[1]

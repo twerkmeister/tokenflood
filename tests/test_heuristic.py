@@ -1,11 +1,14 @@
+import numpy as np
 import pytest
 
 from tokenflood.heuristic import (
+    create_heuristic_messages,
     create_prompt,
     create_prompt_prefix,
     create_prompt_random_part,
 )
 from tokenflood.models.heuristic_task import HeuristicTask
+from tokenflood.models.test_spec import HeuristicTestSpec
 from tokenflood.models.token_set import TokenSet
 
 
@@ -17,17 +20,14 @@ def test_create_prompt_prefix(num_prefix_tokens: int, expected_result: str):
     assert create_prompt_prefix(token_set, num_prefix_tokens) == expected_result
 
 
-def test_create_prompt_random_part():
-    token_set = TokenSet(tokens=(" A", " B", " C", " D"))
-
+def test_create_prompt_random_part(token_set):
     p1 = create_prompt_random_part(token_set, 1000)
     p2 = create_prompt_random_part(token_set, 1000)
     assert p1 != p2
     assert len(p1) == len(p2)
 
 
-def test_create_prompt():
-    token_set = TokenSet(tokens=(" A", " B", " C", " D", " E"))
+def test_create_prompt(token_set):
     task = HeuristicTask(task="--- Write a letter to Santa Claus")
     prompt_length = 1024
     prefix_length = 128
@@ -39,3 +39,14 @@ def test_create_prompt():
         prompt[prefix_length * 2 : prefix_length * 2 + 32] != token_set.tokens[0] * 16
     )
     assert prompt.endswith(task.task)
+
+def test_create_heuristic_messages(token_set, heuristic_task, tokenizer):
+    test_spec = HeuristicTestSpec(name="abc", requests_per_second=1,
+                                  test_length_in_seconds=3, prompt_lengths=(1000,),
+                                  prefix_lengths=(100,), output_lengths=(24,))
+    message_lists = create_heuristic_messages(test_spec, token_set, heuristic_task)
+    assert len(message_lists) == test_spec.total_num_requests
+
+    tokenized = tokenizer.encode_batch([m[0]["content"] for m in message_lists])
+
+    assert all([990 <= len(t.tokens) <= 1010 for t in tokenized])

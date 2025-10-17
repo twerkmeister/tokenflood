@@ -18,15 +18,11 @@ def test_heuristic_task_validation(task: str, expectation: ContextManager):
         HeuristicTask(task=task)
 
 
-def test_heuristic_task_rough_token_estimation():
-    task_description = "Please write a letter to Santa Claus"
-    task = HeuristicTask(task=task_description)
-    assert task.roughly_estimated_token_cost > 0
+def test_heuristic_task_rough_token_estimation(heuristic_task):
+    assert heuristic_task.roughly_estimated_token_cost > 0
 
 
-def test_get_token_cost(test_tokenizer: Tokenizer):
-    task_description = "Please write a letter to Santa Claus"
-    task = HeuristicTask(task=task_description)
-    assert task.get_token_cost(test_tokenizer) == len(
-        test_tokenizer.encode(task_description).tokens
+def test_get_token_cost(tokenizer: Tokenizer, heuristic_task):
+    assert heuristic_task.get_token_cost(tokenizer) == len(
+        tokenizer.encode(heuristic_task.task).tokens
     )

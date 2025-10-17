@@ -3,6 +3,8 @@ import pytest
 from tokenizers import Tokenizer
 
 from tokenflood.models.endpoint_spec import EndpointSpec
+from tokenflood.models.heuristic_task import HeuristicTask
+from tokenflood.models.token_set import TokenSet
 
 
 @pytest.fixture(scope="session")
@@ -14,38 +16,46 @@ def test_folder() -> str:
 
 
 @pytest.fixture(scope="session")
-def test_data_folder(test_folder: str) -> str:
+def data_folder(test_folder: str) -> str:
     folder = os.path.join(test_folder, "data")
     assert os.path.exists(folder)
     return folder
 
 
 @pytest.fixture(scope="session")
-def test_specs_folder(test_data_folder: str) -> str:
-    folder = os.path.join(test_data_folder, "test_specs")
+def test_specs_folder(data_folder: str) -> str:
+    folder = os.path.join(data_folder, "test_specs")
     assert os.path.exists(folder)
     return folder
 
 
 @pytest.fixture(scope="session")
-def endpoint_specs_folder(test_data_folder: str) -> str:
-    folder = os.path.join(test_data_folder, "endpoint_specs")
+def endpoint_specs_folder(data_folder: str) -> str:
+    folder = os.path.join(data_folder, "endpoint_specs")
     assert os.path.exists(folder)
     return folder
 
 
 @pytest.fixture(scope="session")
-def test_model_id() -> str:
+def model_id() -> str:
     return "HuggingFaceTB/SmolLM-135M-Instruct"
 
 
 @pytest.fixture(scope="session")
-def test_tokenizer(test_model_id: str) -> Tokenizer:
-    return Tokenizer.from_pretrained(test_model_id)
+def tokenizer(model_id: str) -> Tokenizer:
+    return Tokenizer.from_pretrained(model_id)
 
 
 @pytest.fixture(scope="session")
-def test_endpoint_spec(test_model_id: str) -> EndpointSpec:
+def endpoint_spec(model_id: str) -> EndpointSpec:
     return EndpointSpec(
-        model=f"openai/{test_model_id}", base_url="http://127.0.0.1:8000/v1"
+        model=f"openai/{model_id}", base_url="http://127.0.0.1:8000/v1"
     )
+
+@pytest.fixture(scope="session")
+def token_set() -> TokenSet:
+    return TokenSet(tokens=(" A", " B", " C", " D", " E"))
+
+@pytest.fixture(scope="session")
+def heuristic_task() -> HeuristicTask:
+    return HeuristicTask(task="Ignore the random input and write a letter to Santa.")

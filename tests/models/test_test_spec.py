@@ -59,14 +59,15 @@ def test_heuristic_test_spec_validation(
 def test_heuristic_test_spec_sampling():
     spec = HeuristicTestSpec(
         name="abc",
-        requests_per_second=3,
-        test_length_in_seconds=10,
+        requests_per_second=100,
+        test_length_in_seconds=1000,
         prompt_lengths=[100, 100, 112],
         prefix_lengths=[20],
         output_lengths=[12, 12, 12, 6],
     )
 
-    prompt_lengths, prefix_lengths, output_lengths = spec.sample_n(100000)
+    prompt_lengths, prefix_lengths = spec.sample_input_tokens()
+    output_lengths = spec.sample_output_tokens()
     assert np.allclose(
         np.average(spec.prompt_lengths), np.average(prompt_lengths), atol=1
     )

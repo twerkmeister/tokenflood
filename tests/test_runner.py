@@ -21,8 +21,8 @@ def test_create_schedule(requests_per_second: float, test_length_in_seconds: int
 
 
 @pytest.mark.asyncio
-async def test_send_llm_request(test_endpoint_spec: EndpointSpec):
+async def test_send_llm_request(endpoint_spec: EndpointSpec):
     prompt = "Write down the ABC."
     messages = [{"content": prompt, "role": "user"}]
-    response = await send_llm_request(test_endpoint_spec, messages, 10)
+    response = await send_llm_request(endpoint_spec, messages, 10)
     assert response
