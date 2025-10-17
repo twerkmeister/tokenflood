@@ -12,7 +12,7 @@ heuristic_tasks = [
 ]
 
 heuristic_token_sets = [
-    TokenSet(tokens=[" " + chr(c) for c in range(65, 91)]),  # " A" - " Z"
+    TokenSet(tokens=tuple([" " + chr(c) for c in range(65, 91)])),  # " A" - " Z"
 ]
 
 
@@ -44,7 +44,7 @@ def create_heuristic_messages(
     token_set = heuristic_token_sets[0]
     messages = []
     for prompt_length, prefix_length, output_length in zip(
-        heuristic_test_spec.sample()
+        *heuristic_test_spec.sample()
     ):
         prompt = create_prompt(token_set, prompt_length, prefix_length, task)
         messages.append((create_message_list_from_prompt(prompt), output_length))

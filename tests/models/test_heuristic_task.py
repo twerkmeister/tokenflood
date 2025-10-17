@@ -1,7 +1,6 @@
-from contextlib import contextmanager
-
+from typing import ContextManager
 import pytest
-from tokenizers.tokenizers import Tokenizer
+from tokenizers import Tokenizer
 
 from tests.utils import does_not_raise
 from tokenflood.models.heuristic_task import HeuristicTask
@@ -14,7 +13,7 @@ from tokenflood.models.heuristic_task import HeuristicTask
         ("", pytest.raises(ValueError)),
     ],
 )
-def test_heuristic_task_validation(task: str, expectation: contextmanager):
+def test_heuristic_task_validation(task: str, expectation: ContextManager):
     with expectation:
         HeuristicTask(task=task)
 

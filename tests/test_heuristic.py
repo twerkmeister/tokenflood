@@ -13,12 +13,12 @@ from tokenflood.models.token_set import TokenSet
     "num_prefix_tokens, expected_result", [(4, " A" * 4), (0, ""), (-10, "")]
 )
 def test_create_prompt_prefix(num_prefix_tokens: int, expected_result: str):
-    token_set = TokenSet(tokens=[" A", " B"])
+    token_set = TokenSet(tokens=(" A", " B"))
     assert create_prompt_prefix(token_set, num_prefix_tokens) == expected_result
 
 
 def test_create_prompt_random_part():
-    token_set = TokenSet(tokens=[" A", " B", " C", " D"])
+    token_set = TokenSet(tokens=(" A", " B", " C", " D"))
 
     p1 = create_prompt_random_part(token_set, 1000)
     p2 = create_prompt_random_part(token_set, 1000)
@@ -27,7 +27,7 @@ def test_create_prompt_random_part():
 
 
 def test_create_prompt():
-    token_set = TokenSet(tokens=[" A", " B", " C", " D", " E"])
+    token_set = TokenSet(tokens=(" A", " B", " C", " D", " E"))
     task = HeuristicTask(task="--- Write a letter to Santa Claus")
     prompt_length = 1024
     prefix_length = 128

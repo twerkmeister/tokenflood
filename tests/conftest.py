@@ -1,6 +1,6 @@
 import os
 import pytest
-from tokenizers.tokenizers import Tokenizer
+from tokenizers import Tokenizer
 
 from tokenflood.models.endpoint_spec import EndpointSpec
 

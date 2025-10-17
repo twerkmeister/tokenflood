@@ -26,12 +26,13 @@ class TestSpec(BaseModel, frozen=True):
                 "(=int(requests_per_second * test_length_in_seconds)) for "
                 "this test would be 0."
             )
+        return self
 
 
 class HeuristicTestSpec(TestSpec, frozen=True):
     prompt_lengths: StrictlyPositiveIntegers
     output_lengths: StrictlyPositiveIntegers
-    prefix_lengths: NonNegativeIntegers = [0]  # pydantic magic on mutable defaults
+    prefix_lengths: NonNegativeIntegers = (0,)
 
     def sample_n(self, n: int) -> Tuple[List[int], List[int], List[int]]:
         return (

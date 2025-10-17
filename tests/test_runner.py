@@ -9,7 +9,7 @@ from tokenflood.runner import create_schedule, send_llm_request
 @pytest.mark.parametrize(
     "requests_per_second, test_length_in_seconds", [(3, 10), (1, 5), (2, 400)]
 )
-def test_create_schedule(requests_per_second: float, test_length_in_seconds: float):
+def test_create_schedule(requests_per_second: float, test_length_in_seconds: int):
     test_spec = TestSpec(
         name="abc",
         requests_per_second=requests_per_second,
