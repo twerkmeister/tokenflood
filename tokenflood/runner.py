@@ -37,9 +37,11 @@ async def run_heuristic_test(
     token_set = token_set or heuristic_token_sets[0]
     task = task or heuristic_tasks[0]
     schedule = create_schedule(run_spec)
-    message_lists = create_heuristic_messages(run_spec, token_set, task)
-    num_generation_tokens = run_spec.sample_output_token_counts()
-    return await run_test(schedule, message_lists, num_generation_tokens, endpoint_spec)
+    prompt_lengths, prefix_lengths, output_lengths = run_spec.sample()
+    message_lists = create_heuristic_messages(
+        prompt_lengths, prefix_lengths, token_set, task
+    )
+    return await run_test(schedule, message_lists, output_lengths, endpoint_spec)
 
 
 async def run_test(

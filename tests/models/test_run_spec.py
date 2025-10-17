@@ -66,8 +66,7 @@ def test_heuristic_run_spec_sampling():
         output_lengths=[12, 12, 12, 6],
     )
 
-    prompt_lengths, prefix_lengths = spec.sample_input_token_counts()
-    output_lengths = spec.sample_output_token_counts()
+    prompt_lengths, prefix_lengths, output_lengths = spec.sample()
     assert np.allclose(
         np.average(spec.prompt_lengths), np.average(prompt_lengths), atol=1
     )

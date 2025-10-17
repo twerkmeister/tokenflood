@@ -49,7 +49,10 @@ def test_create_heuristic_messages(token_set, heuristic_task, tokenizer):
         prefix_lengths=(100,),
         output_lengths=(24,),
     )
-    message_lists = create_heuristic_messages(run_spec, token_set, heuristic_task)
+    prompt_lengths, prefix_lengths, _ = run_spec.sample()
+    message_lists = create_heuristic_messages(
+        prompt_lengths, prefix_lengths, token_set, heuristic_task
+    )
     assert len(message_lists) == run_spec.total_num_requests
 
     tokenized = tokenizer.encode_batch([m[0]["content"] for m in message_lists])
