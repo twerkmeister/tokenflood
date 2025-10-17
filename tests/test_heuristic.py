@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 
 from tokenflood.heuristic import (
@@ -8,7 +7,7 @@ from tokenflood.heuristic import (
     create_prompt_random_part,
 )
 from tokenflood.models.heuristic_task import HeuristicTask
-from tokenflood.models.test_spec import HeuristicTestSpec
+from tokenflood.models.run_spec import HeuristicRunSpec
 from tokenflood.models.token_set import TokenSet
 
 
@@ -40,13 +39,20 @@ def test_create_prompt(token_set):
     )
     assert prompt.endswith(task.task)
 
+
 def test_create_heuristic_messages(token_set, heuristic_task, tokenizer):
-    test_spec = HeuristicTestSpec(name="abc", requests_per_second=1,
-                                  test_length_in_seconds=3, prompt_lengths=(1000,),
-                                  prefix_lengths=(100,), output_lengths=(24,))
-    message_lists = create_heuristic_messages(test_spec, token_set, heuristic_task)
-    assert len(message_lists) == test_spec.total_num_requests
+    run_spec = HeuristicRunSpec(
+        name="abc",
+        requests_per_second=1,
+        test_length_in_seconds=3,
+        prompt_lengths=(1000,),
+        prefix_lengths=(100,),
+        output_lengths=(24,),
+    )
+    message_lists = create_heuristic_messages(run_spec, token_set, heuristic_task)
+    assert len(message_lists) == run_spec.total_num_requests
 
     tokenized = tokenizer.encode_batch([m[0]["content"] for m in message_lists])
 
+    # lengths should be within +-10 token range of the desired length
     assert all([990 <= len(t.tokens) <= 1010 for t in tokenized])

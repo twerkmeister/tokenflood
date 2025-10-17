@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from tests.utils import does_not_raise
-from tokenflood.models.test_spec import HeuristicTestSpec, TestSpec
+from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
 
 
 @pytest.mark.parametrize(
@@ -17,11 +17,11 @@ from tokenflood.models.test_spec import HeuristicTestSpec, TestSpec
         ("abc", 0.1, 1, pytest.raises(ValueError)),
     ],
 )
-def test_test_spec_validation(
+def test_run_spec_validation(
     name, requests_per_second, test_length_in_seconds, expectation
 ):
     with expectation:
-        TestSpec(
+        RunSpec(
             name=name,
             requests_per_second=requests_per_second,
             test_length_in_seconds=test_length_in_seconds,
@@ -42,11 +42,11 @@ def test_test_spec_validation(
         ([1000], [20], [-40], pytest.raises(ValueError)),
     ],
 )
-def test_heuristic_test_spec_validation(
+def test_heuristic_run_spec_validation(
     prompt_lengths, output_lengths, prefix_lengths, expectation
 ):
     with expectation:
-        HeuristicTestSpec(
+        HeuristicRunSpec(
             name="abc",
             requests_per_second=3,
             test_length_in_seconds=10,
@@ -56,8 +56,8 @@ def test_heuristic_test_spec_validation(
         )
 
 
-def test_heuristic_test_spec_sampling():
-    spec = HeuristicTestSpec(
+def test_heuristic_run_spec_sampling():
+    spec = HeuristicRunSpec(
         name="abc",
         requests_per_second=100,
         test_length_in_seconds=1000,
@@ -66,8 +66,8 @@ def test_heuristic_test_spec_sampling():
         output_lengths=[12, 12, 12, 6],
     )
 
-    prompt_lengths, prefix_lengths = spec.sample_input_tokens()
-    output_lengths = spec.sample_output_tokens()
+    prompt_lengths, prefix_lengths = spec.sample_input_token_counts()
+    output_lengths = spec.sample_output_token_counts()
     assert np.allclose(
         np.average(spec.prompt_lengths), np.average(prompt_lengths), atol=1
     )

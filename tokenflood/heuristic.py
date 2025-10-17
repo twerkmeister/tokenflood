@@ -2,7 +2,7 @@ from typing import List
 
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.messages import MessageList, create_message_list_from_prompt
-from tokenflood.models.test_spec import HeuristicTestSpec
+from tokenflood.models.run_spec import HeuristicRunSpec
 from tokenflood.models.token_set import TokenSet
 
 heuristic_tasks = [
@@ -49,11 +49,11 @@ def create_prompt(
 
 
 def create_heuristic_messages(
-    heuristic_test_spec: HeuristicTestSpec, token_set: TokenSet, task: HeuristicTask
+    heuristic_run_spec: HeuristicRunSpec, token_set: TokenSet, task: HeuristicTask
 ) -> List[MessageList]:
     messages = []
     for prompt_length, prefix_length in zip(
-        *heuristic_test_spec.sample_input_tokens()
+        *heuristic_run_spec.sample_input_token_counts()
     ):
         prompt = create_prompt(token_set, prompt_length, prefix_length, task)
         messages.append(create_message_list_from_prompt(prompt))

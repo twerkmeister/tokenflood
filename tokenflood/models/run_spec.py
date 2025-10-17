@@ -9,7 +9,7 @@ from tokenflood.models.validation_types import (
 )
 
 
-class TestSpec(BaseModel, frozen=True):
+class RunSpec(BaseModel, frozen=True):
     name: NonEmptyString
     requests_per_second: PositiveFloat
     test_length_in_seconds: PositiveInt
@@ -29,7 +29,7 @@ class TestSpec(BaseModel, frozen=True):
         return self
 
 
-class HeuristicTestSpec(TestSpec, frozen=True):
+class HeuristicRunSpec(RunSpec, frozen=True):
     prompt_lengths: StrictlyPositiveIntegers
     output_lengths: StrictlyPositiveIntegers
     prefix_lengths: NonNegativeIntegers = (0,)
@@ -37,11 +37,11 @@ class HeuristicTestSpec(TestSpec, frozen=True):
     def sample_n_with(self, sequences: List[Sequence[int]], n: int) -> List[List[int]]:
         return [random.choices(s, k=n) for s in sequences]
 
-    def sample_output_tokens(self) -> List[int]:
-        return self.sample_n_with([self.output_lengths],
-                                  self.total_num_requests)[0]
+    def sample_output_token_counts(self) -> List[int]:
+        return self.sample_n_with([self.output_lengths], self.total_num_requests)[0]
 
-    def sample_input_tokens(self) -> Tuple[List[int], List[int]]:
-        res = self.sample_n_with([self.prompt_lengths, self.prefix_lengths],
-                                 self.total_num_requests)
+    def sample_input_token_counts(self) -> Tuple[List[int], List[int]]:
+        res = self.sample_n_with(
+            [self.prompt_lengths, self.prefix_lengths], self.total_num_requests
+        )
         return res[0], res[1]
