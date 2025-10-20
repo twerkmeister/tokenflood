@@ -37,7 +37,8 @@ async def test_send_llm_request(endpoint_spec: EndpointSpec):
 @mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_run_heuristic_test(run_spec, endpoint_spec):
     start = time.time()
-    responses = await run_heuristic_test(run_spec, endpoint_spec)
+    responses, results = await run_heuristic_test(run_spec, endpoint_spec)
     end = time.time()
     assert end - start < run_spec.test_length_in_seconds + 5
     assert len(responses) == run_spec.total_num_requests
+    assert len(results.prompts) == run_spec.total_num_requests

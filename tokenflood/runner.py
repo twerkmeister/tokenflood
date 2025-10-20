@@ -1,9 +1,9 @@
 import asyncio
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 from litellm import acompletion
-from litellm.types.utils import ModelResponse
+from litellm.types.utils import ModelResponse, Usage
 from tqdm import tqdm
 
 from tokenflood.heuristic import (
@@ -14,6 +14,7 @@ from tokenflood.heuristic import (
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.messages import MessageList
+from tokenflood.models.results import Results
 from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
 from tokenflood.models.token_set import TokenSet
 
@@ -28,12 +29,40 @@ def create_schedule(run_spec: RunSpec) -> List[float]:
     return list(pauses)
 
 
+def collect_results(
+    message_lists: List[MessageList],
+    expected_input_lengths: List[int],
+    expected_prefix_lengths: List[int],
+    expected_output_lengths: List[int],
+    model_responses: List[ModelResponse],
+) -> Results:
+    usages: List[Usage] = [mr.usage for mr in model_responses]  # type: ignore[attr-defined]
+    return Results(
+        prompts=[ml[0]["content"] for ml in message_lists],
+        generated_texts=[mr.choices[0]["message"]["content"] for mr in model_responses],
+        latencies=tuple([int(mr._response_ms) for mr in model_responses]),  # type: ignore[attr-defined]
+        expected_input_lengths=tuple(expected_input_lengths),
+        expected_prefix_lengths=tuple(expected_prefix_lengths),
+        expected_output_lengths=tuple(expected_output_lengths),
+        measured_input_lengths=tuple([usage.prompt_tokens for usage in usages]),
+        measured_prefix_lengths=tuple(
+            [
+                usage.prompt_tokens_details.cached_tokens or 0
+                if usage.prompt_tokens_details
+                else 0
+                for usage in usages
+            ]
+        ),
+        measured_output_lengths=tuple([usage.completion_tokens for usage in usages]),
+    )
+
+
 async def run_heuristic_test(
     run_spec: HeuristicRunSpec,
     endpoint_spec: EndpointSpec,
     token_set: Optional[TokenSet] = None,
     task: Optional[HeuristicTask] = None,
-) -> List[ModelResponse]:
+) -> Tuple[List[ModelResponse], Results]:
     token_set = token_set or heuristic_token_sets[0]
     task = task or heuristic_tasks[0]
     schedule = create_schedule(run_spec)
@@ -41,7 +70,13 @@ async def run_heuristic_test(
     message_lists = create_heuristic_messages(
         prompt_lengths, prefix_lengths, token_set, task
     )
-    return await run_test(schedule, message_lists, output_lengths, endpoint_spec)
+    model_responses = await run_test(
+        schedule, message_lists, output_lengths, endpoint_spec
+    )
+    results = collect_results(
+        message_lists, prompt_lengths, prefix_lengths, output_lengths, model_responses
+    )
+    return model_responses, results
 
 
 async def run_test(

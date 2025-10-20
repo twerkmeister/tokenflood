@@ -58,7 +58,7 @@ def run_spec() -> HeuristicRunSpec:
         name="abc",
         requests_per_second=1,
         test_length_in_seconds=2,
-        prompt_lengths=(64,),
+        prompt_lengths=(128,),
         output_lengths=(2,),
         prefix_lengths=(32,),
     )

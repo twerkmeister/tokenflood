@@ -1,20 +1,22 @@
 from typing import Self, Sequence
 
+import numpy as np
 from pydantic import BaseModel, model_validator
 
-from tokenflood.models.validation_types import StrictlyPositiveIntegers
+from tokenflood.models.util import numeric
+from tokenflood.models.validation_types import NonNegativeIntegers
 
 
 class Results(BaseModel, frozen=True):
     prompts: Sequence[str]
     generated_texts: Sequence[str]
-    latencies: StrictlyPositiveIntegers
-    expected_input_lengths: StrictlyPositiveIntegers
-    expected_prefix_lengths: StrictlyPositiveIntegers
-    expected_output_lengths: StrictlyPositiveIntegers
-    measured_input_lengths: StrictlyPositiveIntegers
-    measured_prefix_lengths: StrictlyPositiveIntegers
-    measured_output_lengths: StrictlyPositiveIntegers
+    latencies: NonNegativeIntegers
+    expected_input_lengths: NonNegativeIntegers
+    expected_prefix_lengths: NonNegativeIntegers
+    expected_output_lengths: NonNegativeIntegers
+    measured_input_lengths: NonNegativeIntegers
+    measured_prefix_lengths: NonNegativeIntegers
+    measured_output_lengths: NonNegativeIntegers
 
     @model_validator(mode="after")
     def check_all_sequences_same_size(self) -> Self:
@@ -25,3 +27,29 @@ class Results(BaseModel, frozen=True):
                 "All data sequences of the result need to be the same size."
             )
         return self
+
+    @staticmethod
+    def calculate_mean_absolute_error(
+        s1: Sequence[numeric], s2: Sequence[numeric]
+    ) -> float:
+        if len(s1) != len(s2):
+            raise ValueError(
+                f"Sequences must be same size to calculate mean absolute error,"
+                f"but have lengths {len(s1)} and {len(s2)} respectively."
+            )
+        return float(np.average(np.abs(np.asarray(s1) - np.asarray(s2))))
+
+    def get_input_length_error(self) -> float:
+        return self.calculate_mean_absolute_error(
+            self.expected_input_lengths, self.measured_input_lengths
+        )
+
+    def get_prefix_length_error(self) -> float:
+        return self.calculate_mean_absolute_error(
+            self.expected_prefix_lengths, self.measured_prefix_lengths
+        )
+
+    def get_output_length_error(self) -> float:
+        return self.calculate_mean_absolute_error(
+            self.expected_output_lengths, self.measured_output_lengths
+        )
