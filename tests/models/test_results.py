@@ -85,3 +85,8 @@ def test_get_prefix_length_error(results_default_kwargs):
 def test_get_output_length_error(results_default_kwargs):
     results = Results(**results_default_kwargs)
     assert results.get_output_length_error() == 0.0
+
+
+def test_get_latency_percentile(results_default_kwargs):
+    results = Results(**results_default_kwargs)
+    assert results.get_latency_percentile(50) == 110.0

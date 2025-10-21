@@ -42,17 +42,17 @@ async def test_send_llm_request(base_endpoint_spec: EndpointSpec):
 @mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_run_heuristic_test(run_spec, base_endpoint_spec):
     start = time.time()
-    responses, results = await run_heuristic_test(run_spec, base_endpoint_spec)
+    run_data = await run_heuristic_test(run_spec, base_endpoint_spec)
     end = time.time()
     assert end - start < run_spec.test_length_in_seconds + 5
-    assert len(responses) == run_spec.total_num_requests
-    assert len(results.prompts) == run_spec.total_num_requests
+    assert len(run_data.responses) == run_spec.total_num_requests
+    assert len(run_data.results.prompts) == run_spec.total_num_requests
 
 
 @pytest.mark.asyncio
 @mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_run_entire_suite(tiny_run_suite, base_endpoint_spec):
-    suite_results = await run_suite(base_endpoint_spec, tiny_run_suite)
-    assert len(suite_results) == 2
-    assert len(suite_results[0][1]) == 2
-    assert len(suite_results[1][1]) == 6
+    run_suite_data = await run_suite(base_endpoint_spec, tiny_run_suite)
+    assert len(run_suite_data) == 2
+    assert len(run_suite_data[0].responses) == 2
+    assert len(run_suite_data[1].responses) == 6

@@ -4,8 +4,8 @@ requests_per_second_rates:
   - 3
 test_length_in_seconds: 2
 load_types:
-  - prompt_length: 128
-    prefix_length: 64
+  - prompt_length: 256
+    prefix_length: 128
     output_length: 2
     weight: 1.0
 percentiles:

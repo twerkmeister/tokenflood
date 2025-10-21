@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import numpy as np
 from litellm import acompletion
@@ -15,6 +15,7 @@ from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.messages import MessageList
 from tokenflood.models.results import Results
+from tokenflood.models.run_data import RunData
 from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.token_set import TokenSet
@@ -63,7 +64,7 @@ async def run_heuristic_test(
     endpoint_spec: EndpointSpec,
     token_set: Optional[TokenSet] = None,
     task: Optional[HeuristicTask] = None,
-) -> Tuple[List[ModelResponse], Results]:
+) -> RunData:
     token_set = token_set or heuristic_token_sets[0]
     task = task or heuristic_tasks[0]
     schedule = create_schedule(run_spec)
@@ -77,7 +78,7 @@ async def run_heuristic_test(
     results = collect_results(
         message_lists, prompt_lengths, prefix_lengths, output_lengths, model_responses
     )
-    return model_responses, results
+    return RunData(run_spec=run_spec, responses=model_responses, results=results)
 
 
 async def run_test(
@@ -114,10 +115,10 @@ async def send_llm_request(
 
 async def run_suite(
     endpoint_spec: EndpointSpec, suite: HeuristicRunSuite
-) -> List[Tuple[HeuristicRunSpec, List[ModelResponse], Results]]:
+) -> List[RunData]:
     run_specs = suite.create_run_specs()
-    suite_results = []
+    run_suite_data = []
     for run_spec in run_specs:
-        responses, run_results = await run_heuristic_test(run_spec, endpoint_spec)
-        suite_results.append((run_spec, responses, run_results))
-    return suite_results
+        run_data = await run_heuristic_test(run_spec, endpoint_spec)
+        run_suite_data.append(run_data)
+    return run_suite_data

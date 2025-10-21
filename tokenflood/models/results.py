@@ -53,3 +53,6 @@ class Results(BaseModel, frozen=True):
         return self.calculate_mean_absolute_error(
             self.expected_output_lengths, self.measured_output_lengths
         )
+
+    def get_latency_percentile(self, percentile: int) -> float:
+        return float(np.percentile(self.latencies, percentile))

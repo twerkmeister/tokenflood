@@ -40,6 +40,13 @@ def endpoint_specs_folder(data_folder: str) -> str:
     return folder
 
 
+@pytest.fixture(scope="session")
+def run_data_folder(data_folder: str) -> str:
+    folder = os.path.join(data_folder, "run_data")
+    assert os.path.exists(folder)
+    return folder
+
+
 @pytest.fixture
 def base_run_suite(run_suites_folder) -> HeuristicRunSuite:
     filename = os.path.join(run_suites_folder, "base.yml")
