@@ -2,10 +2,12 @@ import os
 import pytest
 from tokenizers import Tokenizer
 
+from tokenflood.io import read_endpoint_spec, read_run_suite
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.load_type import LoadType
 from tokenflood.models.run_spec import HeuristicRunSpec
+from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.token_set import TokenSet
 
 
@@ -38,6 +40,24 @@ def endpoint_specs_folder(data_folder: str) -> str:
     return folder
 
 
+@pytest.fixture
+def base_run_suite(run_suites_folder) -> HeuristicRunSuite:
+    filename = os.path.join(run_suites_folder, "base.yml")
+    return read_run_suite(filename)
+
+
+@pytest.fixture
+def tiny_run_suite(run_suites_folder) -> HeuristicRunSuite:
+    filename = os.path.join(run_suites_folder, "tiny.yml")
+    return read_run_suite(filename)
+
+
+@pytest.fixture
+def base_endpoint_spec(endpoint_specs_folder) -> EndpointSpec:
+    filename = os.path.join(endpoint_specs_folder, "base.yml")
+    return read_endpoint_spec(filename)
+
+
 @pytest.fixture(scope="session")
 def model_id() -> str:
     return "HuggingFaceTB/SmolLM-135M-Instruct"
@@ -46,11 +66,6 @@ def model_id() -> str:
 @pytest.fixture(scope="session")
 def tokenizer(model_id: str) -> Tokenizer:
     return Tokenizer.from_pretrained(model_id)
-
-
-@pytest.fixture(scope="session")
-def endpoint_spec(model_id: str) -> EndpointSpec:
-    return EndpointSpec(model=f"openai/{model_id}", base_url="http://127.0.0.1:8000/v1")
 
 
 @pytest.fixture(scope="session")

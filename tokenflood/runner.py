@@ -16,6 +16,7 @@ from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.messages import MessageList
 from tokenflood.models.results import Results
 from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
+from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.token_set import TokenSet
 
 
@@ -109,3 +110,14 @@ async def send_llm_request(
         deployment_id=endpoint_spec.deployment,
         extra_headers=endpoint_spec.extra_headers,
     )
+
+
+async def run_suite(
+    endpoint_spec: EndpointSpec, suite: HeuristicRunSuite
+) -> List[Tuple[HeuristicRunSpec, List[ModelResponse], Results]]:
+    run_specs = suite.create_run_specs()
+    suite_results = []
+    for run_spec in run_specs:
+        responses, run_results = await run_heuristic_test(run_spec, endpoint_spec)
+        suite_results.append((run_spec, responses, run_results))
+    return suite_results
