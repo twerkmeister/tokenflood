@@ -36,6 +36,11 @@ PositiveIntegers = Annotated[
     AfterValidator(non_empty_list),
     AfterValidator(all_strictly_positive),
 ]
+PositiveFloats = Annotated[
+    Tuple[float, ...],
+    AfterValidator(non_empty_list),
+    AfterValidator(all_strictly_positive),
+]
 NonNegativeIntegers = Annotated[
     Tuple[int, ...], AfterValidator(non_empty_list), AfterValidator(all_positive)
 ]

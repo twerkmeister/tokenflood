@@ -25,8 +25,8 @@ def data_folder(test_folder: str) -> str:
 
 
 @pytest.fixture(scope="session")
-def run_specs_folder(data_folder: str) -> str:
-    folder = os.path.join(data_folder, "run_specs")
+def run_suites_folder(data_folder: str) -> str:
+    folder = os.path.join(data_folder, "run_suites")
     assert os.path.exists(folder)
     return folder
 

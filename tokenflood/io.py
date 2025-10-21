@@ -4,7 +4,7 @@ import yaml
 from pydantic import BaseModel
 
 from tokenflood.models.endpoint_spec import EndpointSpec
-from tokenflood.models.run_spec import RunSpec
+from tokenflood.models.run_suite import HeuristicRunSuite
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -22,5 +22,5 @@ def read_endpoint_spec(filename: str) -> EndpointSpec:
     return read_pydantic_yaml(EndpointSpec)(filename)
 
 
-def read_run_spec(filename: str) -> RunSpec:
-    return read_pydantic_yaml(RunSpec)(filename)
+def read_run_suite(filename: str) -> HeuristicRunSuite:
+    return read_pydantic_yaml(HeuristicRunSuite)(filename)

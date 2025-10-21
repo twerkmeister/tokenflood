@@ -1,0 +1,20 @@
+name: ABC
+requests_per_second_rates:
+  - 1
+  - 2
+  - 3
+  - 4
+test_length_in_seconds: 30
+load_types:
+  - prompt_length: 1024
+    prefix_length: 124
+    output_length: 16
+    weight: 2.0
+  - prompt_length: 1200
+    prefix_length: 1100
+    output_length: 40
+    weight: 1.0
+percentiles:
+  - 50
+  - 90
+  - 98

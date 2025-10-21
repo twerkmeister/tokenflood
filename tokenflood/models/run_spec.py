@@ -1,19 +1,17 @@
-from typing import Annotated, List, Self, Tuple
+from typing import List, Self, Tuple
 import random
 
 from pydantic import (
-    AfterValidator,
     BaseModel,
     PositiveFloat,
     PositiveInt,
     model_validator,
 )
 
-from tokenflood.models.load_type import LoadType
+from tokenflood.models.load_type import LoadType, NonEmptyLoadTypes
 from tokenflood.models.validation_types import (
     NonEmptyString,
 )
-from tokenflood.models.validators import non_empty_list
 
 
 class RunSpec(BaseModel, frozen=True):
@@ -37,7 +35,7 @@ class RunSpec(BaseModel, frozen=True):
 
 
 class HeuristicRunSpec(RunSpec, frozen=True):
-    load_types: Annotated[Tuple[LoadType, ...], AfterValidator(non_empty_list)]
+    load_types: NonEmptyLoadTypes
 
     def sample_n(self, n: int) -> Tuple[List[int], List[int], List[int]]:
         loads = self.sample_loads(n)
