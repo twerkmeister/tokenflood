@@ -73,7 +73,7 @@ async def run_heuristic_test(
         prompt_lengths, prefix_lengths, token_set, task
     )
     model_responses = await run_test(
-        schedule, message_lists, output_lengths, endpoint_spec
+        run_spec.name, schedule, message_lists, output_lengths, endpoint_spec
     )
     results = collect_results(
         message_lists, prompt_lengths, prefix_lengths, output_lengths, model_responses
@@ -82,13 +82,14 @@ async def run_heuristic_test(
 
 
 async def run_test(
+    name: str,
     schedule: List[float],
     message_lists: List[MessageList],
     num_generation_tokens: List[int],
     endpoint_spec: EndpointSpec,
 ) -> List[ModelResponse]:
     request_tasks: List[asyncio.Task] = []
-    for i in tqdm(range(len(schedule))):
+    for i in tqdm(range(len(schedule)), desc=name):
         request_task = asyncio.create_task(
             send_llm_request(endpoint_spec, message_lists[i], num_generation_tokens[i])
         )

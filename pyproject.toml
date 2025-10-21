@@ -31,3 +31,6 @@ dev = [
     "types-tqdm (>=4.67.0.20250809,<5.0.0.0)",
     "types-pyyaml (>=6.0.12.20250915,<7.0.0.0)"
 ]
+
+[tool.poetry.scripts]
+tokenflood = "tokenflood.cli:main"
