@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from tests.utils import does_not_raise
+from tokenflood.models.load_type import LoadType
 from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
 
 
@@ -29,30 +30,37 @@ def test_run_spec_validation(
 
 
 @pytest.mark.parametrize(
-    "prompt_lengths, output_lengths, prefix_lengths, expectation",
+    "load_types, expectation",
     [
-        ([1000], [20], [0], does_not_raise()),
-        ([1000, 1000], [20, 20], [0, 0], does_not_raise()),
-        ([1000, 1200], [20], [0], does_not_raise()),
-        ([1000], [20], [], pytest.raises(ValueError)),
-        ([1000], [], [0], pytest.raises(ValueError)),
-        ([], [20], [0], pytest.raises(ValueError)),
-        ([-1], [20], [0], pytest.raises(ValueError)),
-        ([1000], [-20], [0], pytest.raises(ValueError)),
-        ([1000], [20], [-40], pytest.raises(ValueError)),
+        (
+            (
+                LoadType(
+                    prompt_length=1000, prefix_length=20, output_length=12, weight=1
+                ),
+            ),
+            does_not_raise(),
+        ),
+        (
+            (
+                LoadType(
+                    prompt_length=1000, prefix_length=20, output_length=12, weight=1
+                ),
+                LoadType(
+                    prompt_length=1000, prefix_length=200, output_length=120, weight=1
+                ),
+            ),
+            does_not_raise(),
+        ),
+        ([], pytest.raises(ValueError)),
     ],
 )
-def test_heuristic_run_spec_validation(
-    prompt_lengths, output_lengths, prefix_lengths, expectation
-):
+def test_heuristic_run_spec_validation(load_types, expectation):
     with expectation:
         HeuristicRunSpec(
             name="abc",
             requests_per_second=3,
             test_length_in_seconds=10,
-            prompt_lengths=prompt_lengths,
-            prefix_lengths=prefix_lengths,
-            output_lengths=output_lengths,
+            load_types=load_types,
         )
 
 
@@ -61,18 +69,13 @@ def test_heuristic_run_spec_sampling():
         name="abc",
         requests_per_second=100,
         test_length_in_seconds=1000,
-        prompt_lengths=[100, 100, 112],
-        prefix_lengths=[20],
-        output_lengths=[12, 12, 12, 6],
+        load_types=(
+            LoadType(prompt_length=100, prefix_length=20, output_length=12, weight=2),
+            LoadType(prompt_length=112, prefix_length=20, output_length=6, weight=1),
+        ),
     )
 
     prompt_lengths, prefix_lengths, output_lengths = spec.sample()
-    assert np.allclose(
-        np.average(spec.prompt_lengths), np.average(prompt_lengths), atol=1
-    )
-    assert np.allclose(
-        np.average(spec.prefix_lengths), np.average(prefix_lengths), atol=1
-    )
-    assert np.allclose(
-        np.average(spec.output_lengths), np.average(output_lengths), atol=1
-    )
+    assert np.allclose(np.average([100, 100, 112]), np.average(prompt_lengths), atol=1)
+    assert np.allclose(20, np.average(prefix_lengths), atol=1)
+    assert np.allclose(np.average([12, 12, 6]), np.average(output_lengths), atol=1)

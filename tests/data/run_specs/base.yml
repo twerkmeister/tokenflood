@@ -1,0 +1,12 @@
+name: ABC
+request_rates:
+  - 1
+  - 2
+  - 3
+  - 4
+length_in_seconds: 30
+load_types:
+  - prompt_length: 1024
+    prefix_length: 124
+    output_length: 16
+    weight: 2.0

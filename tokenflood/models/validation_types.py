@@ -1,6 +1,6 @@
 from typing import Annotated, Tuple
 
-from pydantic import AfterValidator, StringConstraints
+from pydantic import AfterValidator, Field, StringConstraints
 
 from tokenflood.models.validators import (
     all_non_empty_strings,
@@ -11,6 +11,8 @@ from tokenflood.models.validators import (
     unique_elements,
 )
 
+PositiveInteger = Annotated[int, Field(gt=0)]
+NonNegativeInteger = Annotated[int, Field(ge=0)]
 NonEmptyString = Annotated[str, StringConstraints(min_length=1)]
 NonEmptyStrings = Annotated[
     Tuple[str, ...],
@@ -29,7 +31,7 @@ AtLeastTwoUniqueStrings = Annotated[
     AfterValidator(unique_elements),
     AfterValidator(all_non_empty_strings),
 ]
-StrictlyPositiveIntegers = Annotated[
+PositiveIntegers = Annotated[
     Tuple[int, ...],
     AfterValidator(non_empty_list),
     AfterValidator(all_strictly_positive),

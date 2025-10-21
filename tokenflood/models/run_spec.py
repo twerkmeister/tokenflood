@@ -1,12 +1,19 @@
-from typing import List, Self, Tuple
+from typing import Annotated, List, Self, Tuple
 import random
-from pydantic import BaseModel, PositiveFloat, PositiveInt, model_validator
 
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    PositiveFloat,
+    PositiveInt,
+    model_validator,
+)
+
+from tokenflood.models.load_type import LoadType
 from tokenflood.models.validation_types import (
     NonEmptyString,
-    NonNegativeIntegers,
-    StrictlyPositiveIntegers,
 )
+from tokenflood.models.validators import non_empty_list
 
 
 class RunSpec(BaseModel, frozen=True):
@@ -30,16 +37,21 @@ class RunSpec(BaseModel, frozen=True):
 
 
 class HeuristicRunSpec(RunSpec, frozen=True):
-    prompt_lengths: StrictlyPositiveIntegers
-    output_lengths: StrictlyPositiveIntegers
-    prefix_lengths: NonNegativeIntegers = (0,)
+    load_types: Annotated[Tuple[LoadType, ...], AfterValidator(non_empty_list)]
 
     def sample_n(self, n: int) -> Tuple[List[int], List[int], List[int]]:
-        return (
-            random.choices(self.prompt_lengths, k=n),
-            random.choices(self.prefix_lengths, k=n),
-            random.choices(self.output_lengths, k=n),
-        )
+        loads = self.sample_loads(n)
+        prompt_lengths, prefix_lengths, output_lengths = [], [], []
+        for load in loads:
+            prompt_lengths.append(load.prompt_length)
+            prefix_lengths.append(load.prefix_length)
+            output_lengths.append(load.output_length)
+        return prompt_lengths, prefix_lengths, output_lengths
 
     def sample(self) -> Tuple[List[int], List[int], List[int]]:
         return self.sample_n(self.total_num_requests)
+
+    def sample_loads(self, n: int) -> List[LoadType]:
+        return random.choices(
+            self.load_types, [lt.weight for lt in self.load_types], k=n
+        )

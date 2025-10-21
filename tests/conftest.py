@@ -4,6 +4,7 @@ from tokenizers import Tokenizer
 
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.heuristic_task import HeuristicTask
+from tokenflood.models.load_type import LoadType
 from tokenflood.models.run_spec import HeuristicRunSpec
 from tokenflood.models.token_set import TokenSet
 
@@ -58,9 +59,7 @@ def run_spec() -> HeuristicRunSpec:
         name="abc",
         requests_per_second=1,
         test_length_in_seconds=2,
-        prompt_lengths=(128,),
-        output_lengths=(2,),
-        prefix_lengths=(32,),
+        load_types=(LoadType(prompt_length=128, prefix_length=32, output_length=2),),
     )
 
 

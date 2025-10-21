@@ -7,6 +7,7 @@ from tokenflood.heuristic import (
     create_prompt_random_part,
 )
 from tokenflood.models.heuristic_task import HeuristicTask
+from tokenflood.models.load_type import LoadType
 from tokenflood.models.run_spec import HeuristicRunSpec
 from tokenflood.models.token_set import TokenSet
 
@@ -45,9 +46,7 @@ def test_create_heuristic_messages(token_set, heuristic_task, tokenizer):
         name="abc",
         requests_per_second=1,
         test_length_in_seconds=3,
-        prompt_lengths=(1000,),
-        prefix_lengths=(100,),
-        output_lengths=(24,),
+        load_types=(LoadType(prompt_length=1000, prefix_length=100, output_length=24),),
     )
     prompt_lengths, prefix_lengths, _ = run_spec.sample()
     message_lists = create_heuristic_messages(
