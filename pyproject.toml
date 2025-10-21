@@ -1,12 +1,22 @@
 [project]
 name = "tokenflood"
 version = "0.1.0"
-description = ""
+description = "A load testing framework for simulating arbitary loads on instruction-tuned llms."
 authors = [
     {name = "Thomas Werkmeister",email = "thomas@werkmeister.me"}
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICENSE*"]
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
+[project.urls]
+Homepage = "https://github.com/twerkmeister/tokenflood"
+Issues = "https://github.com/twerkmeister/tokenflood/issues"
+
 dependencies = [
     "litellm (>=1.78.0,<2.0.0)",
     "tqdm (>=4.67.1,<5.0.0)",
