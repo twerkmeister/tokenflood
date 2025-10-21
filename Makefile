@@ -1,6 +1,6 @@
 
 test:
-	pytest tests
+	pytest --cov=tokenflood tests
 
 ci-vllm:
 	vllm serve HuggingFaceTB/SmolLM-135M-Instruct
