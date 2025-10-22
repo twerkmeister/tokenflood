@@ -1,8 +1,11 @@
+import os
+import tempfile
 from typing import List, Tuple
 
 from tokenflood.io import (
     dict_shallow_value_lists_to_tuples,
     dict_shallow_value_tuples_to_lists,
+    make_run_folder,
     read_pydantic_yaml_list,
     read_run_suite,
     write_pydantic_yaml,
@@ -58,3 +61,11 @@ def test_dict_shallow_value_lists_to_tuples():
     assert frozen["b"] == tuple(d["b"])
     assert frozen["c"] == d["c"]
     assert isinstance(frozen["b"], Tuple)
+
+
+def test_make_run_folder():
+    tmpdir = tempfile.mkdtemp()
+    result_folder = os.path.join(tmpdir, "results")
+    assert not os.path.exists(result_folder)
+    make_run_folder(result_folder)
+    assert os.path.isdir(result_folder)

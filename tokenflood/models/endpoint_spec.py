@@ -11,6 +11,7 @@ class EndpointSpec(BaseModel):
     deployment: Optional[str] = None
     extra_headers: Dict = {}
 
+    @property
     def provider_model_str_as_folder_name(self) -> str:
         return self.provider_model_str.replace("/", "__")
 

@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, model_validator
 
-from tokenflood.models.util import numeric
 from tokenflood.models.validation_types import NonNegativeIntegers
+from tokenflood.util import calculate_mean_absolute_error
 
 
 class Results(BaseModel, frozen=True):
@@ -29,29 +29,18 @@ class Results(BaseModel, frozen=True):
             )
         return self
 
-    @staticmethod
-    def calculate_mean_absolute_error(
-        s1: Sequence[numeric], s2: Sequence[numeric]
-    ) -> float:
-        if len(s1) != len(s2):
-            raise ValueError(
-                f"Sequences must be same size to calculate mean absolute error,"
-                f"but have lengths {len(s1)} and {len(s2)} respectively."
-            )
-        return float(np.average(np.abs(np.asarray(s1) - np.asarray(s2))))
-
     def get_input_length_error(self) -> float:
-        return self.calculate_mean_absolute_error(
+        return calculate_mean_absolute_error(
             self.expected_input_lengths, self.measured_input_lengths
         )
 
     def get_prefix_length_error(self) -> float:
-        return self.calculate_mean_absolute_error(
+        return calculate_mean_absolute_error(
             self.expected_prefix_lengths, self.measured_prefix_lengths
         )
 
     def get_output_length_error(self) -> float:
-        return self.calculate_mean_absolute_error(
+        return calculate_mean_absolute_error(
             self.expected_output_lengths, self.measured_output_lengths
         )
 
