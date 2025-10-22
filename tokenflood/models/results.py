@@ -9,15 +9,15 @@ from tokenflood.util import calculate_mean_absolute_error
 
 
 class Results(BaseModel, frozen=True):
-    prompts: Sequence[str]
-    generated_texts: Sequence[str]
     latencies: NonNegativeIntegers
     expected_input_lengths: NonNegativeIntegers
-    expected_prefix_lengths: NonNegativeIntegers
-    expected_output_lengths: NonNegativeIntegers
     measured_input_lengths: NonNegativeIntegers
+    expected_prefix_lengths: NonNegativeIntegers
     measured_prefix_lengths: NonNegativeIntegers
+    expected_output_lengths: NonNegativeIntegers
     measured_output_lengths: NonNegativeIntegers
+    generated_texts: Sequence[str]
+    prompts: Sequence[str]
 
     @model_validator(mode="after")
     def check_all_sequences_same_size(self) -> Self:
@@ -48,5 +48,4 @@ class Results(BaseModel, frozen=True):
         return float(np.percentile(self.latencies, percentile))
 
     def as_dataframe(self) -> pd.DataFrame:
-        df = pd.DataFrame(self.model_dump())
-        return df[df.columns[::-1]]
+        return pd.DataFrame(self.model_dump())

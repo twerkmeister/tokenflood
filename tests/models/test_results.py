@@ -98,3 +98,4 @@ def test_as_dataframe(default_results):
     assert len(df.columns) == len(default_results.model_dump())
     assert df["latencies"][0] == 100
     assert df.columns[-1] == "prompts"
+    assert df.columns[0] == "latencies"
