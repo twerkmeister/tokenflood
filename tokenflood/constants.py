@@ -1,3 +1,5 @@
 RESULTS_FOLDER = "results"
 LATENCY_GRAPH_FILE = "latency.png"
 RUN_DATA_FILE = "run_data.csv"
+ENDPOINT_SPEC_FILE = "endpoint_spec.yml"
+RUN_SUITE_FILE = "run_suite.yml"

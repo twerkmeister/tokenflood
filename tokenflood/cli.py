@@ -2,8 +2,11 @@ import argparse
 import asyncio
 import os
 
-from tokenflood.constants import LATENCY_GRAPH_FILE
-from tokenflood.graphing import visualize_percentiles_across_request_rates
+import pandas as pd
+
+from tokenflood.constants import LATENCY_GRAPH_FILE, RUN_DATA_FILE
+from tokenflood.graphing import visualize_percentiles_across_request_rates, \
+    write_out_raw_data_points
 from tokenflood.io import make_run_folder, read_endpoint_spec, read_run_suite
 from tokenflood.runner import run_suite
 from tokenflood.util import get_run_name
@@ -65,7 +68,9 @@ def run_and_graph_suite(args: argparse.Namespace):
     run_name = get_run_name(endpoint_spec)
     run_folder = make_run_folder(run_name)
     latency_graph_file = os.path.join(run_folder, LATENCY_GRAPH_FILE)
+    run_data_file = os.path.join(run_folder, RUN_DATA_FILE)
     run_suite_data = asyncio.run(run_suite(endpoint_spec, suite))
+    write_out_raw_data_points(run_suite_data, run_data_file)
     visualize_percentiles_across_request_rates(
         suite, run_suite_data, latency_graph_file
     )

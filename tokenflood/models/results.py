@@ -1,6 +1,7 @@
 from typing import Self, Sequence
 
 import numpy as np
+import pandas as pd
 from pydantic import BaseModel, model_validator
 
 from tokenflood.models.util import numeric
@@ -56,3 +57,6 @@ class Results(BaseModel, frozen=True):
 
     def get_latency_percentile(self, percentile: int) -> float:
         return float(np.percentile(self.latencies, percentile))
+
+    def as_dataframe(self) -> pd.DataFrame:
+        return pd.DataFrame(self.model_dump())

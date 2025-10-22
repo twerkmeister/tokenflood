@@ -1,6 +1,7 @@
 from typing import List
 
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from tokenflood.models.run_data import RunData
 from tokenflood.models.run_suite import HeuristicRunSuite
@@ -23,3 +24,9 @@ def visualize_percentiles_across_request_rates(
     plt.title(run_suite.name)
     plt.legend()
     plt.savefig(filename)
+
+
+def write_out_raw_data_points(run_data_list: List[RunData], filename: str):
+    run_data_dfs = [data.as_dataframe() for data in run_data_list]
+    run_data_df = pd.concat(run_data_dfs)
+    run_data_df.to_csv(filename)

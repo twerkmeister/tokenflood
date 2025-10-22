@@ -104,7 +104,7 @@ async def send_llm_request(
     endpoint_spec: EndpointSpec, messages: MessageList, num_generation_tokens: int
 ) -> ModelResponse:
     return await acompletion(
-        model=endpoint_spec.model,
+        model=endpoint_spec.provider_model_str,
         messages=messages,
         max_tokens=num_generation_tokens,
         base_url=endpoint_spec.base_url,

@@ -1,4 +1,7 @@
 import os
+import tempfile
+from typing import Generator
+
 import pytest
 from tokenizers import Tokenizer
 
@@ -64,15 +67,9 @@ def base_endpoint_spec(endpoint_specs_folder) -> EndpointSpec:
     filename = os.path.join(endpoint_specs_folder, "base.yml")
     return read_endpoint_spec(filename)
 
-
-@pytest.fixture(scope="session")
-def model_id(base_endpoint_spec) -> str:
-    return base_endpoint_spec.model
-
-
-@pytest.fixture(scope="session")
-def tokenizer(model_id: str) -> Tokenizer:
-    return Tokenizer.from_pretrained(model_id)
+@pytest.fixture
+def tokenizer(base_endpoint_spec) -> Tokenizer:
+    return Tokenizer.from_pretrained(base_endpoint_spec.model)
 
 
 @pytest.fixture(scope="session")
@@ -93,3 +90,12 @@ def token_set() -> TokenSet:
 @pytest.fixture(scope="session")
 def heuristic_task() -> HeuristicTask:
     return HeuristicTask(task="Ignore the random input and write a letter to Santa.")
+
+
+@pytest.fixture()
+def unique_temporary_file() -> Generator[str, None, None]:
+    _, f_name = tempfile.mkstemp()
+    assert os.path.isfile(f_name)
+    yield f_name
+    os.remove(f_name)
+    assert not os.path.isfile(f_name)
