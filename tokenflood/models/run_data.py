@@ -4,6 +4,7 @@ import pandas as pd
 from litellm.types.utils import ModelResponse
 from pydantic import BaseModel
 
+from tokenflood.constants import REQUESTS_PER_SECOND_COLUMN_NAME
 from tokenflood.models.results import Results
 from tokenflood.models.run_spec import RunSpec
 
@@ -19,6 +20,6 @@ class RunData(BaseModel, frozen=True):
             self.run_spec.requests_per_second
         ] * self.run_spec.total_num_requests
         run_spec_df = pd.DataFrame(
-            {"requests_per_second_at_the_time": requests_per_second_column}
+            {REQUESTS_PER_SECOND_COLUMN_NAME: requests_per_second_column}
         )
         return pd.concat([run_spec_df, self.results.as_dataframe()], axis=1)

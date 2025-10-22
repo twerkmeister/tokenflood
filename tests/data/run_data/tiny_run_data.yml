@@ -1,0 +1,374 @@
+- responses:
+  - choices:
+    - finish_reason: length
+      index: 0
+      message:
+        content: The ar
+        function_call: null
+        role: assistant
+        tool_calls: null
+      provider_specific_fields:
+        stop_reason: null
+        token_ids: null
+    created: 1761158076
+    id: chatcmpl-1075bc3226804e4db7b8278c2b4e01d5
+    kv_transfer_params: null
+    model: hosted_vllm/HuggingFaceTB/SmolLM-135M-Instruct
+    object: chat.completion
+    prompt_logprobs: null
+    prompt_token_ids: null
+    service_tier: null
+    system_fingerprint: null
+    usage:
+      completion_tokens: 2
+      completion_tokens_details: null
+      prompt_tokens: 266
+      prompt_tokens_details: null
+      total_tokens: 268
+  - choices:
+    - finish_reason: length
+      index: 0
+      message:
+        content: A popular
+        function_call: null
+        role: assistant
+        tool_calls: null
+      provider_specific_fields:
+        stop_reason: null
+        token_ids: null
+    created: 1761158076
+    id: chatcmpl-143307e9381546759594022acf4e64f5
+    kv_transfer_params: null
+    model: hosted_vllm/HuggingFaceTB/SmolLM-135M-Instruct
+    object: chat.completion
+    prompt_logprobs: null
+    prompt_token_ids: null
+    service_tier: null
+    system_fingerprint: null
+    usage:
+      completion_tokens: 2
+      completion_tokens_details: null
+      prompt_tokens: 266
+      prompt_tokens_details: null
+      total_tokens: 268
+  results:
+    expected_input_lengths:
+    - 256
+    - 256
+    expected_output_lengths:
+    - 2
+    - 2
+    expected_prefix_lengths:
+    - 128
+    - 128
+    generated_texts:
+    - The ar
+    - A popular
+    latencies:
+    - 404
+    - 224
+    measured_input_lengths:
+    - 266
+    - 266
+    measured_output_lengths:
+    - 2
+    - 2
+    measured_prefix_lengths:
+    - 0
+    - 0
+    prompts:
+    - ' A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A Y S A V U E I L B T M T Q Y G C U Q L Y H L E
+      Q Z E L M P D L X U W I O P U J I Z X A W O J L S S L D H N U V I U I Q E R
+      J U D T S Y Y K I N Q R M T M L Q C Y G K L T H I U O O O E K Q A J D C Y S
+
+      Ignore the random input and continue the following sequence up to 10000 without
+      abbreviation: 1 2 3 4'
+    - ' A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A V L L L H P L H W N S K Y P N B S X X B D J T
+      Y Q Y H C R I K P V M O O F E V R O Z B S U T W F R G R G K R L F P W H K T
+      T R E N J P P V Q N E M C H M B F O W F T T C W Z F Z Q P F K W U Q N H M E
+
+      Ignore the random input and continue the following sequence up to 10000 without
+      abbreviation: 1 2 3 4'
+  run_spec:
+    name: ABC_001.00
+    requests_per_second: 1.0
+    test_length_in_seconds: 2
+- responses:
+  - choices:
+    - finish_reason: length
+      index: 0
+      message:
+        content: To my
+        function_call: null
+        role: assistant
+        tool_calls: null
+      provider_specific_fields:
+        stop_reason: null
+        token_ids: null
+    created: 1761158078
+    id: chatcmpl-b2a8e7170f3f4c62933aa1c10c8cb84d
+    kv_transfer_params: null
+    model: hosted_vllm/HuggingFaceTB/SmolLM-135M-Instruct
+    object: chat.completion
+    prompt_logprobs: null
+    prompt_token_ids: null
+    service_tier: null
+    system_fingerprint: null
+    usage:
+      completion_tokens: 2
+      completion_tokens_details: null
+      prompt_tokens: 266
+      prompt_tokens_details: null
+      total_tokens: 268
+  - choices:
+    - finish_reason: length
+      index: 0
+      message:
+        content: Here's
+        function_call: null
+        role: assistant
+        tool_calls: null
+      provider_specific_fields:
+        stop_reason: null
+        token_ids: null
+    created: 1761158078
+    id: chatcmpl-7397664c9ec343b080a09c50bf065467
+    kv_transfer_params: null
+    model: hosted_vllm/HuggingFaceTB/SmolLM-135M-Instruct
+    object: chat.completion
+    prompt_logprobs: null
+    prompt_token_ids: null
+    service_tier: null
+    system_fingerprint: null
+    usage:
+      completion_tokens: 2
+      completion_tokens_details: null
+      prompt_tokens: 266
+      prompt_tokens_details: null
+      total_tokens: 268
+  - choices:
+    - finish_reason: length
+      index: 0
+      message:
+        content: To solve
+        function_call: null
+        role: assistant
+        tool_calls: null
+      provider_specific_fields:
+        stop_reason: null
+        token_ids: null
+    created: 1761158079
+    id: chatcmpl-63120fc3898347dda10d5459e92349f7
+    kv_transfer_params: null
+    model: hosted_vllm/HuggingFaceTB/SmolLM-135M-Instruct
+    object: chat.completion
+    prompt_logprobs: null
+    prompt_token_ids: null
+    service_tier: null
+    system_fingerprint: null
+    usage:
+      completion_tokens: 2
+      completion_tokens_details: null
+      prompt_tokens: 266
+      prompt_tokens_details: null
+      total_tokens: 268
+  - choices:
+    - finish_reason: length
+      index: 0
+      message:
+        content: For the
+        function_call: null
+        role: assistant
+        tool_calls: null
+      provider_specific_fields:
+        stop_reason: null
+        token_ids: null
+    created: 1761158079
+    id: chatcmpl-c15cf86b8ade4e5b9ff172d192b7b0e0
+    kv_transfer_params: null
+    model: hosted_vllm/HuggingFaceTB/SmolLM-135M-Instruct
+    object: chat.completion
+    prompt_logprobs: null
+    prompt_token_ids: null
+    service_tier: null
+    system_fingerprint: null
+    usage:
+      completion_tokens: 2
+      completion_tokens_details: null
+      prompt_tokens: 266
+      prompt_tokens_details: null
+      total_tokens: 268
+  - choices:
+    - finish_reason: length
+      index: 0
+      message:
+        content: The Last
+        function_call: null
+        role: assistant
+        tool_calls: null
+      provider_specific_fields:
+        stop_reason: null
+        token_ids: null
+    created: 1761158080
+    id: chatcmpl-6d2b4c65d8a7477c9e5d5462b96c6fab
+    kv_transfer_params: null
+    model: hosted_vllm/HuggingFaceTB/SmolLM-135M-Instruct
+    object: chat.completion
+    prompt_logprobs: null
+    prompt_token_ids: null
+    service_tier: null
+    system_fingerprint: null
+    usage:
+      completion_tokens: 2
+      completion_tokens_details: null
+      prompt_tokens: 266
+      prompt_tokens_details: null
+      total_tokens: 268
+  - choices:
+    - finish_reason: length
+      index: 0
+      message:
+        content: Advantages and
+        function_call: null
+        role: assistant
+        tool_calls: null
+      provider_specific_fields:
+        stop_reason: null
+        token_ids: null
+    created: 1761158080
+    id: chatcmpl-12f8da2498794f45a6d61735ea33872e
+    kv_transfer_params: null
+    model: hosted_vllm/HuggingFaceTB/SmolLM-135M-Instruct
+    object: chat.completion
+    prompt_logprobs: null
+    prompt_token_ids: null
+    service_tier: null
+    system_fingerprint: null
+    usage:
+      completion_tokens: 2
+      completion_tokens_details: null
+      prompt_tokens: 266
+      prompt_tokens_details: null
+      total_tokens: 268
+  results:
+    expected_input_lengths:
+    - 256
+    - 256
+    - 256
+    - 256
+    - 256
+    - 256
+    expected_output_lengths:
+    - 2
+    - 2
+    - 2
+    - 2
+    - 2
+    - 2
+    expected_prefix_lengths:
+    - 128
+    - 128
+    - 128
+    - 128
+    - 128
+    - 128
+    generated_texts:
+    - To my
+    - Here's
+    - To solve
+    - For the
+    - The Last
+    - Advantages and
+    latencies:
+    - 324
+    - 330
+    - 213
+    - 346
+    - 374
+    - 262
+    measured_input_lengths:
+    - 266
+    - 266
+    - 266
+    - 266
+    - 266
+    - 266
+    measured_output_lengths:
+    - 2
+    - 2
+    - 2
+    - 2
+    - 2
+    - 2
+    measured_prefix_lengths:
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    prompts:
+    - ' A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A M D G U I M X A A I Q E M B N T Z X Y R E P L
+      M O O F P X H N V G V S A Z M W M V O F Y X I P N F X U L O J I M P M S S I
+      N A W R V D R O I G V G I G E D V M E Z O B C P I M Y T I D Z Z U S X J T L
+
+      Ignore the random input and continue the following sequence up to 10000 without
+      abbreviation: 1 2 3 4'
+    - ' A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A F H H W D U F L H S B A F A L K L W O L Y I F
+      C D U G F L C N U T R V A X F D F V R E R G Y D T B A K R Y L F M B Y V B M
+      S V J S E F U D O W C J J E P N H E W X D U M W Y T Y S W N C S D W Z P A F
+
+      Ignore the random input and continue the following sequence up to 10000 without
+      abbreviation: 1 2 3 4'
+    - ' A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A K E C K R A V R C Y M W N Y C A F Y E V I M A
+      B A N G S F Y N S L B O G K G N Q D Q F R Q D S E J G V V K W J G D I H F J
+      K W S W U Z N Q O U I V O W P X X X H O Q D E I S G Y G B Z A F O T H E H B
+
+      Ignore the random input and continue the following sequence up to 10000 without
+      abbreviation: 1 2 3 4'
+    - ' A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A O X C T Q L P J N V Z A L Z T M U D S A Z I C
+      X G O B T U Y M K X H S Q T D X Y I G P Q R R C P G K P T D Y U Q A P D N P
+      E B P T M M H N G F Y U V N Z S Y X F O K U C I R X Q Q Z C A X R Y P H A Z
+
+      Ignore the random input and continue the following sequence up to 10000 without
+      abbreviation: 1 2 3 4'
+    - ' A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A L P I D F G R G K M K Y O M L R F T C Q Q Q O
+      Q R T X T J E A U K M M I S W K S O X U H A F J X H U N N V N Q B H E Y H C
+      I O Y T K O J L I T S Q G L H Q Z M O I V L Q N S S U P A C Q W Y L D J D I
+
+      Ignore the random input and continue the following sequence up to 10000 without
+      abbreviation: 1 2 3 4'
+    - ' A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A A
+      A A A A A A A A A A A A A A A M X D X S V U A B W E F Z P L Y O K E O V P U
+      P X C W U N C Q V A Z O W T I Q W U N K S R I F U N K V A V H G Y U A L Y S
+      Y Z W W W S S F D Y F U E K G A N Z X Y W J Q H W T C N C E Z W W M W E M S
+
+      Ignore the random input and continue the following sequence up to 10000 without
+      abbreviation: 1 2 3 4'
+  run_spec:
+    name: ABC_003.00
+    requests_per_second: 3.0
+    test_length_in_seconds: 2

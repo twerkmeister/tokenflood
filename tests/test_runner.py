@@ -1,8 +1,10 @@
+import os.path
 import time
 
 import numpy as np
 import pytest
 
+from tokenflood.io import write_pydantic_yaml_list
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_spec import RunSpec
 from tokenflood.runner import (
@@ -46,8 +48,12 @@ async def test_run_heuristic_test(run_spec, base_endpoint_spec):
 
 
 @pytest.mark.asyncio
-async def test_run_entire_suite(tiny_run_suite, base_endpoint_spec):
+async def test_run_entire_suite(tiny_run_suite, base_endpoint_spec, tiny_run_data_file):
     run_suite_data = await run_suite(base_endpoint_spec, tiny_run_suite)
     assert len(run_suite_data) == 2
     assert len(run_suite_data[0].responses) == 2
     assert len(run_suite_data[1].responses) == 6
+
+    # writing it out if it doesn't exist
+    if not os.path.exists(tiny_run_data_file):
+        write_pydantic_yaml_list(tiny_run_data_file, run_suite_data)

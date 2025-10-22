@@ -1,14 +1,15 @@
 import os
 import tempfile
-from typing import Generator
+from typing import Generator, List
 
 import pytest
 from tokenizers import Tokenizer
 
-from tokenflood.io import read_endpoint_spec, read_run_suite
+from tokenflood.io import read_endpoint_spec, read_pydantic_yaml_list, read_run_suite
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.load_type import LoadType
+from tokenflood.models.run_data import RunData
 from tokenflood.models.run_spec import HeuristicRunSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.token_set import TokenSet
@@ -48,6 +49,18 @@ def run_data_folder(data_folder: str) -> str:
     folder = os.path.join(data_folder, "run_data")
     assert os.path.exists(folder)
     return folder
+
+
+@pytest.fixture(scope="session")
+def tiny_run_data_file(run_data_folder: str) -> str:
+    file = os.path.join(run_data_folder, "tiny_run_data.yml")
+    assert os.path.isfile(file)
+    return file
+
+
+@pytest.fixture(scope="session")
+def tiny_run_data(tiny_run_data_file) -> List[RunData]:
+    return read_pydantic_yaml_list(RunData)(tiny_run_data_file)
 
 
 @pytest.fixture
