@@ -52,10 +52,28 @@ def run_data_folder(data_folder: str) -> str:
 
 
 @pytest.fixture(scope="session")
-def tiny_run_data_file(run_data_folder: str) -> str:
-    file = os.path.join(run_data_folder, "tiny_run_data.yml")
-    assert os.path.isfile(file)
+def plots_folder(data_folder: str) -> str:
+    folder = os.path.join(data_folder, "plots")
+    assert os.path.exists(folder)
+    return folder
+
+
+@pytest.fixture(scope="session")
+def tiny_suite_plot_file(plots_folder: str) -> str:
+    file = os.path.join(plots_folder, "tiny_suite_result.png")
     return file
+
+
+@pytest.fixture(scope="session")
+def tiny_run_data_file_unsafe(run_data_folder: str) -> str:
+    file = os.path.join(run_data_folder, "tiny_run_data.yml")
+    return file
+
+
+@pytest.fixture(scope="session")
+def tiny_run_data_file(tiny_run_data_file_unsafe: str) -> str:
+    assert os.path.isfile(tiny_run_data_file_unsafe)
+    return tiny_run_data_file_unsafe
 
 
 @pytest.fixture(scope="session")

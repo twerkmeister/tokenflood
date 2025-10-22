@@ -48,12 +48,15 @@ async def test_run_heuristic_test(run_spec, base_endpoint_spec):
 
 
 @pytest.mark.asyncio
-async def test_run_entire_suite(tiny_run_suite, base_endpoint_spec, tiny_run_data_file):
+async def test_run_entire_tiny_suite(
+    tiny_run_suite, base_endpoint_spec, tiny_run_data_file_unsafe
+):
     run_suite_data = await run_suite(base_endpoint_spec, tiny_run_suite)
-    assert len(run_suite_data) == 2
-    assert len(run_suite_data[0].responses) == 2
-    assert len(run_suite_data[1].responses) == 6
+    run_specs = tiny_run_suite.create_run_specs()
+    assert len(run_suite_data) == len(run_specs)
+    for i in range(len(run_specs)):
+        assert len(run_suite_data[i].responses) == run_specs[i].total_num_requests
 
     # writing it out if it doesn't exist
-    if not os.path.exists(tiny_run_data_file):
-        write_pydantic_yaml_list(tiny_run_data_file, run_suite_data)
+    if not os.path.exists(tiny_run_data_file_unsafe):
+        write_pydantic_yaml_list(tiny_run_data_file_unsafe, run_suite_data)

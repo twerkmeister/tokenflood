@@ -48,4 +48,5 @@ class Results(BaseModel, frozen=True):
         return float(np.percentile(self.latencies, percentile))
 
     def as_dataframe(self) -> pd.DataFrame:
-        return pd.DataFrame(self.model_dump())
+        df = pd.DataFrame(self.model_dump())
+        return df[df.columns[::-1]]
