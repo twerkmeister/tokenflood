@@ -66,8 +66,8 @@ def base_endpoint_spec(endpoint_specs_folder) -> EndpointSpec:
 
 
 @pytest.fixture(scope="session")
-def model_id() -> str:
-    return "HuggingFaceTB/SmolLM-135M-Instruct"
+def model_id(base_endpoint_spec) -> str:
+    return base_endpoint_spec.model
 
 
 @pytest.fixture(scope="session")

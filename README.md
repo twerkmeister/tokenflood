@@ -27,3 +27,11 @@ tokenflood ripples
 tokenflood run run.yml endpoint.yml
 
 ```
+
+## Endpoint Examples
+
+* Self-hosted VLLM
+* Openai
+* Bedrock
+* Azure
+* Gemini

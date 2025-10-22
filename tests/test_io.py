@@ -1,5 +1,5 @@
 def test_read_base_endpoint_spec(base_endpoint_spec):
-    assert base_endpoint_spec.model == "openai/HuggingFaceTB/SmolLM-135M-Instruct"
+    assert base_endpoint_spec.model == "hosted_vllm/HuggingFaceTB/SmolLM-135M-Instruct"
     assert base_endpoint_spec.base_url == "http://127.0.0.1:8000/v1"
 
 

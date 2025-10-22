@@ -1,9 +1,7 @@
-import os
 import time
 
 import numpy as np
 import pytest
-from unittest import mock
 
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_spec import RunSpec
@@ -30,7 +28,6 @@ def test_create_schedule(requests_per_second: float, test_length_in_seconds: int
 
 
 @pytest.mark.asyncio
-@mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_send_llm_request(base_endpoint_spec: EndpointSpec):
     prompt = "Write down the ABC."
     messages = [{"content": prompt, "role": "user"}]
@@ -39,7 +36,6 @@ async def test_send_llm_request(base_endpoint_spec: EndpointSpec):
 
 
 @pytest.mark.asyncio
-@mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_run_heuristic_test(run_spec, base_endpoint_spec):
     start = time.time()
     run_data = await run_heuristic_test(run_spec, base_endpoint_spec)
@@ -50,7 +46,6 @@ async def test_run_heuristic_test(run_spec, base_endpoint_spec):
 
 
 @pytest.mark.asyncio
-@mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_run_entire_suite(tiny_run_suite, base_endpoint_spec):
     run_suite_data = await run_suite(base_endpoint_spec, tiny_run_suite)
     assert len(run_suite_data) == 2
