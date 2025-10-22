@@ -67,6 +67,7 @@ def base_endpoint_spec(endpoint_specs_folder) -> EndpointSpec:
     filename = os.path.join(endpoint_specs_folder, "base.yml")
     return read_endpoint_spec(filename)
 
+
 @pytest.fixture
 def tokenizer(base_endpoint_spec) -> Tokenizer:
     return Tokenizer.from_pretrained(base_endpoint_spec.model)

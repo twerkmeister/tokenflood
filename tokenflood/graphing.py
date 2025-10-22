@@ -29,4 +29,4 @@ def visualize_percentiles_across_request_rates(
 def write_out_raw_data_points(run_data_list: List[RunData], filename: str):
     run_data_dfs = [data.as_dataframe() for data in run_data_list]
     run_data_df = pd.concat(run_data_dfs)
-    run_data_df.to_csv(filename)
+    run_data_df.to_csv(filename, index=False)

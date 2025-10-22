@@ -47,4 +47,3 @@ tokenflood = "tokenflood.cli:main"
 [project.urls]
 Homepage = "https://github.com/twerkmeister/tokenflood"
 Issues = "https://github.com/twerkmeister/tokenflood/issues"
-x
