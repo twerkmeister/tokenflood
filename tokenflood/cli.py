@@ -1,7 +1,8 @@
 import argparse
 import asyncio
 import os
-
+import sys
+from typing import List
 
 from tokenflood.constants import LATENCY_GRAPH_FILE, RUN_DATA_FILE
 from tokenflood.graphing import (
@@ -54,6 +55,11 @@ def create_argument_parser():
     return parser
 
 
+def parse_args(args: List[str]) -> argparse.Namespace:
+    arg_parser = create_argument_parser()
+    return arg_parser.parse_args(args)
+
+
 def print_help_of(arg_parser: argparse.ArgumentParser):
     """Convenience method so we can always pass the args into the target func."""
 
@@ -78,8 +84,7 @@ def run_and_graph_suite(args: argparse.Namespace):
 
 
 def main():
-    arg_parser = create_argument_parser()
-    args = arg_parser.parse_args()
+    args = parse_args(sys.argv[1:])
     print(the_wave)
     args.func(args)
 

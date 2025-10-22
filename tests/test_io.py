@@ -1,5 +1,4 @@
 import os
-import tempfile
 
 from tokenflood.io import (
     make_run_folder,
@@ -42,9 +41,8 @@ def test_read_write_pydantic_model_list(base_run_suite, unique_temporary_file):
     assert re_read_base_run_suites[1] == base_run_suite
 
 
-def test_make_run_folder():
-    tmpdir = tempfile.mkdtemp()
-    result_folder = os.path.join(tmpdir, "results")
+def test_make_run_folder(unique_temporary_folder):
+    result_folder = os.path.join(unique_temporary_folder, "results")
     assert not os.path.exists(result_folder)
     make_run_folder(result_folder)
     assert os.path.isdir(result_folder)

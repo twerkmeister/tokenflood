@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 from typing import Generator, List
 
@@ -131,3 +132,12 @@ def unique_temporary_file() -> Generator[str, None, None]:
     yield f_name
     os.remove(f_name)
     assert not os.path.isfile(f_name)
+
+
+@pytest.fixture()
+def unique_temporary_folder() -> Generator[str, None, None]:
+    name = tempfile.mkdtemp()
+    assert os.path.isdir(name)
+    yield name
+    shutil.rmtree(name)
+    assert not os.path.isdir(name)
