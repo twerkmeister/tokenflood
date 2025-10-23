@@ -1,6 +1,7 @@
 import os
+import sys
 
-from tokenflood.cli import create_starter_files, parse_args, run_and_graph_suite
+from tokenflood.cli import create_starter_files, main, parse_args, run_and_graph_suite
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
     LATENCY_GRAPH_FILE,
@@ -83,3 +84,16 @@ def test_run_and_graph_suite(
         RUN_SUITE_FILE,
         ENDPOINT_SPEC_FILE,
     }
+
+
+def test_load_dotenv(unique_temporary_folder, monkeypatch):
+    monkeypatch.chdir(unique_temporary_folder)
+    env_var = "TEST_X_ABC"
+    env_value = "123"
+    with open(".env", "w") as f:
+        f.write(f"{env_var}={env_value}\n")
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, "argv", [sys.argv[0]])
+        main()
+        assert os.getenv(env_var) == env_value

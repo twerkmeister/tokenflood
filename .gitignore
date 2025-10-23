@@ -1,3 +1,4 @@
+.env
 endpoint*.yml
 run_suite*.yml
 results/

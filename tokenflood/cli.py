@@ -4,6 +4,8 @@ import os
 import sys
 from typing import List
 
+from dotenv import load_dotenv
+
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
     LATENCY_GRAPH_FILE,
@@ -140,10 +142,7 @@ def run_and_graph_suite(args: argparse.Namespace):
 
 
 def main():
+    load_dotenv(".env")
     args = parse_args(sys.argv[1:])
     print(the_wave)
     args.func(args)
-
-
-if __name__ == "__main__":
-    main()
