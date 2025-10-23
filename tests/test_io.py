@@ -4,11 +4,14 @@ import pytest
 
 from tokenflood.io import (
     add_suffix_to_file_name,
+    error_to_str,
     get_first_available_filename_like,
     list_dir_relative,
     make_run_folder,
+    read_file,
     read_pydantic_yaml_list,
     read_run_suite,
+    write_file,
     write_pydantic_yaml,
     write_pydantic_yaml_list,
 )
@@ -89,3 +92,19 @@ def test_list_dir_relative(unique_temporary_folder, base_endpoint_spec, monkeypa
     files = list_dir_relative(target_dir)
     assert len(files) == 1
     assert files[0] == f"{target_dir}/{file_name}"
+
+
+def test_write_read_file(unique_temporary_file):
+    text = "ABC"
+    write_file(unique_temporary_file, text)
+    assert text == read_file(unique_temporary_file)
+
+
+def test_error_to_str():
+    error_text = "Bad value for variable x"
+    err = ValueError(error_text)
+    assert error_text in error_to_str(err)
+
+
+def test_error_to_str_none():
+    assert error_to_str(None) is None

@@ -1,6 +1,5 @@
 import os
-from typing import Callable, List, Type, TypeVar
-
+from typing import Callable, List, Optional, Type, TypeVar
 import yaml
 from pydantic import BaseModel
 
@@ -73,3 +72,21 @@ def get_first_available_filename_like(filename: str) -> str:
 def list_dir_relative(folder_name: str) -> List[str]:
     """List dir while preserving the relative path name."""
     return [os.path.join(folder_name, f) for f in os.listdir(folder_name)]
+
+
+def write_file(filename: str, s: str):
+    with open(filename, "w") as f:
+        f.write(s)
+
+
+def read_file(filename: str) -> str:
+    with open(filename) as f:
+        return f.read()
+
+
+def error_to_str(e: Optional[BaseException]) -> Optional[str]:
+    # return "\n".join(traceback.format_exception(e))
+    if e:
+        return str(e)
+    else:
+        return None

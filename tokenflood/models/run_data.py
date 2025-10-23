@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 from litellm.types.utils import ModelResponse
@@ -13,6 +13,7 @@ class RunData(BaseModel, frozen=True):
     run_spec: RunSpec
     responses: List[ModelResponse]
     results: Results
+    error: Optional[str] = None
 
     def as_dataframe(self) -> pd.DataFrame:
         """Create a dataframe with the requests per second phase and the result data."""

@@ -8,12 +8,14 @@ from dotenv import load_dotenv
 
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
+    ERROR_FILE,
     LATENCY_GRAPH_FILE,
     RUN_DATA_FILE,
     RUN_SUITE_FILE,
 )
 from tokenflood.graphing import (
     visualize_percentiles_across_request_rates,
+    write_out_error,
     write_out_raw_data_points,
 )
 from tokenflood.io import (
@@ -130,9 +132,11 @@ def run_and_graph_suite(args: argparse.Namespace):
     run_data_file = os.path.join(run_folder, RUN_DATA_FILE)
     endpoint_spec_file = os.path.join(run_folder, ENDPOINT_SPEC_FILE)
     run_suite_file = os.path.join(run_folder, RUN_SUITE_FILE)
+    error_file = os.path.join(run_folder, ERROR_FILE)
     run_suite_data = asyncio.run(run_suite(endpoint_spec, suite))
 
     # write out input configs and results to run folder
+    write_out_error(run_suite_data, error_file)
     write_pydantic_yaml(endpoint_spec_file, endpoint_spec)
     write_pydantic_yaml(run_suite_file, suite)
     write_out_raw_data_points(run_suite_data, run_data_file)

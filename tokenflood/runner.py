@@ -1,5 +1,6 @@
 import asyncio
-from typing import List, Optional
+from dataclasses import dataclass
+from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
 from litellm import acompletion
@@ -11,6 +12,7 @@ from tokenflood.heuristic import (
     heuristic_tasks,
     heuristic_token_sets,
 )
+from tokenflood.io import error_to_str
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.messages import MessageList
@@ -19,6 +21,32 @@ from tokenflood.models.run_data import RunData
 from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.token_set import TokenSet
+
+
+@dataclass
+class RunState:
+    error: Optional[str] = None
+
+
+def set_error_state(run_state: RunState) -> Callable[[asyncio.Task], None]:
+    """A callback to help stop a run on the first error."""
+
+    def on_done(task: asyncio.Task):
+        if task.exception():
+            run_state.error = error_to_str(task.exception())
+
+    return on_done
+
+
+def make_empty_response() -> ModelResponse:
+    """Create an empty ModelResponse object as a placeholder for skipped requests.
+
+    Requests are skipped once an error happens during any requests."""
+    return ModelResponse(
+        choices=[{"message": {"content": ""}}],
+        usage=Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
+        _response_ms=0,
+    )
 
 
 def create_schedule(run_spec: RunSpec) -> List[float]:
@@ -72,13 +100,31 @@ async def run_heuristic_test(
     message_lists = create_heuristic_messages(
         prompt_lengths, prefix_lengths, token_set, task
     )
-    model_responses = await run_test(
+    model_responses, error = await run_test(
         run_spec.name, schedule, message_lists, output_lengths, endpoint_spec
     )
     results = collect_results(
         message_lists, prompt_lengths, prefix_lengths, output_lengths, model_responses
     )
-    return RunData(run_spec=run_spec, responses=model_responses, results=results)
+    return RunData(
+        run_spec=run_spec, responses=model_responses, results=results, error=error
+    )
+
+
+def mend_responses(
+    responses_and_errors: List[Union[ModelResponse, BaseException]],
+    target_num_responses: int,
+) -> List[ModelResponse]:
+    """Replace failed and skipped requests with empty responses."""
+    # replace exceptions with model responses
+    mended_responses: List[ModelResponse] = [
+        r if isinstance(r, ModelResponse) else make_empty_response()
+        for r in responses_and_errors
+    ]
+    # fill responses for skipped responses with empty responses
+    num_skipped_responses = target_num_responses - len(mended_responses)
+    skipped_responses = [make_empty_response() for _ in range(num_skipped_responses)]
+    return mended_responses + skipped_responses
 
 
 async def run_test(
@@ -87,17 +133,22 @@ async def run_test(
     message_lists: List[MessageList],
     num_generation_tokens: List[int],
     endpoint_spec: EndpointSpec,
-) -> List[ModelResponse]:
+) -> Tuple[List[ModelResponse], Optional[str]]:
     request_tasks: List[asyncio.Task] = []
+    state = RunState()
     for i in tqdm(range(len(schedule)), desc=name):
         request_task = asyncio.create_task(
             send_llm_request(endpoint_spec, message_lists[i], num_generation_tokens[i])
         )
         request_tasks.append(request_task)
+        request_task.add_done_callback(set_error_state(state))
         await asyncio.sleep(schedule[i])
+        if state.error:
+            break
 
-    responses: List[ModelResponse] = await asyncio.gather(*request_tasks)
-    return responses
+    responses_and_errors = await asyncio.gather(*request_tasks, return_exceptions=True)
+    responses = mend_responses(responses_and_errors, len(schedule))
+    return responses, state.error
 
 
 async def send_llm_request(
@@ -122,4 +173,7 @@ async def run_suite(
     for run_spec in run_specs:
         run_data = await run_heuristic_test(run_spec, endpoint_spec)
         run_suite_data.append(run_data)
+        if run_data.error:
+            print("Ending run due to error")
+            break
     return run_suite_data

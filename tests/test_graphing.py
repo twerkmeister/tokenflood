@@ -2,11 +2,13 @@ import os
 
 import pandas as pd
 from pandas.testing import assert_frame_equal
-from tokenflood.constants import REQUESTS_PER_SECOND_COLUMN_NAME
+from tokenflood.constants import ERROR_FILE, REQUESTS_PER_SECOND_COLUMN_NAME
 from tokenflood.graphing import (
     visualize_percentiles_across_request_rates,
+    write_out_error,
     write_out_raw_data_points,
 )
+from tokenflood.io import read_file
 
 
 def test_write_out_raw_data_points(tiny_run_data, unique_temporary_file):
@@ -34,3 +36,20 @@ def test_visualize_percentiles_across_request_rates(
         tiny_run_suite, tiny_run_data, unique_temporary_file
     )
     assert os.path.exists(tiny_suite_plot_file)
+
+
+def test_write_out_error(unique_temporary_folder, tiny_run_data):
+    target_file = os.path.join(unique_temporary_folder, ERROR_FILE)
+    error_str = "test error"
+    tiny_run_data_with_error = [
+        tiny_run_data[0],
+        tiny_run_data[1].model_copy(update={"error": error_str}),
+    ]
+    write_out_error(tiny_run_data_with_error, target_file)
+    assert error_str == read_file(target_file)
+
+
+def test_write_out_no_error(unique_temporary_folder, tiny_run_data):
+    target_file = os.path.join(unique_temporary_folder, ERROR_FILE)
+    write_out_error(tiny_run_data, target_file)
+    assert not os.path.exists(target_file)

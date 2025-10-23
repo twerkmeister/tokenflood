@@ -1,14 +1,18 @@
 import os.path
 import time
+from unittest import mock
 
 import numpy as np
 import pytest
+from litellm.types.utils import ModelResponse
 
 from tokenflood.io import write_pydantic_yaml_list
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_spec import RunSpec
 from tokenflood.runner import (
     create_schedule,
+    make_empty_response,
+    mend_responses,
     run_heuristic_test,
     run_suite,
     send_llm_request,
@@ -60,3 +64,32 @@ async def test_run_entire_tiny_suite(
     # writing it out if it doesn't exist
     if not os.path.exists(tiny_run_data_file_unsafe):
         write_pydantic_yaml_list(tiny_run_data_file_unsafe, run_suite_data)
+
+
+@pytest.mark.asyncio
+@mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
+async def test_run_tiny_suite_openai_missing_api_key(
+    tiny_run_suite,
+    openai_endpoint_spec,
+):
+    run_suite_data = await run_suite(openai_endpoint_spec, tiny_run_suite)
+    run_specs = tiny_run_suite.create_run_specs()
+    assert len(run_suite_data) == 1
+    assert len(run_specs) > 1
+    assert "API key" in run_suite_data[0].error
+    assert len(run_suite_data[0].results.prompts) == run_specs[0].total_num_requests
+    assert all([v == 0 for v in run_suite_data[0].results.latencies])
+
+
+def test_mend_responses():
+    responses_and_errors = [
+        make_empty_response(),
+        make_empty_response(),
+        ValueError("test"),
+    ]
+    target_num_responses = 5
+    mended_responses = mend_responses(responses_and_errors, target_num_responses)
+    assert len(mended_responses) == target_num_responses
+    assert mended_responses[0] == responses_and_errors[0]
+    assert mended_responses[1] == responses_and_errors[1]
+    assert all([isinstance(v, ModelResponse) for v in mended_responses])

@@ -101,6 +101,11 @@ def base_endpoint_spec(endpoint_specs_folder) -> EndpointSpec:
 
 
 @pytest.fixture
+def openai_endpoint_spec() -> EndpointSpec:
+    return EndpointSpec(provider="openai", model="gpt-4o-mini")
+
+
+@pytest.fixture
 def tokenizer(base_endpoint_spec) -> Tokenizer:
     return Tokenizer.from_pretrained(base_endpoint_spec.model)
 
