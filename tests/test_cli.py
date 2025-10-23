@@ -8,6 +8,7 @@ from tokenflood.constants import (
     RESULTS_FOLDER,
     RUN_DATA_FILE,
     RUN_SUITE_FILE,
+    SUMMARY_FILE,
 )
 from tokenflood.io import (
     list_dir_relative,
@@ -77,12 +78,13 @@ def test_run_and_graph_suite(
     run_folders = list_dir_relative(RESULTS_FOLDER)
     assert len(run_folders) == 1
     result_files = os.listdir(run_folders[0])
-    assert len(result_files) == 4
+    assert len(result_files) == 5
     assert set(result_files) == {
         RUN_DATA_FILE,
         LATENCY_GRAPH_FILE,
         RUN_SUITE_FILE,
         ENDPOINT_SPEC_FILE,
+        SUMMARY_FILE,
     }
 
 

@@ -4,6 +4,7 @@ RUN_DATA_FILE = "run_data.csv"
 ENDPOINT_SPEC_FILE = "endpoint_spec.yml"
 RUN_SUITE_FILE = "run_suite.yml"
 ERROR_FILE = "error.log"
+SUMMARY_FILE = "summary.yml"
 REQUESTS_PER_SECOND_COLUMN_NAME = "requests_per_second_at_the_time"
 
 MAX_INPUT_TOKENS_ENV_VAR = "TOKENFLOOD_MAX_INPUT_TOKENS"

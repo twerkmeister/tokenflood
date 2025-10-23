@@ -3,6 +3,7 @@ from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import yaml
 
 from tokenflood.io import write_file
 from tokenflood.models.endpoint_spec import EndpointSpec
@@ -58,7 +59,7 @@ def write_out_summary(
     for rd in run_data_list:
         load_result = {
             "requests_per_second": rd.run_spec.requests_per_second,
-            "mean_latency": np.average(rd.results.latencies),
+            "mean_latency": float(np.average(rd.results.latencies)),
             "mean_input_token_error": rd.results.get_input_length_error(),
             "mean_output_token_error": rd.results.get_output_length_error(),
             "mean_prefix_token_error": rd.results.get_prefix_length_error(),
@@ -70,3 +71,4 @@ def write_out_summary(
 
         load_results.append(load_result)
     summary_data["load_results"] = load_results
+    write_file(filename, yaml.safe_dump(summary_data, sort_keys=False))
