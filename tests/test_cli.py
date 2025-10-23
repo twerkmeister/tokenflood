@@ -1,9 +1,19 @@
 import os
 
 from tokenflood.cli import create_starter_files, parse_args, run_and_graph_suite
-from tokenflood.constants import LATENCY_GRAPH_FILE, RESULTS_FOLDER, RUN_DATA_FILE
-from tokenflood.io import list_dir_relative, read_endpoint_spec, read_run_suite, \
-    write_pydantic_yaml
+from tokenflood.constants import (
+    ENDPOINT_SPEC_FILE,
+    LATENCY_GRAPH_FILE,
+    RESULTS_FOLDER,
+    RUN_DATA_FILE,
+    RUN_SUITE_FILE,
+)
+from tokenflood.io import (
+    list_dir_relative,
+    read_endpoint_spec,
+    read_run_suite,
+    write_pydantic_yaml,
+)
 from tokenflood.starter_pack import (
     starter_endpoint_spec_filename,
     starter_endpoint_spec_vllm,
@@ -52,7 +62,9 @@ def test_ripple_does_not_override(unique_temporary_folder, monkeypatch):
     assert len(os.listdir(unique_temporary_folder)) == 4
 
 
-def test_run_and_graph_suite(monkeypatch, unique_temporary_folder, tiny_run_suite, base_endpoint_spec):
+def test_run_and_graph_suite(
+    monkeypatch, unique_temporary_folder, tiny_run_suite, base_endpoint_spec
+):
     monkeypatch.chdir(unique_temporary_folder)
     write_pydantic_yaml(starter_run_suite_filename, tiny_run_suite)
     write_pydantic_yaml(starter_endpoint_spec_filename, base_endpoint_spec)
@@ -64,5 +76,10 @@ def test_run_and_graph_suite(monkeypatch, unique_temporary_folder, tiny_run_suit
     run_folders = list_dir_relative(RESULTS_FOLDER)
     assert len(run_folders) == 1
     result_files = os.listdir(run_folders[0])
-    assert len(result_files) == 2
-    assert set(result_files) == {RUN_DATA_FILE, LATENCY_GRAPH_FILE}
+    assert len(result_files) == 4
+    assert set(result_files) == {
+        RUN_DATA_FILE,
+        LATENCY_GRAPH_FILE,
+        RUN_SUITE_FILE,
+        ENDPOINT_SPEC_FILE,
+    }

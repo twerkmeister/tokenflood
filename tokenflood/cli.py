@@ -4,7 +4,12 @@ import os
 import sys
 from typing import List
 
-from tokenflood.constants import LATENCY_GRAPH_FILE, RUN_DATA_FILE
+from tokenflood.constants import (
+    ENDPOINT_SPEC_FILE,
+    LATENCY_GRAPH_FILE,
+    RUN_DATA_FILE,
+    RUN_SUITE_FILE,
+)
 from tokenflood.graphing import (
     visualize_percentiles_across_request_rates,
     write_out_raw_data_points,
@@ -121,7 +126,13 @@ def run_and_graph_suite(args: argparse.Namespace):
     run_folder = make_run_folder(run_name)
     latency_graph_file = os.path.join(run_folder, LATENCY_GRAPH_FILE)
     run_data_file = os.path.join(run_folder, RUN_DATA_FILE)
+    endpoint_spec_file = os.path.join(run_folder, ENDPOINT_SPEC_FILE)
+    run_suite_file = os.path.join(run_folder, RUN_SUITE_FILE)
     run_suite_data = asyncio.run(run_suite(endpoint_spec, suite))
+
+    # write out input configs and results to run folder
+    write_pydantic_yaml(endpoint_spec_file, endpoint_spec)
+    write_pydantic_yaml(run_suite_file, suite)
     write_out_raw_data_points(run_suite_data, run_data_file)
     visualize_percentiles_across_request_rates(
         suite, run_suite_data, latency_graph_file
