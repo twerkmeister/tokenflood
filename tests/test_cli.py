@@ -70,7 +70,7 @@ def test_run_and_graph_suite(
     write_pydantic_yaml(starter_run_suite_filename, tiny_run_suite)
     write_pydantic_yaml(starter_endpoint_spec_filename, base_endpoint_spec)
     args = parse_args(
-        ["run", starter_run_suite_filename, starter_endpoint_spec_filename]
+        ["run", starter_run_suite_filename, starter_endpoint_spec_filename, "-y"]
     )
     run_and_graph_suite(args)
     assert os.path.exists(RESULTS_FOLDER)
@@ -84,6 +84,21 @@ def test_run_and_graph_suite(
         RUN_SUITE_FILE,
         ENDPOINT_SPEC_FILE,
     }
+
+
+def test_run_and_graph_suite_decline(
+    monkeypatch, unique_temporary_folder, tiny_run_suite, base_endpoint_spec
+):
+    monkeypatch.chdir(unique_temporary_folder)
+    monkeypatch.setattr("builtins.input", lambda _: "no")
+
+    write_pydantic_yaml(starter_run_suite_filename, tiny_run_suite)
+    write_pydantic_yaml(starter_endpoint_spec_filename, base_endpoint_spec)
+    args = parse_args(
+        ["run", starter_run_suite_filename, starter_endpoint_spec_filename]
+    )
+    run_and_graph_suite(args)
+    assert not os.path.exists(RESULTS_FOLDER)
 
 
 def test_load_dotenv(unique_temporary_folder, monkeypatch):

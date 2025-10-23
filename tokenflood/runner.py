@@ -7,6 +7,7 @@ from litellm import acompletion
 from litellm.types.utils import ModelResponse, Usage
 from tqdm import tqdm
 
+from tokenflood.constants import MAX_INPUT_TOKENS_ENV_VAR, MAX_OUTPUT_TOKENS_ENV_VAR
 from tokenflood.heuristic import (
     create_heuristic_messages,
     heuristic_tasks,
@@ -177,3 +178,56 @@ async def run_suite(
             print("Ending run due to error")
             break
     return run_suite_data
+
+
+def estimate_token_usage(suite: HeuristicRunSuite) -> Tuple[int, int]:
+    """Estimate total token usage based on the run suite parameters.
+
+    Specifically: requests per seconds, length of test, load types."""
+    total_input_tokens = 0
+    total_output_tokens = 0
+    for run_spec in suite.create_run_specs():
+        input_tokens, _, output_tokens = run_spec.sample()
+        total_input_tokens += sum(input_tokens)
+        total_output_tokens += sum(output_tokens)
+    return total_input_tokens, total_output_tokens
+
+
+def check_token_usage_upfront(
+    suite: HeuristicRunSuite,
+    max_input_tokens: int,
+    max_output_tokens: int,
+    proceed: bool,
+) -> bool:
+    estimated_input_tokens, estimated_output_tokens = estimate_token_usage(suite)
+    print("Checking estimated token usage for the run:")
+    print(
+        f"Estimated input tokens / configured max input tokens: {estimated_input_tokens}/{max_input_tokens}"
+    )
+    print(
+        f"Estimated output tokens / configured max output tokens: {estimated_output_tokens}/{max_output_tokens}"
+    )
+    if (
+        estimated_input_tokens > max_input_tokens
+        or estimated_output_tokens > max_output_tokens
+    ):
+        print("Estimated tokens beyond configured maximum. Aborting the run.")
+        print(
+            "Increase the maximum tokens you are willing to spend via the env vars "
+            f"{MAX_INPUT_TOKENS_ENV_VAR} and {MAX_OUTPUT_TOKENS_ENV_VAR}"
+        )
+        return False
+
+    if proceed:
+        print("Check auto-accepted")
+        return True
+
+    response = "start_value"
+    yes_answers = {"y", "yes"}
+    no_answers = {"n", "no", ""}
+    trials = 0
+    while response not in yes_answers.union(no_answers) and trials < 3:
+        response = input("Start the run? [y/N]: ")
+        response = response.strip().lower()
+        trials += 1
+    return response in yes_answers

@@ -10,6 +10,10 @@ from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
     ERROR_FILE,
     LATENCY_GRAPH_FILE,
+    MAX_INPUT_TOKENS_DEFAULT,
+    MAX_INPUT_TOKENS_ENV_VAR,
+    MAX_OUTPUT_TOKENS_DEFAULT,
+    MAX_OUTPUT_TOKENS_ENV_VAR,
     RUN_DATA_FILE,
     RUN_SUITE_FILE,
 )
@@ -25,7 +29,7 @@ from tokenflood.io import (
     read_run_suite,
     write_pydantic_yaml,
 )
-from tokenflood.runner import run_suite
+from tokenflood.runner import check_token_usage_upfront, run_suite
 from tokenflood.starter_pack import (
     starter_endpoint_spec_filename,
     starter_endpoint_spec_vllm,
@@ -74,6 +78,12 @@ def create_argument_parser():
     )
     run_cmd_parser.add_argument("run_suite", type=str)
     run_cmd_parser.add_argument("endpoint", type=str)
+    run_cmd_parser.add_argument(
+        "-y",
+        "--autoaccept",
+        help="Auto accept run start if tokens are within configured limits.",
+        action="store_true",
+    )
     run_cmd_parser.set_defaults(func=run_and_graph_suite)
 
     # Ripple
@@ -127,6 +137,17 @@ def run_and_graph_suite(args: argparse.Namespace):
     endpoint_spec = read_endpoint_spec(args.endpoint)
     suite = read_run_suite(args.run_suite)
     run_name = get_run_name(endpoint_spec)
+
+    accepted_token_usage = check_token_usage_upfront(
+        suite,
+        int(os.getenv(MAX_INPUT_TOKENS_ENV_VAR, MAX_INPUT_TOKENS_DEFAULT)),
+        int(os.getenv(MAX_OUTPUT_TOKENS_ENV_VAR, MAX_OUTPUT_TOKENS_DEFAULT)),
+        args.autoaccept,
+    )
+    if not accepted_token_usage:
+        print("Stopping...")
+        return
+
     run_folder = make_run_folder(run_name)
     latency_graph_file = os.path.join(run_folder, LATENCY_GRAPH_FILE)
     run_data_file = os.path.join(run_folder, RUN_DATA_FILE)

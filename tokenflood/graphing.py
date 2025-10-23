@@ -1,9 +1,11 @@
 from typing import List
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from tokenflood.io import write_file
+from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_data import RunData
 from tokenflood.models.run_suite import HeuristicRunSuite
 
@@ -38,3 +40,33 @@ def write_out_error(run_data_list: List[RunData], filename: str):
         if run_data.error:
             write_file(filename, run_data.error)
             break
+
+
+def write_out_summary(
+    run_suite: HeuristicRunSuite,
+    endpoint_spec: EndpointSpec,
+    run_data_list: List[RunData],
+    filename: str,
+):
+    total_num_requests = sum([len(rd.responses) for rd in run_data_list])
+    summary_data = {
+        "run_suite": run_suite.name,
+        "endpoint": endpoint_spec.provider_model_str,
+        "total_num_requests": total_num_requests,
+    }
+    load_results = []
+    for rd in run_data_list:
+        load_result = {
+            "requests_per_second": rd.run_spec.requests_per_second,
+            "mean_latency": np.average(rd.results.latencies),
+            "mean_input_token_error": rd.results.get_input_length_error(),
+            "mean_output_token_error": rd.results.get_output_length_error(),
+            "mean_prefix_token_error": rd.results.get_prefix_length_error(),
+        }
+        for percentile in run_suite.percentiles:
+            load_result[f"p{percentile}"] = rd.results.get_latency_percentile(
+                percentile
+            )
+
+        load_results.append(load_result)
+    summary_data["load_results"] = load_results

@@ -10,7 +10,9 @@ from tokenflood.io import write_pydantic_yaml_list
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_spec import RunSpec
 from tokenflood.runner import (
+    check_token_usage_upfront,
     create_schedule,
+    estimate_token_usage,
     make_empty_response,
     mend_responses,
     run_heuristic_test,
@@ -93,3 +95,71 @@ def test_mend_responses():
     assert mended_responses[0] == responses_and_errors[0]
     assert mended_responses[1] == responses_and_errors[1]
     assert all([isinstance(v, ModelResponse) for v in mended_responses])
+
+
+def test_estimate_token_usage_tiny(tiny_run_suite):
+    estimated_input_tokens, estimated_output_tokens = estimate_token_usage(
+        tiny_run_suite
+    )
+    num_requests = 8
+    assert estimated_input_tokens == 256 * num_requests
+    assert estimated_output_tokens == 2 * num_requests
+
+
+def test_estimate_token_usage_base(base_run_suite):
+    estimated_input_tokens, estimated_output_tokens = estimate_token_usage(
+        base_run_suite
+    )
+    num_requests = 300
+    input_tokens_diff = abs(
+        estimated_input_tokens - np.average([1024, 1024, 1200]) * num_requests
+    )
+    # less than 1% diff
+    assert input_tokens_diff / estimated_input_tokens < 0.01
+
+    output_tokens_diff = abs(
+        estimated_output_tokens - np.average([16, 16, 40]) * num_requests
+    )
+    assert output_tokens_diff / estimated_output_tokens < 0.05
+
+
+@pytest.mark.parametrize(
+    "user_input, input_token_diff, output_token_diff, autoaccept, expected_result",
+    [
+        # within limits no auto accept
+        ("y", 100, 100, False, True),
+        ("yes", 100, 100, False, True),
+        ("n", 100, 100, False, False),
+        ("no", 100, 100, False, False),
+        ("gibberish", 100, 100, False, False),
+        # within limits auto accept
+        ("gibberish", 100, 100, True, True),
+        # out of limits no auto accept
+        ("gibberish", -100, 100, False, False),
+        ("gibberish", 100, -100, False, False),
+        # out of limits auto accept
+        ("gibberish", -100, 100, True, False),
+        ("gibberish", 100, -100, True, False),
+    ],
+)
+def test_check_token_usage_upfront(
+    tiny_run_suite,
+    monkeypatch,
+    user_input,
+    input_token_diff,
+    output_token_diff,
+    autoaccept,
+    expected_result,
+):
+    monkeypatch.setattr("builtins.input", lambda _: user_input)
+
+    estimated_input_tokens, estimated_output_tokens = estimate_token_usage(
+        tiny_run_suite
+    )
+
+    assert expected_result == check_token_usage_upfront(
+        tiny_run_suite,
+        estimated_input_tokens + input_token_diff,
+        estimated_output_tokens + output_token_diff,
+        autoaccept,
+    )
