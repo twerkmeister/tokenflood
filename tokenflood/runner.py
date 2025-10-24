@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple, Union
-
+import logging
 import numpy as np
 from litellm import acompletion
 from litellm.types.utils import ModelResponse, Usage
@@ -22,6 +22,8 @@ from tokenflood.models.run_data import RunData
 from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.token_set import TokenSet
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -163,6 +165,7 @@ async def send_llm_request(
         api_key=endpoint_spec.api_key_env_var,
         deployment_id=endpoint_spec.deployment,
         extra_headers=endpoint_spec.extra_headers,
+        max_retries=0,
     )
 
 
@@ -175,7 +178,7 @@ async def run_suite(
         run_data = await run_heuristic_test(run_spec, endpoint_spec)
         run_suite_data.append(run_data)
         if run_data.error:
-            print("Ending run due to error")
+            log.error(f"Ending run due to error: {run_data.error}")
             break
     return run_suite_data
 
@@ -200,26 +203,30 @@ def check_token_usage_upfront(
     proceed: bool,
 ) -> bool:
     estimated_input_tokens, estimated_output_tokens = estimate_token_usage(suite)
-    print("Checking estimated token usage for the run:")
-    print(
-        f"Estimated input tokens / configured max input tokens: {estimated_input_tokens}/{max_input_tokens}"
+    log.info("Checking estimated token usage for the run:")
+    log.info(
+        f"Estimated input tokens / configured max input tokens: "
+        f"{estimated_input_tokens} / {max_input_tokens}"
     )
-    print(
-        f"Estimated output tokens / configured max output tokens: {estimated_output_tokens}/{max_output_tokens}"
+    log.info(
+        f"Estimated output tokens / configured max output tokens: "
+        f"{estimated_output_tokens} / {max_output_tokens}"
     )
     if (
         estimated_input_tokens > max_input_tokens
         or estimated_output_tokens > max_output_tokens
     ):
-        print("Estimated tokens beyond configured maximum. Aborting the run.")
-        print(
+        log.info(
+            "[red]Estimated tokens beyond configured maximum. Aborting the run.[/]"
+        )
+        log.info(
             "Increase the maximum tokens you are willing to spend via the env vars "
-            f"{MAX_INPUT_TOKENS_ENV_VAR} and {MAX_OUTPUT_TOKENS_ENV_VAR}"
+            f"[red]{MAX_INPUT_TOKENS_ENV_VAR}[/] and [red]{MAX_OUTPUT_TOKENS_ENV_VAR}[/]"
         )
         return False
 
     if proceed:
-        print("Check auto-accepted")
+        log.info("Token usage [blue]auto-accepted[/blue]")
         return True
 
     response = "start_value"

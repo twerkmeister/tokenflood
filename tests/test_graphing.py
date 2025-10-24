@@ -2,7 +2,11 @@ import os
 
 import pandas as pd
 from pandas.testing import assert_frame_equal
-from tokenflood.constants import ERROR_FILE, REQUESTS_PER_SECOND_COLUMN_NAME
+from tokenflood.constants import (
+    ERROR_FILE,
+    LATENCY_GRAPH_FILE,
+    REQUESTS_PER_SECOND_COLUMN_NAME,
+)
 from tokenflood.graphing import (
     visualize_percentiles_across_request_rates,
     write_out_error,
@@ -29,13 +33,24 @@ def test_write_out_raw_data_points(tiny_run_data, unique_temporary_file):
         assert_frame_equal(comparable_df, tiny_run_data[i].results.as_dataframe())
 
 
-def test_visualize_percentiles_across_request_rates(
-    tiny_run_suite, tiny_run_data, unique_temporary_file, tiny_suite_plot_file
+def test_visualize_percentiles_across_request_rates_changes(
+    tiny_run_suite, tiny_run_data, tiny_suite_plot_file
 ):
     visualize_percentiles_across_request_rates(
-        tiny_run_suite, tiny_run_data, unique_temporary_file
+        tiny_run_suite, tiny_run_data, tiny_suite_plot_file
     )
     assert os.path.exists(tiny_suite_plot_file)
+
+
+def test_visualize_percentiles_across_request_rates_unfinished_run(
+    tiny_run_suite, tiny_run_data, unique_temporary_folder, monkeypatch
+):
+    monkeypatch.chdir(unique_temporary_folder)
+    file = LATENCY_GRAPH_FILE
+    tiny_run_data = tiny_run_data[:1]
+    assert len(tiny_run_data) < len(tiny_run_suite.requests_per_second_rates)
+    visualize_percentiles_across_request_rates(tiny_run_suite, tiny_run_data, file)
+    assert os.path.exists(file)
 
 
 def test_write_out_error(unique_temporary_folder, tiny_run_data):

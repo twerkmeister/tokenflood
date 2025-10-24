@@ -83,6 +83,24 @@ async def test_run_tiny_suite_openai_missing_api_key(
     assert all([v == 0 for v in run_suite_data[0].results.latencies])
 
 
+@pytest.mark.asyncio
+async def test_run_tiny_suite_bad_endpoint(
+    tiny_run_suite,
+    base_endpoint_spec,
+):
+    # creating endpoint spec with bad port number
+    bad_endpoint_spec = base_endpoint_spec.model_copy(
+        update={"base_url": "http://127.0.0.1:8001/v1"}
+    )
+    run_suite_data = await run_suite(bad_endpoint_spec, tiny_run_suite)
+    run_specs = tiny_run_suite.create_run_specs()
+    assert len(run_suite_data) == 1
+    assert len(run_specs) > 1
+    assert "Connection error" in run_suite_data[0].error
+    assert len(run_suite_data[0].results.prompts) == run_specs[0].total_num_requests
+    assert all([v == 0 for v in run_suite_data[0].results.latencies])
+
+
 def test_mend_responses():
     responses_and_errors = [
         make_empty_response(),

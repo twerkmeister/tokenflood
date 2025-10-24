@@ -14,7 +14,7 @@ from tokenflood.models.run_suite import HeuristicRunSuite
 def visualize_percentiles_across_request_rates(
     run_suite: HeuristicRunSuite, run_suite_data: List[RunData], filename: str
 ):
-    x = run_suite.requests_per_second_rates
+    x = [data.run_spec.requests_per_second for data in run_suite_data]
     for percentile in run_suite.percentiles:
         y = [
             run_data.results.get_latency_percentile(percentile)

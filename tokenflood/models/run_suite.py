@@ -22,7 +22,7 @@ class HeuristicRunSuite(BaseModel, frozen=True):
     def create_run_specs(self) -> List[HeuristicRunSpec]:
         return [
             HeuristicRunSpec(
-                name=f"{self.name}_{rate:06.2f}",
+                name=f"run suite {self.name}: {rate:.2f} requests/s",
                 requests_per_second=rate,
                 test_length_in_seconds=self.test_length_in_seconds,
                 load_types=self.load_types,

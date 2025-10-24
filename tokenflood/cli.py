@@ -2,7 +2,12 @@ import argparse
 import asyncio
 import os
 import sys
+from io import StringIO
 from typing import List
+from rich import print
+import logging
+from rich.logging import RichHandler
+from tokenflood import __version__
 
 from dotenv import load_dotenv
 
@@ -41,13 +46,16 @@ from tokenflood.starter_pack import (
 )
 from tokenflood.util import get_run_name
 
-the_wave = """
+log = logging.getLogger(__name__)
+
+
+the_wave = f"""[blue]
 ⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠇⡅⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀           
 ⠧⡇⠀⠀⠒⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠀⠀⠀⠀⠀⠀⠀⡤⡆⠦⠆⢀⠠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀  
 ⠧⣷⣆⠅⢦⠀⠀⠀⠀⠀⠀⠀⠀⠠⠀⠈⠀⠀⠀⠀⠀⢤⣤⣆⢇⣶⣤⡤⡯⣦⣌⡡⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠷⣿⣷⣆⣐⡆⠀⠀⠀⠀⢀⠤⠊⠀⠀⢀⣠⣾⢯⣦⣴⣜⣺⣾⣿⣤⠟⠋⣷⢛⡣⠭⠢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠯⣿⣷⢫⡯⠄⠀⠀⢀⠐⠁⠀⠀⠀⠠⣤⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣙⣷⡗⢤⡤⠀⠈⣰⠶⡤⠀⠀⠀⠀⠀⠀⠀tokenflood v1.0⠀⠀⠀⠀⠀⠀⠀⠀
+⠯⣿⣷⢫⡯⠄⠀⠀⢀⠐⠁⠀⠀⠀⠠⣤⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣙⣷⡗⢤⡤⠀⠈⣰⠶⡤⠀⠀⠀⠀⠀⠀⠀[/][yellow]tokenflood v{__version__}[/][blue]⠀⠀⠀⠀⠀⠀⠀⠀
 ⣩⣿⡏⠉⠉⠀⢠⡔⠁⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⠑⣏⠶⡉⠖⣡⠂⣈⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⣮⣿⣧⣤⣤⠖⠁⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⢉⡻⣿⣿⣿⣿⣿⣿⣿⣿⠟⠓⠈⠅⠈⠀⠀⠘⢒⣽⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⣿⡿⠛⠉⠀⠀⠀⣀⠔⢀⡴⣃⠀⠀⢀⠷⠲⡄⠸⠟⢋⣿⣿⣿⣿⣿⡇⠀⠀⠀⠐⠁⠀⠀⠂⠀⠀⠰⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -63,20 +71,26 @@ the_wave = """
 ⡀⡆⠀⡉⡁⢿⣉⢀⠀⣰⣷⣿⣟⠠⡽⢂⡀⡄⠀⠰⣖⢱⢖⢂⡆⠈⣿⣿⣿⣿⣿⣶⣄⡙⠻⢿⣿⣿⣷⣦⣀⠀⠠⣤⣀⡀⢈⣓⣶⣶⣿⣿⣿⣿⣿⠟⠉⠀⠀⠀⣉⣭⣽⣿⣿
 ⡇⣯⣿⣿⣿⣾⣿⣿⣿⠿⠟⡡⢞⣹⠾⢻⣚⣛⢺⠞⢋⣭⣾⣧⡃⢄⡈⢿⣿⣿⣿⣿⣿⣿⣯⣿⣮⣽⣿⣿⣿⣿⣷⣬⣽⣿⣿⣿⣽⡿⣿⡿⠟⠋⢀⣀⣐⣺⣿⣿⣟⣫⣭⣿⣿
 ⢳⣿⣿⣿⣿⣿⣿⣿⣿⣤⣿⣿⣿⣿⣿⣦⠒⠉⢁⡀⠀⣙⣛⢿⣷⣶⣅⠀⠙⠻⣿⣿⣿⣿⣟⡚⠛⠻⠞⠿⠿⡿⡿⠯⠁⠟⣊⠾⠝⢋⣁⣀⣤⣤⣿⣿⣿⡿⠿⠿⠻⠛⠻⠻⠿
-⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⣐⣾⡿⡟⢶⠾⢋⢹⠿⢿⣿⣿⣷⣦⡈⠙⠛⠿⠿⢿⣶⣶⣶⣶⣶⢶⠟⠚⠀⠁⠀⠀⠙⠛⠛⠛⠛⠛⠋⠉⠁⠀⠀⠀⠀⠀⢀⠀⠀"""
+⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⣐⣾⡿⡟⢶⠾⢋⢹⠿⢿⣿⣿⣷⣦⡈⠙⠛⠿⠿⢿⣶⣶⣶⣶⣶⢶⠟⠚⠀⠁⠀⠀⠙⠛⠛⠛⠛⠛⠋⠉⠁⠀⠀⠀⠀⠀⢀⠀⠀[/]"""
+
+
+def configure_logging():
+    tokenflood_logger = logging.getLogger("tokenflood")
+    tokenflood_logger.setLevel(logging.INFO)
+    tokenflood_logger.addHandler(RichHandler(markup=True))
 
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
         prog="tokenflood",
-        description="A load testing tool for LLMs that simulates arbitrary work loads.",
+        description="[blue]A load testing tool for LLMs that simulates arbitrary work loads.[/]",
     )
     parser.set_defaults(func=print_help_of(parser))
     subparsers = parser.add_subparsers()
 
     # RUN
     run_cmd_parser = subparsers.add_parser(
-        "run", help="Execute a run suite and graph results"
+        "run", help="[blue]Execute a run suite and graph results[/]"
     )
     run_cmd_parser.add_argument("run_suite", type=str)
     run_cmd_parser.add_argument("endpoint", type=str)
@@ -90,7 +104,8 @@ def create_argument_parser():
 
     # Ripple
     ripple_cmd_parser = subparsers.add_parser(
-        "ripple", help="Create starter files for run suite and endpoint specifications."
+        "ripple",
+        help="[blue]Create starter files for run suite and endpoint specifications.[/]",
     )
     ripple_cmd_parser.set_defaults(func=create_starter_files)
 
@@ -106,7 +121,10 @@ def print_help_of(arg_parser: argparse.ArgumentParser):
     """Convenience method so we can always pass the args into the target func."""
 
     def print_help(args: argparse.Namespace):
-        arg_parser.print_help()
+        s = StringIO()
+        arg_parser.print_help(s)
+        s.seek(0)
+        print(s.read())
 
     return print_help
 
@@ -118,20 +136,20 @@ def create_starter_files(args: argparse.Namespace):
     available_run_suite_filename = get_first_available_filename_like(
         starter_run_suite_filename
     )
-    print(
-        f"Creating starter files for run suite and endpoint specifications: \n"
-        f"* {available_run_suite_filename}\n"
-        f"* {available_endpoint_spec_filename}\n"
+    log.info(
+        "Creating starter files for run suite and endpoint specifications: \n"
+        f"[green]* {available_run_suite_filename} [/]\n"
+        f"[green]* {available_endpoint_spec_filename} [/]"
     )
 
     write_pydantic_yaml(available_endpoint_spec_filename, starter_endpoint_spec_vllm)
     write_pydantic_yaml(available_run_suite_filename, starter_run_suite)
 
-    print(
+    log.info(
         "Inspect those files, boot up a vllm server with a tiny model using \n"
-        f"vllm serve {starter_model_id} \n"
-        "and run a first load test against it using \n"
-        f"tokenflood run {available_run_suite_filename} {available_endpoint_spec_filename}"
+        f"[blue]vllm serve {starter_model_id}[/]\n"
+        "and run a first load test against it using\n"
+        f"[blue]tokenflood run {available_run_suite_filename} {available_endpoint_spec_filename}[/]"
     )
 
 
@@ -147,7 +165,7 @@ def run_and_graph_suite(args: argparse.Namespace):
         args.autoaccept,
     )
     if not accepted_token_usage:
-        print("Stopping...")
+        log.info("Stopping because token usage was not accepted.")
         return
 
     run_folder = make_run_folder(run_name)
@@ -172,6 +190,7 @@ def run_and_graph_suite(args: argparse.Namespace):
 
 def main():
     load_dotenv(".env")
+    configure_logging()
     args = parse_args(sys.argv[1:])
     print(the_wave)
     args.func(args)

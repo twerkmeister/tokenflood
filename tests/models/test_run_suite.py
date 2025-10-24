@@ -45,7 +45,7 @@ def test_create_run_specs(default_run_suite_kwargs):
     run_specs = run_suite.create_run_specs()
     assert len(run_specs) == len(run_suite.requests_per_second_rates)
 
-    assert run_specs[0].name == f"{run_suite.name}_001.00"
+    assert run_specs[0].name == f"run suite {run_suite.name}: 1.00 requests/s"
     assert all(
         [
             rs.test_length_in_seconds == run_suite.test_length_in_seconds
