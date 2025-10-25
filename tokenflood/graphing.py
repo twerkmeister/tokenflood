@@ -28,6 +28,7 @@ def visualize_percentiles_across_request_rates(
     plt.title(run_suite.name)
     plt.legend()
     plt.savefig(filename)
+    plt.close()
 
 
 def write_out_raw_data_points(run_data_list: List[RunData], filename: str):

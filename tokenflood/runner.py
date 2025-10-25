@@ -204,13 +204,15 @@ def check_token_usage_upfront(
 ) -> bool:
     estimated_input_tokens, estimated_output_tokens = estimate_token_usage(suite)
     log.info("Checking estimated token usage for the run:")
+    input_token_color = get_limit_color(estimated_input_tokens, max_input_tokens)
+    output_token_color = get_limit_color(estimated_output_tokens, max_output_tokens)
     log.info(
         f"Estimated input tokens / configured max input tokens: "
-        f"{estimated_input_tokens} / {max_input_tokens}"
+        f"[{input_token_color}]{estimated_input_tokens}[/] / [blue]{max_input_tokens}[/]"
     )
     log.info(
         f"Estimated output tokens / configured max output tokens: "
-        f"{estimated_output_tokens} / {max_output_tokens}"
+        f"[{output_token_color}]{estimated_output_tokens}[/] / [blue]{max_output_tokens}[/]"
     )
     if (
         estimated_input_tokens > max_input_tokens
@@ -238,3 +240,9 @@ def check_token_usage_upfront(
         response = response.strip().lower()
         trials += 1
     return response in yes_answers
+
+
+def get_limit_color(n: int, target: int) -> str:
+    if n > target:
+        return "red"
+    return "blue"

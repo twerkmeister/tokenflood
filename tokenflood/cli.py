@@ -6,6 +6,8 @@ from io import StringIO
 from typing import List
 from rich import print
 import logging
+
+from rich.highlighter import NullHighlighter
 from rich.logging import RichHandler
 from tokenflood import __version__
 
@@ -49,8 +51,7 @@ from tokenflood.util import get_run_name
 log = logging.getLogger(__name__)
 
 
-the_wave = f"""[blue]
-⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+the_wave = f"""[blue]⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠇⡅⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀           
 ⠧⡇⠀⠀⠒⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠀⠀⠀⠀⠀⠀⠀⡤⡆⠦⠆⢀⠠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀  
 ⠧⣷⣆⠅⢦⠀⠀⠀⠀⠀⠀⠀⠀⠠⠀⠈⠀⠀⠀⠀⠀⢤⣤⣆⢇⣶⣤⡤⡯⣦⣌⡡⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -77,7 +78,9 @@ the_wave = f"""[blue]
 def configure_logging():
     tokenflood_logger = logging.getLogger("tokenflood")
     tokenflood_logger.setLevel(logging.INFO)
-    tokenflood_logger.addHandler(RichHandler(markup=True))
+    tokenflood_logger.addHandler(
+        RichHandler(markup=True, highlighter=NullHighlighter(), keywords=[])
+    )
 
 
 def create_argument_parser():
@@ -169,14 +172,16 @@ def run_and_graph_suite(args: argparse.Namespace):
         return
 
     run_folder = make_run_folder(run_name)
+    log.info(f"Preparing run folder: [blue]{run_folder}[/]")
     latency_graph_file = os.path.join(run_folder, LATENCY_GRAPH_FILE)
     run_data_file = os.path.join(run_folder, RUN_DATA_FILE)
     endpoint_spec_file = os.path.join(run_folder, ENDPOINT_SPEC_FILE)
     run_suite_file = os.path.join(run_folder, RUN_SUITE_FILE)
     error_file = os.path.join(run_folder, ERROR_FILE)
     summary_file = os.path.join(run_folder, SUMMARY_FILE)
+    log.info("Starting load test")
     run_suite_data = asyncio.run(run_suite(endpoint_spec, suite))
-
+    log.info("Writing results")
     # write out input configs and results to run folder
     write_out_error(run_suite_data, error_file)
     write_pydantic_yaml(endpoint_spec_file, endpoint_spec)
@@ -186,11 +191,14 @@ def run_and_graph_suite(args: argparse.Namespace):
     visualize_percentiles_across_request_rates(
         suite, run_suite_data, latency_graph_file
     )
+    log.info("Done.")
 
 
 def main():
     load_dotenv(".env")
     configure_logging()
     args = parse_args(sys.argv[1:])
-    print(the_wave)
+    log.info(
+        the_wave,
+    )
     args.func(args)
