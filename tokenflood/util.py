@@ -21,3 +21,15 @@ def calculate_mean_absolute_error(
             f"but have lengths {len(s1)} and {len(s2)} respectively."
         )
     return float(np.average(np.abs(np.asarray(s1) - np.asarray(s2))))
+
+
+def calculate_relative_error(
+    s1: Sequence[numeric], target_sequence: Sequence[numeric]
+) -> float:
+    return round(
+        float(
+            calculate_mean_absolute_error(s1, target_sequence)
+            / float(np.average(target_sequence))
+        ),
+        2,
+    )

@@ -60,9 +60,9 @@ def write_out_summary(
         load_result = {
             "requests_per_second": rd.run_spec.requests_per_second,
             "mean_latency": float(np.average(rd.results.latencies)),
-            "mean_input_token_error": rd.results.get_input_length_error(),
-            "mean_output_token_error": rd.results.get_output_length_error(),
-            "mean_prefix_token_error": rd.results.get_prefix_length_error(),
+            "relative_input_token_error": rd.results.get_relative_input_length_error(),
+            "relative_output_token_error": rd.results.get_relative_output_length_error(),
+            "relative_prefix_token_error": rd.results.get_relative_prefix_length_error(),
         }
         for percentile in run_suite.percentiles:
             load_result[f"p{percentile}"] = rd.results.get_latency_percentile(
