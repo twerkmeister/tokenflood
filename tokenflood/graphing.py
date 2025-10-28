@@ -25,7 +25,8 @@ def visualize_percentiles_across_request_rates(
 
     plt.xlabel("Requests per Second")
     plt.ylabel("Latency in ms")
-    plt.title(run_suite.name)
+    plt.suptitle(f"Run suite: {run_suite.name}")
+    plt.title("Latency percentiles across request rates")
     plt.legend()
     plt.savefig(filename)
     plt.close()
@@ -60,7 +61,7 @@ def write_out_summary(
     for rd in run_data_list:
         load_result = {
             "requests_per_second": rd.run_spec.requests_per_second,
-            "mean_latency": float(np.average(rd.results.latencies)),
+            "mean_latency": round(float(np.average(rd.results.latencies)), 2),
             "relative_input_token_error": rd.results.get_relative_input_length_error(),
             "relative_output_token_error": rd.results.get_relative_output_length_error(),
             "relative_prefix_token_error": rd.results.get_relative_prefix_length_error(),

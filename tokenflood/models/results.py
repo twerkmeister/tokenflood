@@ -60,7 +60,7 @@ class Results(BaseModel, frozen=True):
         )
 
     def get_latency_percentile(self, percentile: int) -> float:
-        return float(np.percentile(self.latencies, percentile))
+        return round(float(np.percentile(self.latencies, percentile)), 2)
 
     def as_dataframe(self) -> pd.DataFrame:
         return pd.DataFrame(self.model_dump())

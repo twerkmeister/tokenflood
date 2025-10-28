@@ -38,6 +38,7 @@ from tokenflood.io import (
     read_run_suite,
     write_pydantic_yaml,
 )
+from tokenflood.models.run_data import RunData
 from tokenflood.runner import check_token_usage_upfront, run_suite
 from tokenflood.starter_pack import (
     starter_endpoint_spec_filename,
@@ -105,12 +106,12 @@ def create_argument_parser():
     )
     run_cmd_parser.set_defaults(func=run_and_graph_suite)
 
-    # Ripple
-    ripple_cmd_parser = subparsers.add_parser(
-        "ripple",
+    # Initialization
+    init_cmd_parser = subparsers.add_parser(
+        "init",
         help="[blue]Create starter files for run suite and endpoint specifications.[/]",
     )
-    ripple_cmd_parser.set_defaults(func=create_starter_files)
+    init_cmd_parser.set_defaults(func=create_starter_files)
 
     return parser
 
@@ -182,6 +183,7 @@ def run_and_graph_suite(args: argparse.Namespace):
     log.info("Starting load test")
     run_suite_data = asyncio.run(run_suite(endpoint_spec, suite))
     log.info("Writing results")
+    warn_of_heuristic_errors(run_suite_data)
     # write out input configs and results to run folder
     write_out_error(run_suite_data, error_file)
     write_pydantic_yaml(endpoint_spec_file, endpoint_spec)
@@ -189,9 +191,27 @@ def run_and_graph_suite(args: argparse.Namespace):
     write_out_raw_data_points(run_suite_data, run_data_file)
     write_out_summary(suite, endpoint_spec, run_suite_data, summary_file)
     visualize_percentiles_across_request_rates(
-        suite, run_suite_data, latency_graph_file
+        suite,
+        run_suite_data,
+        latency_graph_file,
     )
     log.info("Done.")
+
+
+def warn_of_heuristic_errors(run_suite_data: List[RunData]):
+    limit = 0.05
+    input_length_errors = [rd.results.get_relative_input_length_error() for rd in run_suite_data]
+    output_length_errors = [rd.results.get_relative_output_length_error() for rd in run_suite_data]
+
+    if any([error > limit for error in input_length_errors]):
+        max_error = max(input_length_errors)
+        log.warning(f"There's been a {max_error * 100}% error on the input token length. The recorded latencies might not be representative.")
+
+    if any([error > limit for error in output_length_errors]):
+        max_error = max(output_length_errors)
+        log.warning(
+            f"There's been a {max_error * 100}% error on the output token length. The recorded latencies might not be representative."
+        )
 
 
 def main():

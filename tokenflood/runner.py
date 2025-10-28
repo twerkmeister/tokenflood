@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple, Union
 import logging
 import numpy as np
+from aiohttp import ClientSession
 from litellm import acompletion
 from litellm.types.utils import ModelResponse, Usage
 from tqdm import tqdm
@@ -16,7 +17,7 @@ from tokenflood.heuristic import (
 from tokenflood.io import error_to_str
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.heuristic_task import HeuristicTask
-from tokenflood.models.messages import MessageList
+from tokenflood.models.messages import MessageList, create_message_list_from_prompt
 from tokenflood.models.results import Results
 from tokenflood.models.run_data import RunData
 from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
@@ -91,11 +92,14 @@ def collect_results(
 
 
 async def run_heuristic_test(
+    run_suite_name: str,
+    phase: int,
     run_spec: HeuristicRunSpec,
     endpoint_spec: EndpointSpec,
     token_set: Optional[TokenSet] = None,
     task: Optional[HeuristicTask] = None,
 ) -> RunData:
+    test_name = f"Run suite {run_suite_name} phase {phase}: {run_spec.requests_per_second:.2f} requests/s"
     token_set = token_set or heuristic_token_sets[0]
     task = task or heuristic_tasks[0]
     schedule = create_schedule(run_spec)
@@ -104,7 +108,7 @@ async def run_heuristic_test(
         prompt_lengths, prefix_lengths, token_set, task
     )
     model_responses, error = await run_test(
-        run_spec.name, schedule, message_lists, output_lengths, endpoint_spec
+        test_name, schedule, message_lists, output_lengths, endpoint_spec
     )
     results = collect_results(
         message_lists, prompt_lengths, prefix_lengths, output_lengths, model_responses
@@ -138,10 +142,13 @@ async def run_test(
     endpoint_spec: EndpointSpec,
 ) -> Tuple[List[ModelResponse], Optional[str]]:
     request_tasks: List[asyncio.Task] = []
+    log.info("Warming up for the new phase.")
+    client_session = ClientSession()
+    await warm_up_session(endpoint_spec, client_session)
     state = RunState()
     for i in tqdm(range(len(schedule)), desc=name):
         request_task = asyncio.create_task(
-            send_llm_request(endpoint_spec, message_lists[i], num_generation_tokens[i])
+            send_llm_request(endpoint_spec, message_lists[i], num_generation_tokens[i], client_session)
         )
         request_tasks.append(request_task)
         request_task.add_done_callback(set_error_state(state))
@@ -149,13 +156,20 @@ async def run_test(
         if state.error:
             break
 
+    log.info("Waiting for all requests to come back.")
     responses_and_errors = await asyncio.gather(*request_tasks, return_exceptions=True)
     responses = mend_responses(responses_and_errors, len(schedule))
+    await client_session.close()
+    log.info("Finished the phase.")
     return responses, state.error
+
+async def warm_up_session(endpoint_spec: EndpointSpec, client_session: ClientSession):
+    message_list = create_message_list_from_prompt("Hello!")
+    return await send_llm_request(endpoint_spec, message_list, 1, client_session)
 
 
 async def send_llm_request(
-    endpoint_spec: EndpointSpec, messages: MessageList, num_generation_tokens: int
+    endpoint_spec: EndpointSpec, messages: MessageList, num_generation_tokens: int, client_session: ClientSession
 ) -> ModelResponse:
     return await acompletion(
         model=endpoint_spec.provider_model_str,
@@ -166,6 +180,7 @@ async def send_llm_request(
         deployment_id=endpoint_spec.deployment,
         extra_headers=endpoint_spec.extra_headers,
         max_retries=0,
+        shared_session=client_session
     )
 
 
@@ -174,8 +189,8 @@ async def run_suite(
 ) -> List[RunData]:
     run_specs = suite.create_run_specs()
     run_suite_data = []
-    for run_spec in run_specs:
-        run_data = await run_heuristic_test(run_spec, endpoint_spec)
+    for phase, run_spec in enumerate(run_specs):
+        run_data = await run_heuristic_test(suite.name, phase+1, run_spec, endpoint_spec)
         run_suite_data.append(run_data)
         if run_data.error:
             log.error(f"Ending run due to error: {run_data.error}")

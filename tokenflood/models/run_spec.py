@@ -9,13 +9,9 @@ from pydantic import (
 )
 
 from tokenflood.models.load_type import LoadType, NonEmptyLoadTypes
-from tokenflood.models.validation_types import (
-    NonEmptyString,
-)
 
 
 class RunSpec(BaseModel, frozen=True):
-    name: NonEmptyString
     requests_per_second: PositiveFloat
     test_length_in_seconds: PositiveInt
 

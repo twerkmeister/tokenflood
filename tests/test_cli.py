@@ -34,7 +34,7 @@ def test_parse_args_run():
 
 
 def test_parse_args_ripple(unique_temporary_folder, monkeypatch):
-    args = parse_args(["ripple"])
+    args = parse_args(["init"])
     assert args.func.__name__ == create_starter_files.__name__
 
 
@@ -43,9 +43,9 @@ def test_parse_args_empty():
     assert args.func.__name__ == "print_help"
 
 
-def test_ripple(unique_temporary_folder, monkeypatch):
+def test_init(unique_temporary_folder, monkeypatch):
     monkeypatch.chdir(unique_temporary_folder)
-    args = parse_args(["ripple"])
+    args = parse_args(["init"])
     create_starter_files(args)
     os.path.isfile(starter_run_suite_filename)
     os.path.isfile(starter_endpoint_spec_filename)
@@ -55,9 +55,9 @@ def test_ripple(unique_temporary_folder, monkeypatch):
     assert endpoint_spec == starter_endpoint_spec_vllm
 
 
-def test_ripple_does_not_override(unique_temporary_folder, monkeypatch):
+def test_init_does_not_override(unique_temporary_folder, monkeypatch):
     monkeypatch.chdir(unique_temporary_folder)
-    args = parse_args(["ripple"])
+    args = parse_args(["init"])
     create_starter_files(args)
     assert len(os.listdir(unique_temporary_folder)) == 2
     create_starter_files(args)

@@ -6,7 +6,13 @@ from tokenflood.models.token_set import TokenSet
 
 heuristic_tasks = [
     HeuristicTask(
-        task="Ignore the random input and continue the following sequence up to 10000 without abbreviation: 1 2 3 4"
+        task="Task: Count up to 10000 naming each individual number like this: 1 2 3 4"
+    ),
+    HeuristicTask(
+        task="Task: Write an intro chapter for a historic novel that is at least 20 pages long."
+    ),
+    HeuristicTask(
+        task="Task: Recite the Bible verse by verse starting with Genesis 1."
     )
 ]
 
