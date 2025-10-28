@@ -1,21 +1,22 @@
-from typing import Self, Sequence
+import math
+from typing import Callable, Self, Sequence
 
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, model_validator
 
-from tokenflood.models.validation_types import NonNegativeIntegers
-from tokenflood.util import calculate_mean_absolute_error, calculate_relative_error
+from tokenflood.models.validation_types import NonNegativeIntegersOrEmpty
+from tokenflood.util import calculate_mean_error, calculate_relative_error
 
 
 class Results(BaseModel, frozen=True):
-    latencies: NonNegativeIntegers
-    expected_input_lengths: NonNegativeIntegers
-    measured_input_lengths: NonNegativeIntegers
-    expected_prefix_lengths: NonNegativeIntegers
-    measured_prefix_lengths: NonNegativeIntegers
-    expected_output_lengths: NonNegativeIntegers
-    measured_output_lengths: NonNegativeIntegers
+    latencies: NonNegativeIntegersOrEmpty
+    expected_input_lengths: NonNegativeIntegersOrEmpty
+    measured_input_lengths: NonNegativeIntegersOrEmpty
+    expected_prefix_lengths: NonNegativeIntegersOrEmpty
+    measured_prefix_lengths: NonNegativeIntegersOrEmpty
+    expected_output_lengths: NonNegativeIntegersOrEmpty
+    measured_output_lengths: NonNegativeIntegersOrEmpty
     generated_texts: Sequence[str]
     prompts: Sequence[str]
 
@@ -29,36 +30,57 @@ class Results(BaseModel, frozen=True):
             )
         return self
 
+    @property
+    def is_empty(self):
+        return len(self.latencies) == 0
+
+    @staticmethod
+    def nan_if_empty(func: Callable[..., float]) -> Callable[..., float]:
+        def wrapped(myself: "Results", *args):
+            if myself.is_empty:
+                return math.nan
+            else:
+                return func(myself, *args)
+
+        return wrapped
+
+    @nan_if_empty
     def get_input_length_error(self) -> float:
-        return calculate_mean_absolute_error(
+        return calculate_mean_error(
             self.expected_input_lengths, self.measured_input_lengths
         )
 
+    @nan_if_empty
     def get_relative_input_length_error(self) -> float:
         return calculate_relative_error(
             self.measured_input_lengths, self.expected_input_lengths
         )
 
+    @nan_if_empty
     def get_prefix_length_error(self) -> float:
-        return calculate_mean_absolute_error(
+        return calculate_mean_error(
             self.expected_prefix_lengths, self.measured_prefix_lengths
         )
 
+    @nan_if_empty
     def get_relative_prefix_length_error(self) -> float:
         return calculate_relative_error(
             self.measured_prefix_lengths, self.expected_prefix_lengths
         )
 
+    @nan_if_empty
     def get_output_length_error(self) -> float:
-        return calculate_mean_absolute_error(
+        return calculate_mean_error(
             self.expected_output_lengths, self.measured_output_lengths
         )
 
+    @nan_if_empty
     def get_relative_output_length_error(self) -> float:
         return calculate_relative_error(
             self.measured_output_lengths, self.expected_output_lengths
         )
 
+    @nan_if_empty
     def get_latency_percentile(self, percentile: int) -> float:
         return round(float(np.percentile(self.latencies, percentile)), 2)
 

@@ -200,12 +200,18 @@ def run_and_graph_suite(args: argparse.Namespace):
 
 def warn_of_heuristic_errors(run_suite_data: List[RunData]):
     limit = 0.05
-    input_length_errors = [rd.results.get_relative_input_length_error() for rd in run_suite_data]
-    output_length_errors = [rd.results.get_relative_output_length_error() for rd in run_suite_data]
+    input_length_errors = [
+        rd.results.get_relative_input_length_error() for rd in run_suite_data
+    ]
+    output_length_errors = [
+        rd.results.get_relative_output_length_error() for rd in run_suite_data
+    ]
 
     if any([error > limit for error in input_length_errors]):
         max_error = max(input_length_errors)
-        log.warning(f"There's been a {max_error * 100}% error on the input token length. The recorded latencies might not be representative.")
+        log.warning(
+            f"There's been a {max_error * 100}% error on the input token length. The recorded latencies might not be representative."
+        )
 
     if any([error > limit for error in output_length_errors]):
         max_error = max(output_length_errors)

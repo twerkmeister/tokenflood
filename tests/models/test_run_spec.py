@@ -7,23 +7,19 @@ from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
 
 
 @pytest.mark.parametrize(
-    "name, requests_per_second, test_length_in_seconds, expectation",
+    "requests_per_second, test_length_in_seconds, expectation",
     [
-        ("abc", 3, 10, does_not_raise()),
-        ("", 3, 10, pytest.raises(ValueError)),
-        ("abc", 0, 10, pytest.raises(ValueError)),
-        ("abc", -1, 10, pytest.raises(ValueError)),
-        ("abc", -3, 0, pytest.raises(ValueError)),
-        ("abc", -3, -1, pytest.raises(ValueError)),
-        ("abc", 0.1, 1, pytest.raises(ValueError)),
+        (3, 10, does_not_raise()),
+        (0, 10, pytest.raises(ValueError)),
+        (-1, 10, pytest.raises(ValueError)),
+        (-3, 0, pytest.raises(ValueError)),
+        (-3, -1, pytest.raises(ValueError)),
+        (0.1, 1, pytest.raises(ValueError)),
     ],
 )
-def test_run_spec_validation(
-    name, requests_per_second, test_length_in_seconds, expectation
-):
+def test_run_spec_validation(requests_per_second, test_length_in_seconds, expectation):
     with expectation:
         RunSpec(
-            name=name,
             requests_per_second=requests_per_second,
             test_length_in_seconds=test_length_in_seconds,
         )
@@ -57,7 +53,6 @@ def test_run_spec_validation(
 def test_heuristic_run_spec_validation(load_types, expectation):
     with expectation:
         HeuristicRunSpec(
-            name="abc",
             requests_per_second=3,
             test_length_in_seconds=10,
             load_types=load_types,
@@ -66,7 +61,6 @@ def test_heuristic_run_spec_validation(load_types, expectation):
 
 def test_heuristic_run_spec_sampling():
     spec = HeuristicRunSpec(
-        name="abc",
         requests_per_second=100,
         test_length_in_seconds=1000,
         load_types=(

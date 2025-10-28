@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Sequence
+from typing import Callable, Optional, Sequence, TypeVar
 
 import numpy as np
 
@@ -12,24 +12,31 @@ def get_run_name(endpoint_spec: EndpointSpec):
     return f"{date_str}_{endpoint_spec.provider_model_str_as_folder_name}"
 
 
-def calculate_mean_absolute_error(
-    s1: Sequence[numeric], s2: Sequence[numeric]
+def calculate_mean_error(
+    observations: Sequence[numeric], targets: Sequence[numeric]
 ) -> float:
-    if len(s1) != len(s2):
+    if len(observations) != len(targets):
         raise ValueError(
-            f"Sequences must be same size to calculate mean absolute error,"
-            f"but have lengths {len(s1)} and {len(s2)} respectively."
+            f"Sequences must be same size to calculate mean error,"
+            f"but have lengths {len(observations)} and {len(targets)} respectively."
         )
-    return float(np.average(np.abs(np.asarray(s1) - np.asarray(s2))))
+    return float(np.average(np.asarray(observations) - np.asarray(targets)))
 
 
 def calculate_relative_error(
-    s1: Sequence[numeric], target_sequence: Sequence[numeric]
+    observations: Sequence[numeric], targets: Sequence[numeric]
 ) -> float:
     return round(
-        float(
-            calculate_mean_absolute_error(s1, target_sequence)
-            / float(np.average(target_sequence))
-        ),
+        float(calculate_mean_error(observations, targets) / float(np.average(targets))),
         2,
     )
+
+
+T = TypeVar("T")
+
+
+def find_idx(s: Sequence[T], predicate: Callable[[T], bool]) -> Optional[int]:
+    for i in range(len(s)):
+        if predicate(s[i]):
+            return i
+    return None

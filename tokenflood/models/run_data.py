@@ -14,6 +14,7 @@ class RunData(BaseModel, frozen=True):
     responses: List[ModelResponse]
     results: Results
     error: Optional[str] = None
+    ping_results: Optional[Results] = None
 
     def as_dataframe(self) -> pd.DataFrame:
         """Create a dataframe with the requests per second phase and the result data."""

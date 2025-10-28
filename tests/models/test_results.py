@@ -1,9 +1,25 @@
+import math
 from typing import Dict
 
 import pytest
 
 from tests.utils import does_not_raise
 from tokenflood.models.results import Results
+
+
+@pytest.fixture()
+def empty_results() -> Results:
+    return Results(
+        latencies=(),
+        expected_input_lengths=(),
+        measured_input_lengths=(),
+        expected_prefix_lengths=(),
+        measured_prefix_lengths=(),
+        expected_output_lengths=(),
+        measured_output_lengths=(),
+        generated_texts=(),
+        prompts=(),
+    )
 
 
 @pytest.fixture()
@@ -80,16 +96,32 @@ def test_get_input_length_error(default_results):
     assert default_results.get_input_length_error() == 511.0
 
 
+def test_get_input_length_error_empty(empty_results):
+    assert math.isnan(empty_results.get_relative_input_length_error())
+
+
 def test_get_prefix_length_error(default_results):
     assert default_results.get_prefix_length_error() == 28.0
+
+
+def test_get_prefix_length_error_empty(empty_results):
+    assert math.isnan(empty_results.get_relative_prefix_length_error())
 
 
 def test_get_output_length_error(default_results):
     assert default_results.get_output_length_error() == 0.0
 
 
+def test_get_output_length_error_empty(empty_results):
+    assert math.isnan(empty_results.get_relative_output_length_error())
+
+
 def test_get_latency_percentile(default_results):
     assert default_results.get_latency_percentile(50) == 110.0
+
+
+def test_get_latency_percentile_empty(empty_results):
+    assert math.isnan(empty_results.get_latency_percentile(50))
 
 
 def test_as_dataframe(default_results):

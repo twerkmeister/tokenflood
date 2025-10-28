@@ -113,10 +113,9 @@ def tokenizer(base_endpoint_spec) -> Tokenizer:
 @pytest.fixture(scope="session")
 def run_spec() -> HeuristicRunSpec:
     return HeuristicRunSpec(
-        name="abc",
-        requests_per_second=1,
-        test_length_in_seconds=2,
-        load_types=(LoadType(prompt_length=128, prefix_length=32, output_length=2),),
+        requests_per_second=2,
+        test_length_in_seconds=1,
+        load_types=(LoadType(prompt_length=128, prefix_length=32, output_length=1),),
     )
 
 

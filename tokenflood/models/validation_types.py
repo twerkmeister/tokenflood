@@ -56,3 +56,5 @@ PositiveUniqueFloats = Annotated[
 NonNegativeIntegers = Annotated[
     Tuple[int, ...], AfterValidator(non_empty_list), AfterValidator(all_positive)
 ]
+
+NonNegativeIntegersOrEmpty = Annotated[Tuple[int, ...], AfterValidator(all_positive)]

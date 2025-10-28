@@ -13,7 +13,7 @@ heuristic_tasks = [
     ),
     HeuristicTask(
         task="Task: Recite the Bible verse by verse starting with Genesis 1."
-    )
+    ),
 ]
 
 heuristic_token_sets = [
