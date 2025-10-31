@@ -1,3 +1,4 @@
+import logging
 import os.path
 import time
 from unittest import mock
@@ -13,8 +14,7 @@ from tokenflood.runner import (
     check_token_usage_upfront,
     create_schedule,
     estimate_token_usage,
-    make_empty_response,
-    drop_responses_after_first_error,
+    get_warm_session,
     run_heuristic_test,
     run_suite,
     send_llm_request,
@@ -45,8 +45,12 @@ async def test_send_llm_request(base_endpoint_spec: EndpointSpec):
 
 @pytest.mark.asyncio
 async def test_run_heuristic_test(run_spec, base_endpoint_spec):
+    client_session, url_observer, state = await get_warm_session(base_endpoint_spec)
+    assert state.error is None
     start = time.time()
-    run_data = await run_heuristic_test("test", run_spec, base_endpoint_spec)
+    run_data = await run_heuristic_test(
+        "test", run_spec, base_endpoint_spec, client_session, url_observer
+    )
     end = time.time()
     assert end - start < run_spec.test_length_in_seconds + 5
     assert len(run_data.responses) == run_spec.total_num_requests
@@ -55,7 +59,9 @@ async def test_run_heuristic_test(run_spec, base_endpoint_spec):
 
 @pytest.mark.asyncio
 async def test_run_entire_tiny_suite(
-    tiny_run_suite, base_endpoint_spec, tiny_run_data_file_unsafe
+    tiny_run_suite,
+    base_endpoint_spec,
+    tiny_run_data_file_unsafe,
 ):
     run_suite_data = await run_suite(base_endpoint_spec, tiny_run_suite)
     run_specs = tiny_run_suite.create_run_specs()
@@ -71,72 +77,28 @@ async def test_run_entire_tiny_suite(
 @pytest.mark.asyncio
 @mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_run_tiny_suite_openai_missing_api_key(
-    tiny_run_suite,
-    openai_endpoint_spec,
+    tiny_run_suite, openai_endpoint_spec, caplog
 ):
-    run_suite_data = await run_suite(openai_endpoint_spec, tiny_run_suite)
+    with caplog.at_level(logging.ERROR):
+        run_suite_data = await run_suite(openai_endpoint_spec, tiny_run_suite)
     run_specs = tiny_run_suite.create_run_specs()
-    assert len(run_suite_data) == 1
+    assert len(run_suite_data) == 0
     assert len(run_specs) > 1
-    assert "API key" in run_suite_data[0].error
-    assert run_suite_data[0].results.is_empty
-    assert run_suite_data[0].ping_results is not None
-    assert run_suite_data[0].ping_results.is_empty
+    assert "API key" in caplog.text
 
 
 @pytest.mark.asyncio
-async def test_run_tiny_suite_bad_endpoint(
-    tiny_run_suite,
-    base_endpoint_spec,
-):
+async def test_run_tiny_suite_bad_endpoint(tiny_run_suite, base_endpoint_spec, caplog):
     # creating endpoint spec with bad port number
     bad_endpoint_spec = base_endpoint_spec.model_copy(
         update={"base_url": "http://127.0.0.1:8001/v1"}
     )
-    run_suite_data = await run_suite(bad_endpoint_spec, tiny_run_suite)
+    with caplog.at_level(logging.ERROR):
+        run_suite_data = await run_suite(bad_endpoint_spec, tiny_run_suite)
     run_specs = tiny_run_suite.create_run_specs()
-    assert len(run_suite_data) == 1
+    assert len(run_suite_data) == 0
     assert len(run_specs) > 1
-    assert "Connection error" in run_suite_data[0].error
-    assert run_suite_data[0].results.is_empty
-    assert run_suite_data[0].ping_results is not None
-    assert run_suite_data[0].ping_results.is_empty
-
-
-@pytest.mark.parametrize(
-    ("responses, expected_length"),
-    [
-        (
-            [
-                make_empty_response(),
-                make_empty_response(),
-                ValueError("test"),
-            ],
-            2,
-        ),
-        (
-            [
-                make_empty_response(),
-                ValueError("test"),
-                make_empty_response(),
-            ],
-            1,
-        ),
-        (
-            [
-                ValueError("test"),
-                make_empty_response(),
-                make_empty_response(),
-            ],
-            0,
-        ),
-    ],
-)
-def test_drop_responses_after_first_error(responses, expected_length):
-    mended_responses = drop_responses_after_first_error(responses)
-    assert len(mended_responses) == expected_length
-    for i in range(len(mended_responses)):
-        assert responses[i] == mended_responses[i]
+    assert "Connection error" in caplog.text
 
 
 def test_estimate_token_usage_tiny(tiny_run_suite):

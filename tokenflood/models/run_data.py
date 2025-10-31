@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+import numpy as np
 import pandas as pd
 from litellm.types.utils import ModelResponse
 from pydantic import BaseModel
@@ -13,8 +14,8 @@ class RunData(BaseModel, frozen=True):
     run_spec: RunSpec
     responses: List[ModelResponse]
     results: Results
+    ping_latencies: List[int] = []
     error: Optional[str] = None
-    ping_results: Optional[Results] = None
 
     def as_dataframe(self) -> pd.DataFrame:
         """Create a dataframe with the requests per second phase and the result data."""
@@ -25,3 +26,8 @@ class RunData(BaseModel, frozen=True):
             {REQUESTS_PER_SECOND_COLUMN_NAME: requests_per_second_column}
         )
         return pd.concat([run_spec_df, self.results.as_dataframe()], axis=1)
+
+    def average_network_latency(self) -> int:
+        if len(self.ping_latencies) < 1:
+            return -1
+        return int(np.average(np.asarray(self.ping_latencies)))

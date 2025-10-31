@@ -210,13 +210,13 @@ def warn_of_heuristic_errors(run_suite_data: List[RunData]):
     if any([error > limit for error in input_length_errors]):
         max_error = max(input_length_errors)
         log.warning(
-            f"There's been a {max_error * 100}% error on the input token length. The recorded latencies might not be representative."
+            f"There's been a {(max_error * 100):.2f}% error on the input token length. The recorded latencies might not be representative."
         )
 
     if any([error > limit for error in output_length_errors]):
         max_error = max(output_length_errors)
         log.warning(
-            f"There's been a {max_error * 100}% error on the output token length. The recorded latencies might not be representative."
+            f"There's been a {int(max_error * 100):.2f}% error on the output token length. The recorded latencies might not be representative."
         )
 
 
