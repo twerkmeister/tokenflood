@@ -6,6 +6,7 @@ from tokenflood.networking import (
     ObserveURLMiddleware,
     option_request_endpoint,
     ping_endpoint,
+    time_async_func,
 )
 from tokenflood.runner import send_llm_request
 
@@ -24,7 +25,7 @@ async def test_observe_url_middleware(base_endpoint_spec: EndpointSpec):
 
 @pytest.mark.asyncio
 async def test_ping_endpoint():
-    latency = await ping_endpoint("127.0.0.1", 8000)
+    latency = await time_async_func(ping_endpoint("127.0.0.1", 8000))
     assert latency < 5
 
 
@@ -35,7 +36,9 @@ async def test_option_request_endpoint(base_endpoint_spec: EndpointSpec):
     prompt = "ping"
     messages = [{"content": prompt, "role": "user"}]
     await send_llm_request(base_endpoint_spec, messages, 1, client_session)
-    latency = await option_request_endpoint(
-        client_session, str(url_observer.url), url_observer.headers
+    latency = await time_async_func(
+        option_request_endpoint(
+            client_session, str(url_observer.url), url_observer.headers
+        )
     )
     assert latency < 5

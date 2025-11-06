@@ -28,6 +28,7 @@ from tokenflood.models.token_set import TokenSet
 from tokenflood.networking import (
     ObserveURLMiddleware,
     option_request_endpoint,
+    time_async_func,
 )
 from tokenflood.util import drop_after_exception
 
@@ -169,8 +170,10 @@ async def run_test(
         if sum(schedule[:i]) > len(ping_tasks):
             ping_tasks.append(
                 schedule_watched_task(
-                    option_request_endpoint(
-                        client_session, str(url_observer.url), url_observer.headers
+                    time_async_func(
+                        option_request_endpoint(
+                            client_session, str(url_observer.url), url_observer.headers
+                        )
                     ),
                     state,
                 )
