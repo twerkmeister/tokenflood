@@ -20,10 +20,10 @@ def visualize_percentiles_across_request_rates(
             run_data.results.get_latency_percentile(percentile)
             for run_data in run_suite_data
         ]
-        plt.plot(x, y, marker='o', markersize=3, label=f"p{percentile}")
+        plt.plot(x, y, marker="o", markersize=3, label=f"p{percentile}")
 
     ping_latencies = [data.average_network_latency() for data in run_suite_data]
-    plt.plot(x, ping_latencies, marker='o', markersize=3, label="network latency")
+    plt.plot(x, ping_latencies, marker="o", markersize=3, label="network latency")
 
     plt.xlabel("Requests per Second")
     plt.ylabel("Latency in ms")
