@@ -1,8 +1,11 @@
+import asyncio
 import os
 
 import pytest
 
 from tokenflood.io import (
+    CSVFileSink,
+    FileSink,
     add_suffix_to_file_name,
     error_to_str,
     get_first_available_filename_like,
@@ -108,3 +111,37 @@ def test_error_to_str():
 
 def test_error_to_str_none():
     assert error_to_str(None) is None
+
+@pytest.mark.asyncio
+async def test_file_sink(unique_temporary_file):
+    with open(unique_temporary_file, "w") as f:
+        f.write("XYZ\n")
+
+    items = [
+        "test\n", "ABC\n"
+    ]
+    sink = FileSink(unique_temporary_file)
+    for item in items:
+        sink.write(item)
+        await asyncio.sleep(0.001)
+    sink.close()
+
+    with open(unique_temporary_file) as f:
+        assert f.read() == "XYZ\n" + "".join(items)
+
+
+@pytest.mark.asyncio
+async def test_csv_file_sink(unique_temporary_file):
+    key1, key2 = "a", "b"
+    items = [
+        {key1: 1, key2: 2},
+        {key1: 3, key2: 4}
+    ]
+    sink = CSVFileSink(unique_temporary_file, [key1, key2])
+    for item in items:
+        sink.write(item)
+        await asyncio.sleep(0.001)
+    sink.close()
+
+    with open(unique_temporary_file) as f:
+        assert f.read() == "a,b\n1,2\n3,4\n"

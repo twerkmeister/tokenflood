@@ -1,5 +1,10 @@
+import asyncio
+import csv
 import os
-from typing import Callable, List, Optional, Type, TypeVar
+from io import StringIO
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
+
+import aiofiles
 import yaml
 from pydantic import BaseModel
 
@@ -90,3 +95,57 @@ def error_to_str(e: Optional[BaseException]) -> Optional[str]:
         return str(e)
     else:
         return None
+
+
+class FileSink:
+
+    def __init__(self, destination: str):
+        self.queue = asyncio.Queue()
+        self.destination = destination
+        self.consumer_task = asyncio.create_task(self._consume())
+
+    async def _consume(self):
+        async with aiofiles.open(self.destination, "a", encoding="utf-8") as f:
+            while True:
+                try:
+                    item = await self.queue.get()
+                    await f.write(item)
+                    await f.flush()
+                except asyncio.QueueShutDown:
+                    break
+
+    def write(self, item: str):
+        self.queue.put_nowait(item)
+
+    def close(self):
+        self.queue.shutdown()
+
+
+class CSVFileSink(FileSink):
+
+    def __init__(self, destination: str, columns: List[str]):
+        super().__init__(destination)
+        self.columns = columns
+        self.stringio = StringIO()
+        self.writer = csv.DictWriter(self.stringio, fieldnames=columns)
+        self.write_header()
+
+    def write(self, item: Dict[str, Any]):
+        self.writer.writerow(item)
+        self.flush()
+
+    def write_header(self):
+        self.writer.writeheader()
+        self.flush()
+
+    def flush(self):
+        super().write(self.get_buffer())
+        self.reset_buffer()
+
+    def get_buffer(self) -> str:
+        self.stringio.seek(0)
+        return self.stringio.read()
+
+    def reset_buffer(self):
+        self.stringio.seek(0)
+        self.stringio.truncate(0)
