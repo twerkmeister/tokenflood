@@ -1,8 +1,11 @@
+import asyncio
+
 import pytest
 from datetime import datetime
 
 from litellm.types.utils import ModelResponse
 
+from tokenflood.networking import ping_endpoint, time_async_func
 from tokenflood.runner import make_empty_response
 from tokenflood.util import (
     calculate_mean_error,
@@ -106,3 +109,19 @@ def test_drop_after_exception(elements, expected_length):
     assert len(mended_responses) == expected_length
     for i in range(len(mended_responses)):
         assert elements[i] == mended_responses[i]
+
+
+@pytest.mark.asyncio
+async def test_tasking():
+    def on_done(task: asyncio.Task):
+        res = task.result()
+        print(res)
+
+    async def my_task():
+        return await time_async_func(ping_endpoint("google.de", 443))
+
+    task = asyncio.create_task(my_task())
+    task.add_done_callback(on_done)
+
+    await asyncio.wait([task])
+    print("done")

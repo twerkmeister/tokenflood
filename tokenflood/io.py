@@ -2,15 +2,20 @@ import asyncio
 import csv
 import os
 from io import StringIO
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, List, Type, TypeVar
 
 import aiofiles
 import yaml
 from pydantic import BaseModel
 
-from tokenflood.constants import RESULTS_FOLDER
+from tokenflood.constants import (
+    RESULTS_FOLDER,
+)
 from tokenflood.models.endpoint_spec import EndpointSpec
+from tokenflood.models.llm_request_data import LLMRequestData
+from tokenflood.models.ping_request_data import PingData
 from tokenflood.models.run_suite import HeuristicRunSuite
+from tokenflood.models.util import get_fields
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -89,23 +94,18 @@ def read_file(filename: str) -> str:
         return f.read()
 
 
-def error_to_str(e: Optional[BaseException]) -> Optional[str]:
-    # return "\n".join(traceback.format_exception(e))
-    if e:
-        return str(e)
-    else:
-        return None
+def error_to_str(e: BaseException) -> str:
+    return str(e)
 
 
 class FileSink:
-
     def __init__(self, destination: str):
-        self.queue = asyncio.Queue()
+        self.queue: asyncio.Queue[str] = asyncio.Queue()
         self.destination = destination
-        self.consumer_task = asyncio.create_task(self._consume())
+        self.consumer_task = None
 
     async def _consume(self):
-        async with aiofiles.open(self.destination, "a", encoding="utf-8") as f:
+        async with aiofiles.open(self.destination, "w", encoding="utf-8") as f:
             while True:
                 try:
                     item = await self.queue.get()
@@ -120,9 +120,11 @@ class FileSink:
     def close(self):
         self.queue.shutdown()
 
+    def activate(self):
+        self.consumer_task = asyncio.create_task(self._consume())
+
 
 class CSVFileSink(FileSink):
-
     def __init__(self, destination: str, columns: List[str]):
         super().__init__(destination)
         self.columns = columns
@@ -130,7 +132,7 @@ class CSVFileSink(FileSink):
         self.writer = csv.DictWriter(self.stringio, fieldnames=columns)
         self.write_header()
 
-    def write(self, item: Dict[str, Any]):
+    def write_dict(self, item: Dict[str, Any]):
         self.writer.writerow(item)
         self.flush()
 
@@ -139,7 +141,7 @@ class CSVFileSink(FileSink):
         self.flush()
 
     def flush(self):
-        super().write(self.get_buffer())
+        self.write(self.get_buffer())
         self.reset_buffer()
 
     def get_buffer(self) -> str:
@@ -149,3 +151,42 @@ class CSVFileSink(FileSink):
     def reset_buffer(self):
         self.stringio.seek(0)
         self.stringio.truncate(0)
+
+
+class IOContext:
+    def write_error(self, message: str):
+        raise NotImplementedError
+
+    def write_llm_request(self, data: Dict):
+        raise NotImplementedError
+
+    def write_network_latency(self, data: Dict):
+        raise NotImplementedError
+
+    def activate(self):
+        raise NotImplementedError
+
+
+class FileIOContext(IOContext):
+    def __init__(self, llm_request_file, network_latency_file, error_file):
+        self.llm_request_sink = CSVFileSink(
+            llm_request_file, columns=get_fields(LLMRequestData)
+        )
+        self.network_latency_sink = CSVFileSink(
+            network_latency_file, columns=get_fields(PingData)
+        )
+        self.error_sink = FileSink(error_file)
+
+    def write_error(self, message: str):
+        self.error_sink.write(message)
+
+    def write_llm_request(self, data: Dict):
+        self.llm_request_sink.write_dict(data)
+
+    def write_network_latency(self, data: Dict):
+        self.network_latency_sink.write_dict(data)
+
+    def activate(self):
+        self.error_sink.activate()
+        self.network_latency_sink.activate()
+        self.llm_request_sink.activate()

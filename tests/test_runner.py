@@ -4,10 +4,10 @@ import time
 from unittest import mock
 
 import numpy as np
+import pandas as pd
 import pytest
 from aiohttp import ClientSession
 
-from tokenflood.io import write_pydantic_yaml_list
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_spec import RunSpec
 from tokenflood.runner import (
@@ -44,60 +44,70 @@ async def test_send_llm_request(base_endpoint_spec: EndpointSpec):
 
 
 @pytest.mark.asyncio
-async def test_run_heuristic_test(run_spec, base_endpoint_spec):
-    client_session, url_observer, state = await get_warm_session(base_endpoint_spec)
+async def test_run_heuristic_test(run_spec, base_endpoint_spec, file_io_context):
+    file_io_context.activate()
+    client_session, url_observer, state = await get_warm_session(
+        base_endpoint_spec, file_io_context
+    )
     assert state.error is None
     start = time.time()
-    run_data = await run_heuristic_test(
-        "test", run_spec, base_endpoint_spec, client_session, url_observer
+    error = await run_heuristic_test(
+        "test",
+        run_spec,
+        base_endpoint_spec,
+        client_session,
+        url_observer,
+        file_io_context,
     )
     end = time.time()
     assert end - start < run_spec.test_length_in_seconds + 5
-    assert len(run_data.responses) == run_spec.total_num_requests
-    assert len(run_data.results.prompts) == run_spec.total_num_requests
+    assert error is None
+
+    df = pd.read_csv(file_io_context.llm_request_sink.destination)
+    assert len(df) == run_spec.total_num_requests
 
 
 @pytest.mark.asyncio
 async def test_run_entire_tiny_suite(
     tiny_run_suite,
     base_endpoint_spec,
-    tiny_run_data_file_unsafe,
+    file_io_context,
 ):
-    run_suite_data = await run_suite(base_endpoint_spec, tiny_run_suite)
-    run_specs = tiny_run_suite.create_run_specs()
-    assert len(run_suite_data) == len(run_specs)
-    for i in range(len(run_specs)):
-        assert len(run_suite_data[i].responses) == run_specs[i].total_num_requests
-
-    # writing it out if it doesn't exist
-    if not os.path.exists(tiny_run_data_file_unsafe):
-        write_pydantic_yaml_list(tiny_run_data_file_unsafe, run_suite_data)
+    await run_suite(base_endpoint_spec, tiny_run_suite, file_io_context)
+    df = pd.read_csv(file_io_context.llm_request_sink.destination)
+    total_num_requests = sum(
+        [run_spec.total_num_requests for run_spec in tiny_run_suite.create_run_specs()]
+    )
+    assert len(df) == total_num_requests
 
 
 @pytest.mark.asyncio
 @mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_run_tiny_suite_openai_missing_api_key(
-    tiny_run_suite, openai_endpoint_spec, caplog
+    tiny_run_suite, openai_endpoint_spec, file_io_context, caplog
 ):
     with caplog.at_level(logging.ERROR):
-        run_suite_data = await run_suite(openai_endpoint_spec, tiny_run_suite)
+        await run_suite(openai_endpoint_spec, tiny_run_suite, file_io_context)
     run_specs = tiny_run_suite.create_run_specs()
-    assert len(run_suite_data) == 0
+    df = pd.read_csv(file_io_context.llm_request_sink.destination)
+    assert len(df) == 0
     assert len(run_specs) > 1
     assert "API key" in caplog.text
 
 
 @pytest.mark.asyncio
-async def test_run_tiny_suite_bad_endpoint(tiny_run_suite, base_endpoint_spec, caplog):
+async def test_run_tiny_suite_bad_endpoint(
+    tiny_run_suite, base_endpoint_spec, file_io_context, caplog
+):
     # creating endpoint spec with bad port number
     bad_endpoint_spec = base_endpoint_spec.model_copy(
         update={"base_url": "http://127.0.0.1:8001/v1"}
     )
     with caplog.at_level(logging.ERROR):
-        run_suite_data = await run_suite(bad_endpoint_spec, tiny_run_suite)
-    run_specs = tiny_run_suite.create_run_specs()
-    assert len(run_suite_data) == 0
-    assert len(run_specs) > 1
+        await run_suite(bad_endpoint_spec, tiny_run_suite, file_io_context)
+    df = pd.read_csv(file_io_context.llm_request_sink.destination)
+    assert len(df) == 0
+    assert len(tiny_run_suite.create_run_specs()) > 1
     assert "Connection error" in caplog.text
 
 

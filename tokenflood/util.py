@@ -5,9 +5,17 @@ from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.util import numeric
 
 
+def get_exact_date_str() -> str:
+    # trim microseconds
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f")[:-3]
+
+
+def get_date_str() -> str:
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
 def get_run_name(endpoint_spec: EndpointSpec):
-    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    return f"{date_str}_{endpoint_spec.provider_model_str_as_folder_name}"
+    return f"{get_date_str()}_{endpoint_spec.provider_model_str_as_folder_name}"
 
 
 def calculate_mean_error(

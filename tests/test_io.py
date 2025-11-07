@@ -109,37 +109,28 @@ def test_error_to_str():
     assert error_text in error_to_str(err)
 
 
-def test_error_to_str_none():
-    assert error_to_str(None) is None
-
 @pytest.mark.asyncio
 async def test_file_sink(unique_temporary_file):
-    with open(unique_temporary_file, "w") as f:
-        f.write("XYZ\n")
-
-    items = [
-        "test\n", "ABC\n"
-    ]
+    items = ["test\n", "ABC\n"]
     sink = FileSink(unique_temporary_file)
+    sink.activate()
     for item in items:
         sink.write(item)
         await asyncio.sleep(0.001)
     sink.close()
 
     with open(unique_temporary_file) as f:
-        assert f.read() == "XYZ\n" + "".join(items)
+        assert f.read() == "".join(items)
 
 
 @pytest.mark.asyncio
 async def test_csv_file_sink(unique_temporary_file):
     key1, key2 = "a", "b"
-    items = [
-        {key1: 1, key2: 2},
-        {key1: 3, key2: 4}
-    ]
+    items = [{key1: 1, key2: 2}, {key2: 4, key1: 3}]
     sink = CSVFileSink(unique_temporary_file, [key1, key2])
+    sink.activate()
     for item in items:
-        sink.write(item)
+        sink.write_dict(item)
         await asyncio.sleep(0.001)
     sink.close()
 

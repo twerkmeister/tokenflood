@@ -4,9 +4,11 @@ import sys
 from tokenflood.cli import create_starter_files, main, parse_args, run_and_graph_suite
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
+    ERROR_FILE,
     LATENCY_GRAPH_FILE,
+    NETWORK_LATENCY_FILE,
     RESULTS_FOLDER,
-    RUN_DATA_FILE,
+    LLM_REQUESTS_FILE,
     RUN_SUITE_FILE,
     SUMMARY_FILE,
 )
@@ -78,9 +80,11 @@ def test_run_and_graph_suite(
     run_folders = list_dir_relative(RESULTS_FOLDER)
     assert len(run_folders) == 1
     result_files = os.listdir(run_folders[0])
-    assert len(result_files) == 5
+    assert len(result_files) == 7
     assert set(result_files) == {
-        RUN_DATA_FILE,
+        LLM_REQUESTS_FILE,
+        NETWORK_LATENCY_FILE,
+        ERROR_FILE,
         LATENCY_GRAPH_FILE,
         RUN_SUITE_FILE,
         ENDPOINT_SPEC_FILE,

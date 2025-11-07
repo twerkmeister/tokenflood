@@ -4,6 +4,8 @@ import os
 import sys
 from io import StringIO
 from typing import List
+
+import pandas as pd
 from rich import print
 import logging
 
@@ -21,24 +23,24 @@ from tokenflood.constants import (
     MAX_INPUT_TOKENS_ENV_VAR,
     MAX_OUTPUT_TOKENS_DEFAULT,
     MAX_OUTPUT_TOKENS_ENV_VAR,
-    RUN_DATA_FILE,
+    NETWORK_LATENCY_FILE,
+    LLM_REQUESTS_FILE,
     RUN_SUITE_FILE,
     SUMMARY_FILE,
 )
-from tokenflood.graphing import (
+from tokenflood.analysis import (
+    create_summary,
+    make_super_title,
     visualize_percentiles_across_request_rates,
-    write_out_error,
-    write_out_raw_data_points,
-    write_out_summary,
 )
 from tokenflood.io import (
+    FileIOContext,
     get_first_available_filename_like,
     make_run_folder,
     read_endpoint_spec,
     read_run_suite,
     write_pydantic_yaml,
 )
-from tokenflood.models.run_data import RunData
 from tokenflood.runner import check_token_usage_upfront, run_suite
 from tokenflood.starter_pack import (
     starter_endpoint_spec_filename,
@@ -174,50 +176,36 @@ def run_and_graph_suite(args: argparse.Namespace):
 
     run_folder = make_run_folder(run_name)
     log.info(f"Preparing run folder: [blue]{run_folder}[/]")
-    latency_graph_file = os.path.join(run_folder, LATENCY_GRAPH_FILE)
-    run_data_file = os.path.join(run_folder, RUN_DATA_FILE)
+
     endpoint_spec_file = os.path.join(run_folder, ENDPOINT_SPEC_FILE)
-    run_suite_file = os.path.join(run_folder, RUN_SUITE_FILE)
-    error_file = os.path.join(run_folder, ERROR_FILE)
-    summary_file = os.path.join(run_folder, SUMMARY_FILE)
-    log.info("Starting load test")
-    run_suite_data = asyncio.run(run_suite(endpoint_spec, suite))
-    log.info("Writing results")
-    warn_of_heuristic_errors(run_suite_data)
-    # write out input configs and results to run folder
-    write_out_error(run_suite_data, error_file)
+    log.info(f"Writing endpoint spec to: [blue]{endpoint_spec_file}[/]")
     write_pydantic_yaml(endpoint_spec_file, endpoint_spec)
+
+    run_suite_file = os.path.join(run_folder, RUN_SUITE_FILE)
+    log.info(f"Writing run suite to: [blue]{run_suite_file}[/]")
     write_pydantic_yaml(run_suite_file, suite)
-    write_out_raw_data_points(run_suite_data, run_data_file)
-    write_out_summary(suite, endpoint_spec, run_suite_data, summary_file)
+
+    error_file = os.path.join(run_folder, ERROR_FILE)
+    llm_requests_file = os.path.join(run_folder, LLM_REQUESTS_FILE)
+    network_latency_file = os.path.join(run_folder, NETWORK_LATENCY_FILE)
+    io_context = FileIOContext(llm_requests_file, network_latency_file, error_file)
+    log.info("Starting load test")
+    log.info(f"Writing any errors to: [blue]{error_file}[/]")
+    log.info(f"Writing LLM request data to: [blue]{llm_requests_file}[/]")
+    log.info(f"Writing network latency data to: [blue]{network_latency_file}[/]")
+
+    asyncio.run(run_suite(endpoint_spec, suite, io_context))
+    log.info("Analyzing data.")
+    llm_request_data = pd.read_csv(llm_requests_file)
+    ping_data = pd.read_csv(network_latency_file)
+    summary_file = os.path.join(run_folder, SUMMARY_FILE)
+    latency_graph_file = os.path.join(run_folder, LATENCY_GRAPH_FILE)
+    summary = create_summary(suite, endpoint_spec, llm_request_data, ping_data)
+    write_pydantic_yaml(summary_file, summary)
     visualize_percentiles_across_request_rates(
-        suite,
-        run_suite_data,
-        latency_graph_file,
+        make_super_title(suite, endpoint_spec), summary, latency_graph_file
     )
     log.info("Done.")
-
-
-def warn_of_heuristic_errors(run_suite_data: List[RunData]):
-    limit = 0.05
-    input_length_errors = [
-        rd.results.get_relative_input_length_error() for rd in run_suite_data
-    ]
-    output_length_errors = [
-        rd.results.get_relative_output_length_error() for rd in run_suite_data
-    ]
-
-    if any([error > limit for error in input_length_errors]):
-        max_error = max(input_length_errors)
-        log.warning(
-            f"There's been a {(max_error * 100):.2f}% error on the input token length. The recorded latencies might not be representative."
-        )
-
-    if any([error > limit for error in output_length_errors]):
-        max_error = max(output_length_errors)
-        log.warning(
-            f"There's been a {int(max_error * 100):.2f}% error on the output token length. The recorded latencies might not be representative."
-        )
 
 
 def main():
