@@ -68,7 +68,7 @@ def plots_folder(data_folder: str) -> str:
 
 @pytest.fixture(scope="session")
 def results_folder(data_folder: str) -> str:
-    folder = os.path.join(data_folder, "results")
+    folder = os.path.join(data_folder, "test_results")
     assert os.path.isdir(folder)
     return folder
 
