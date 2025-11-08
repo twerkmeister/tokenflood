@@ -174,10 +174,10 @@ async def run_heuristic_test(
                     handle_ping_result(state, io_context, ping_context)
                 )
                 num_pings += 1
+        log.info("Waiting for all requests to come back.")
 
     # make sure all data can be flushed
-    await asyncio.sleep(0.1)
-    log.info("Waiting for all requests to come back.")
+    await io_context.wait_for_pending_writes()
     log.info("Finished the phase.")
     return state.error
 

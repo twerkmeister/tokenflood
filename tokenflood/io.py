@@ -123,6 +123,10 @@ class FileSink:
     def activate(self):
         self.consumer_task = asyncio.create_task(self._consume())
 
+    async def wait_for_pending_writes(self):
+        while not self.queue.empty():
+            await asyncio.sleep(0.001)
+
 
 class CSVFileSink(FileSink):
     def __init__(self, destination: str, columns: List[str]):
@@ -166,6 +170,9 @@ class IOContext:
     def activate(self):
         raise NotImplementedError
 
+    def wait_for_pending_writes(self):
+        raise NotImplementedError
+
 
 class FileIOContext(IOContext):
     def __init__(self, llm_request_file, network_latency_file, error_file):
@@ -190,3 +197,8 @@ class FileIOContext(IOContext):
         self.error_sink.activate()
         self.network_latency_sink.activate()
         self.llm_request_sink.activate()
+
+    async def wait_for_pending_writes(self):
+        await self.error_sink.wait_for_pending_writes()
+        await self.llm_request_sink.wait_for_pending_writes()
+        await self.network_latency_sink.wait_for_pending_writes()
