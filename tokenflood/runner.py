@@ -157,7 +157,7 @@ async def run_heuristic_test(
 
             await asyncio.sleep(schedule[i])
             # ping at most every second
-            if sum(schedule[:i]) > num_pings:
+            if sum(schedule[: i + 1]) > num_pings:
                 ping_context = PingRequestContext(
                     datetime=get_exact_date_str(),
                     endpoint_url=str(url_observer.url),

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,6 +7,7 @@ import pandas as pd
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.run_summary import LoadResult, RunSummary
+from tokenflood.models.util import numeric
 from tokenflood.util import calculate_relative_error
 
 PHASE_FIELD = "requests_per_second_phase"
@@ -69,8 +70,8 @@ def create_summary(
         phase_ping_data = get_phase_data(ping_data, phase)
         percentiles = {}
         for percentile in run_suite.percentiles:
-            percentiles[f"p{percentile}"] = round(
-                float(np.percentile(phase_llm_request_data["latency"], percentile)), 2
+            percentiles[f"p{percentile}"] = get_percentile_float(
+                list(phase_llm_request_data["latency"]), percentile
             )
         load_results.append(
             LoadResult(
@@ -121,3 +122,12 @@ def create_summary(
         ),
         load_results=load_results,
     )
+
+
+def get_percentile_float(seq: Sequence[numeric], percentile: int) -> float:
+    value = 0.0
+    if len(seq) == 1:
+        value = seq[0]
+    elif len(seq) > 1:
+        value = round(float(np.percentile(seq, percentile)), 2)
+    return value
