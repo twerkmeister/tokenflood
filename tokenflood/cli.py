@@ -41,6 +41,8 @@ from tokenflood.io import (
     read_run_suite,
     write_pydantic_yaml,
 )
+from tokenflood.logging import global_warn_once_filter
+from tokenflood.models.run_summary import RunSummary
 from tokenflood.runner import check_token_usage_upfront, run_suite
 from tokenflood.starter_pack import (
     starter_endpoint_spec_filename,
@@ -52,7 +54,6 @@ from tokenflood.starter_pack import (
 from tokenflood.util import get_date_str, get_run_name
 
 log = logging.getLogger(__name__)
-
 
 the_wave = f"""[blue]⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠇⡅⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀           
@@ -84,6 +85,8 @@ def configure_logging():
     tokenflood_logger.addHandler(
         RichHandler(markup=True, highlighter=NullHighlighter(), keywords=[])
     )
+    for handler in tokenflood_logger.handlers:
+        handler.addFilter(global_warn_once_filter)
 
 
 def create_argument_parser():
@@ -191,9 +194,9 @@ def run_and_graph_suite(args: argparse.Namespace):
     network_latency_file = os.path.join(run_folder, NETWORK_LATENCY_FILE)
     io_context = FileIOContext(llm_requests_file, network_latency_file, error_file)
     log.info("Starting load test")
-    log.info(f"Writing any errors to: [blue]{error_file}[/]")
-    log.info(f"Writing LLM request data to: [blue]{llm_requests_file}[/]")
-    log.info(f"Writing network latency data to: [blue]{network_latency_file}[/]")
+    log.info(f"Streaming any errors to: [blue]{error_file}[/]")
+    log.info(f"Streaming LLM request data to: [blue]{llm_requests_file}[/]")
+    log.info(f"Streaming network latency data to: [blue]{network_latency_file}[/]")
 
     asyncio.run(run_suite(endpoint_spec, suite, io_context))
     log.info("Analyzing data.")
@@ -203,10 +206,25 @@ def run_and_graph_suite(args: argparse.Namespace):
     latency_graph_file = os.path.join(run_folder, LATENCY_GRAPH_FILE)
     summary = create_summary(suite, endpoint_spec, llm_request_data, ping_data)
     write_pydantic_yaml(summary_file, summary)
+    warn_relative_error(summary)
     visualize_percentiles_across_request_rates(
         make_super_title(suite, endpoint_spec, date_str), summary, latency_graph_file
     )
     log.info("Done.")
+
+
+def warn_relative_error(summary: RunSummary):
+    if abs(summary.relative_input_token_error) > 0.05:
+        sign = "more" if summary.relative_input_token_error > 0 else "less"
+        log.warning(
+            f"On average, the prompts had {abs(int(summary.relative_input_token_error * 100))}% {sign} tokens than expected. The observed latencies might not be representative."
+        )
+
+    if abs(summary.relative_output_token_error) > 0.05:
+        sign = "more" if summary.relative_output_token_error > 0 else "less"
+        log.warning(
+            f"On average, the generated texts had {abs(int(summary.relative_output_token_error * 100))}% {sign} tokens than expected. The observed latencies might not be representative."
+        )
 
 
 def main():

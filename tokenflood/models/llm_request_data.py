@@ -1,9 +1,14 @@
+import logging
 from typing import Self
 
 from litellm.types.utils import ModelResponse
 from pydantic import BaseModel, NonNegativeFloat, NonNegativeInt
 
+from tokenflood.logging import WARN_ONCE_KEY
 from tokenflood.models.validation_types import NonEmptyString
+from tokenflood.util import calculate_relative_error
+
+log = logging.getLogger(__name__)
 
 
 class LLMRequestResult(BaseModel, frozen=True):
@@ -68,3 +73,29 @@ class LLMRequestData(BaseModel, frozen=True):
         return cls.from_result_and_context(
             LLMRequestResult.from_model_response(response), context
         )
+
+    def warn_on_diverging_measurements(self):
+        threshold = 0.1
+        relative_input_token_error = calculate_relative_error(
+            [self.measured_input_tokens], [self.expected_input_tokens]
+        )
+        if abs(relative_input_token_error) > threshold:
+            longer_or_shorter = (
+                "longer" if relative_input_token_error > 0 else "shorter"
+            )
+            log.warning(
+                f"Observed input tokens that are more than {abs(int(relative_input_token_error * 100))}% {longer_or_shorter} than what was expected. The measured latencies might not be representative. This warning type will only appear once per phase.",
+                extra={WARN_ONCE_KEY: "input_tokens_off"},
+            )
+
+        relative_output_token_error = calculate_relative_error(
+            [self.measured_output_tokens], [self.expected_output_tokens]
+        )
+        if abs(relative_output_token_error) > threshold:
+            longer_or_shorter = (
+                "longer" if relative_output_token_error > 0 else "shorter"
+            )
+            log.warning(
+                f"Observed output tokens that are more than {abs(int(relative_output_token_error * 100))}% {longer_or_shorter} than what was expected. The measured latencies might not be representative. This warning type will only appear once per phase.",
+                extra={WARN_ONCE_KEY: "output_tokens_off"},
+            )

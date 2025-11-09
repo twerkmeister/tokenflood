@@ -16,6 +16,7 @@ from tokenflood.heuristic import (
     heuristic_token_sets,
 )
 from tokenflood.io import IOContext, error_to_str, exception_group_to_str
+from tokenflood.logging import global_warn_once_filter
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.llm_request_data import LLMRequestContext, LLMRequestData
@@ -62,6 +63,7 @@ def handle_llm_result(
             data = LLMRequestData.from_response_and_context(
                 model_response, llm_request_context
             )
+            data.warn_on_diverging_measurements()
             io_context.write_llm_request(data.model_dump())
 
     return on_done
@@ -248,6 +250,7 @@ async def run_suite(
         if error:
             log.error(f"Ending run due to error: {error}")
             break
+        global_warn_once_filter.clear()
     await client_session.close()
 
 

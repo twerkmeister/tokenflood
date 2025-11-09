@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Callable, List, Optional, Sequence, TypeVar
 import numpy as np
+
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.util import numeric
 
