@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Callable, List, Optional, Sequence, TypeVar
+from typing import Callable, Optional, Sequence, TypeVar
 import numpy as np
 
 from tokenflood.models.endpoint_spec import EndpointSpec
@@ -51,10 +51,3 @@ def find_idx(s: Sequence[T], predicate: Callable[[T], bool]) -> Optional[int]:
         if predicate(s[i]):
             return i
     return None
-
-
-def drop_after_exception(s: List[X | BaseException]) -> List[X]:
-    idx = find_idx(s, lambda x: isinstance(x, BaseException))
-    if idx is None:
-        return s  # type: ignore[return-value]
-    return s[:idx]  # type: ignore[return-value]

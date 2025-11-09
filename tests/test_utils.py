@@ -9,7 +9,6 @@ from tokenflood.runner import make_empty_response
 from tokenflood.util import (
     calculate_mean_error,
     calculate_relative_error,
-    drop_after_exception,
     find_idx,
     get_date_str,
     get_run_name,
@@ -73,42 +72,6 @@ def test_get_run_name(base_endpoint_spec):
 )
 def test_find_idx(s, predicate, expected_result):
     assert find_idx(s, predicate) == expected_result
-
-
-@pytest.mark.parametrize(
-    ("elements, expected_length"),
-    [
-        (
-            [
-                0,
-                1,
-                ValueError("test"),
-            ],
-            2,
-        ),
-        (
-            [
-                0,
-                ValueError("test"),
-                2,
-            ],
-            1,
-        ),
-        (
-            [
-                ValueError("test"),
-                1,
-                2,
-            ],
-            0,
-        ),
-    ],
-)
-def test_drop_after_exception(elements, expected_length):
-    mended_responses = drop_after_exception(elements)
-    assert len(mended_responses) == expected_length
-    for i in range(len(mended_responses)):
-        assert elements[i] == mended_responses[i]
 
 
 @pytest.mark.asyncio
