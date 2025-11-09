@@ -9,13 +9,14 @@ from tokenflood.analysis import (
     visualize_percentiles_across_request_rates,
 )
 from tokenflood.models.run_summary import RunSummary
+from tokenflood.util import get_date_str
 
 
 def test_visualize_percentiles_across_request_rates_changes(
     results_run_suite, results_endpoint_spec, results_run_summary, results_plot_file
 ):
     visualize_percentiles_across_request_rates(
-        make_super_title(results_run_suite, results_endpoint_spec),
+        make_super_title(results_run_suite, results_endpoint_spec, get_date_str()),
         results_run_summary,
         results_plot_file,
     )
@@ -31,7 +32,9 @@ def test_visualize_percentiles_across_request_rates_empty_run_summary(
         results_run_suite.name, results_endpoint_spec.provider_model_str
     )
     visualize_percentiles_across_request_rates(
-        make_super_title(results_run_suite, results_endpoint_spec), run_summary, file
+        make_super_title(results_run_suite, results_endpoint_spec, get_date_str()),
+        run_summary,
+        file,
     )
     assert os.path.exists(file)
 

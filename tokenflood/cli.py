@@ -49,7 +49,7 @@ from tokenflood.starter_pack import (
     starter_run_suite,
     starter_run_suite_filename,
 )
-from tokenflood.util import get_run_name
+from tokenflood.util import get_date_str, get_run_name
 
 log = logging.getLogger(__name__)
 
@@ -162,7 +162,8 @@ def create_starter_files(args: argparse.Namespace):
 def run_and_graph_suite(args: argparse.Namespace):
     endpoint_spec = read_endpoint_spec(args.endpoint)
     suite = read_run_suite(args.run_suite)
-    run_name = get_run_name(endpoint_spec)
+    date_str = get_date_str()
+    run_name = get_run_name(date_str, endpoint_spec)
 
     accepted_token_usage = check_token_usage_upfront(
         suite,
@@ -203,7 +204,7 @@ def run_and_graph_suite(args: argparse.Namespace):
     summary = create_summary(suite, endpoint_spec, llm_request_data, ping_data)
     write_pydantic_yaml(summary_file, summary)
     visualize_percentiles_across_request_rates(
-        make_super_title(suite, endpoint_spec), summary, latency_graph_file
+        make_super_title(suite, endpoint_spec, date_str), summary, latency_graph_file
     )
     log.info("Done.")
 

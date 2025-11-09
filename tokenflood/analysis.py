@@ -21,8 +21,10 @@ def get_phases(data: pd.DataFrame) -> List[float]:
     return list(pd.unique(data[PHASE_FIELD]))
 
 
-def make_super_title(run_suite: HeuristicRunSuite, endpoint_spec: EndpointSpec) -> str:
-    return f"run suite: {run_suite.name}\nmodel: {endpoint_spec.provider_model_str}"
+def make_super_title(
+    run_suite: HeuristicRunSuite, endpoint_spec: EndpointSpec, date_str: str
+) -> str:
+    return f"run suite: {run_suite.name}\nprovider/model: {endpoint_spec.provider_model_str}\ndatetime: {date_str}"
 
 
 def visualize_percentiles_across_request_rates(
@@ -44,10 +46,10 @@ def visualize_percentiles_across_request_rates(
     plt.plot(
         phases, ping_latencies, marker="o", markersize=3, label="mean network latency"
     )
-    plt.subplots_adjust(top=0.8)
+    plt.subplots_adjust(top=0.75)
     plt.xlabel("Requests per Second")
     plt.ylabel("Latency in ms")
-    plt.suptitle(title)
+    plt.suptitle(title, ha="left", x=0.125)
     plt.title("Latency percentiles across request rates")
     plt.legend()
     plt.savefig(filename)

@@ -14,8 +14,8 @@ def get_date_str() -> str:
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
-def get_run_name(endpoint_spec: EndpointSpec):
-    return f"{get_date_str()}_{endpoint_spec.provider_model_str_as_folder_name}"
+def get_run_name(date_str: str, endpoint_spec: EndpointSpec):
+    return f"{date_str}_{endpoint_spec.provider_model_str_as_folder_name}"
 
 
 def calculate_mean_error(
@@ -33,7 +33,10 @@ def calculate_relative_error(
     observations: Sequence[numeric], targets: Sequence[numeric]
 ) -> float:
     return round(
-        float(calculate_mean_error(observations, targets) / (float(np.average(targets)) + 1e-3)),
+        float(
+            calculate_mean_error(observations, targets)
+            / (float(np.average(targets)) + 1e-3)
+        ),
         2,
     )
 

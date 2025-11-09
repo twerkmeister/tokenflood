@@ -46,10 +46,10 @@ async def test_send_llm_request(base_endpoint_spec: EndpointSpec):
 @pytest.mark.asyncio
 async def test_run_heuristic_test(run_spec, base_endpoint_spec, file_io_context):
     file_io_context.activate()
-    client_session, url_observer, state = await get_warm_session(
+    client_session, url_observer, error = await get_warm_session(
         base_endpoint_spec, file_io_context
     )
-    assert state.error is None
+    assert error is None
     start = time.time()
     error = await run_heuristic_test(
         "test",
