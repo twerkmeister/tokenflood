@@ -98,6 +98,10 @@ def error_to_str(e: BaseException) -> str:
     return str(e)
 
 
+def exception_group_to_str(eg: ExceptionGroup) -> str:
+    return "\n".join([error_to_str(e) for e in eg.exceptions])
+
+
 class FileSink:
     def __init__(self, destination: str):
         self.queue: asyncio.Queue[str] = asyncio.Queue()
@@ -185,6 +189,8 @@ class FileIOContext(IOContext):
         self.error_sink = FileSink(error_file)
 
     def write_error(self, message: str):
+        if not message.endswith("\n"):
+            message += "\n"
         self.error_sink.write(message)
 
     def write_llm_request(self, data: Dict):

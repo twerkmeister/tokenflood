@@ -1,5 +1,4 @@
 import asyncio
-from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 import logging
 
@@ -16,7 +15,7 @@ from tokenflood.heuristic import (
     heuristic_tasks,
     heuristic_token_sets,
 )
-from tokenflood.io import IOContext, error_to_str
+from tokenflood.io import IOContext, error_to_str, exception_group_to_str
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.llm_request_data import LLMRequestContext, LLMRequestData
@@ -34,37 +33,31 @@ from tokenflood.util import get_exact_date_str
 
 log = logging.getLogger(__name__)
 
-
-@dataclass
-class RunState:
-    error: Optional[str] = None
-
-
 litellm.disable_cache()
 
 
-def handle_error(
-    run_state: RunState, io_context: IOContext
-) -> Callable[[asyncio.Task], None]:
+def handle_error(io_context: IOContext) -> Callable[[asyncio.Task], None]:
     """Callback to handle task errors."""
 
     def on_done(task: asyncio.Task):
-        error = task.exception()
-        if error is not None:
-            run_state.error = error_to_str(error)
-            io_context.write_error(error_to_str(error))
+        if task.cancelled():
+            io_context.write_error("Request cancelled.")
+        else:
+            error = task.exception()
+            if error is not None:
+                io_context.write_error(error_to_str(error))
 
     return on_done
 
 
 def handle_llm_result(
-    run_state: RunState, io_context: IOContext, llm_request_context: LLMRequestContext
+    io_context: IOContext, llm_request_context: LLMRequestContext
 ) -> Callable[[asyncio.Task[ModelResponse]], None]:
     """Callback to handle llm request results and errors."""
 
     def on_done(task: asyncio.Task[ModelResponse]):
-        handle_error(run_state, io_context)(task)
-        if not task.exception():
+        handle_error(io_context)(task)
+        if not task.cancelled() and not task.exception():
             model_response: ModelResponse = task.result()
             data = LLMRequestData.from_response_and_context(
                 model_response, llm_request_context
@@ -75,13 +68,13 @@ def handle_llm_result(
 
 
 def handle_ping_result(
-    run_state: RunState, io_context: IOContext, ping_context: PingRequestContext
+    io_context: IOContext, ping_context: PingRequestContext
 ) -> Callable[[asyncio.Task[int]], None]:
     """Callback to handle ping request results and errors."""
 
     def on_done(task: asyncio.Task[int]):
-        handle_error(run_state, io_context)(task)
-        if not task.exception():
+        handle_error(io_context)(task)
+        if not task.cancelled() and not task.exception():
             latency: int = task.result()
             data = PingData.from_context(ping_context, latency)
             io_context.write_network_latency(data.model_dump())
@@ -128,58 +121,59 @@ async def run_heuristic_test(
     message_lists = create_heuristic_messages(
         prompt_lengths, prefix_lengths, token_set, task
     )
-
-    state = RunState()
+    error = None
     num_pings = 0
-    async with asyncio.TaskGroup() as tg:
-        for i in tqdm(range(len(schedule)), desc=test_description):
-            request_context = LLMRequestContext(
-                datetime=get_exact_date_str(),
-                expected_input_tokens=prompt_lengths[i],
-                expected_prefix_tokens=prefix_lengths[i],
-                expected_output_tokens=output_lengths[i],
-                requests_per_second_phase=run_spec.requests_per_second,
-                request_number=i,
-                model=endpoint_spec.provider_model_str,
-                prompt=message_lists[i][0]["content"],
-            )
-            if state.error:
-                break
-            t = tg.create_task(
-                send_llm_request(
-                    endpoint_spec,
-                    message_lists[i],
-                    output_lengths[i],
-                    client_session,
-                )
-            )
-            t.add_done_callback(handle_llm_result(state, io_context, request_context))
-
-            await asyncio.sleep(schedule[i])
-            # ping at most every second
-            if sum(schedule[: i + 1]) > num_pings:
-                ping_context = PingRequestContext(
+    try:
+        async with asyncio.TaskGroup() as tg:
+            for i in tqdm(range(len(schedule)), desc=test_description):
+                request_context = LLMRequestContext(
                     datetime=get_exact_date_str(),
-                    endpoint_url=str(url_observer.url),
+                    expected_input_tokens=prompt_lengths[i],
+                    expected_prefix_tokens=prefix_lengths[i],
+                    expected_output_tokens=output_lengths[i],
                     requests_per_second_phase=run_spec.requests_per_second,
+                    request_number=i,
+                    model=endpoint_spec.provider_model_str,
+                    prompt=message_lists[i][0]["content"],
                 )
-                pt = tg.create_task(
-                    time_async_func(
-                        option_request_endpoint(
-                            client_session, str(url_observer.url), url_observer.headers
-                        )
+                t = tg.create_task(
+                    send_llm_request(
+                        endpoint_spec,
+                        message_lists[i],
+                        output_lengths[i],
+                        client_session,
                     )
                 )
-                pt.add_done_callback(
-                    handle_ping_result(state, io_context, ping_context)
-                )
-                num_pings += 1
-        log.info("Waiting for all requests to come back.")
+                t.add_done_callback(handle_llm_result(io_context, request_context))
+
+                await asyncio.sleep(schedule[i])
+                # ping at most every second
+                if sum(schedule[: i + 1]) > num_pings:
+                    ping_context = PingRequestContext(
+                        datetime=get_exact_date_str(),
+                        endpoint_url=str(url_observer.url),
+                        requests_per_second_phase=run_spec.requests_per_second,
+                    )
+                    pt = tg.create_task(
+                        time_async_func(
+                            option_request_endpoint(
+                                client_session,
+                                str(url_observer.url),
+                                url_observer.headers,
+                            )
+                        )
+                    )
+                    pt.add_done_callback(handle_ping_result(io_context, ping_context))
+                    num_pings += 1
+            log.info("Waiting for all requests to come back.")
+    except ExceptionGroup as eg:
+        error = exception_group_to_str(eg)
+        log.error(f"Aborting the phase due to errors: {error}")
 
     # make sure all data can be flushed
     await io_context.wait_for_pending_writes()
     log.info("Finished the phase.")
-    return state.error
+    return error
 
 
 async def warm_up_session(endpoint_spec: EndpointSpec, client_session: ClientSession):
@@ -214,14 +208,17 @@ def make_test_description(
 
 async def get_warm_session(
     endpoint_spec: EndpointSpec, io_context: IOContext
-) -> Tuple[ClientSession, ObserveURLMiddleware, RunState]:
+) -> Tuple[ClientSession, ObserveURLMiddleware, Optional[str]]:
+    error = None
     url_observer = ObserveURLMiddleware()
     client_session = ClientSession(middlewares=[url_observer])
-    state = RunState()
-    warmup_task = asyncio.create_task(warm_up_session(endpoint_spec, client_session))
-    warmup_task.add_done_callback(handle_error(state, io_context))
-    await asyncio.gather(warmup_task, return_exceptions=True)
-    return client_session, url_observer, state
+    try:
+        async with asyncio.TaskGroup() as tg:
+            t = tg.create_task(warm_up_session(endpoint_spec, client_session))
+            t.add_done_callback(handle_error(io_context))
+    except ExceptionGroup as eg:
+        error = exception_group_to_str(eg)
+    return client_session, url_observer, error
 
 
 async def run_suite(
@@ -230,11 +227,11 @@ async def run_suite(
     io_context.activate()
     run_specs = suite.create_run_specs()
     log.info("Warming up.")
-    client_session, url_observer, state = await get_warm_session(
+    client_session, url_observer, error = await get_warm_session(
         endpoint_spec, io_context
     )
-    if state.error:
-        log.error(f"Not starting run due to error: {state.error}")
+    if error:
+        log.error(f"Not starting run due to error: {error}")
         await client_session.close()
         return
     for phase, run_spec in enumerate(run_specs):

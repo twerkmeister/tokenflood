@@ -33,7 +33,7 @@ def calculate_relative_error(
     observations: Sequence[numeric], targets: Sequence[numeric]
 ) -> float:
     return round(
-        float(calculate_mean_error(observations, targets) / float(np.average(targets))),
+        float(calculate_mean_error(observations, targets) / (float(np.average(targets)) + 1e-3)),
         2,
     )
 
