@@ -4,7 +4,7 @@ import logging
 
 import litellm
 import numpy as np
-from aiohttp import ClientSession
+from aiohttp import ClientSession, TCPConnector
 from litellm import acompletion
 from litellm.types.utils import ModelResponse, Usage
 from tqdm import tqdm
@@ -213,7 +213,8 @@ async def get_warm_session(
 ) -> Tuple[ClientSession, ObserveURLMiddleware, Optional[str]]:
     error = None
     url_observer = ObserveURLMiddleware()
-    client_session = ClientSession(middlewares=[url_observer])
+    connector = TCPConnector(limit=1000, loop=asyncio.get_running_loop())
+    client_session = ClientSession(middlewares=[url_observer], connector=connector)
     try:
         async with asyncio.TaskGroup() as tg:
             t = tg.create_task(warm_up_session(endpoint_spec, client_session))

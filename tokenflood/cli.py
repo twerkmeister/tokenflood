@@ -27,6 +27,7 @@ from tokenflood.constants import (
     LLM_REQUESTS_FILE,
     RUN_SUITE_FILE,
     SUMMARY_FILE,
+    WARNING_LIMIT,
 )
 from tokenflood.analysis import (
     create_summary,
@@ -207,20 +208,20 @@ def run_and_graph_suite(args: argparse.Namespace):
     summary = create_summary(suite, endpoint_spec, llm_request_data, ping_data)
     write_pydantic_yaml(summary_file, summary)
     warn_relative_error(summary)
-    visualize_percentiles_across_request_rates(
-        make_super_title(suite, endpoint_spec, date_str), summary, latency_graph_file
-    )
+    title = make_super_title(suite, endpoint_spec, date_str, summary.mean_measured_input_tokens,
+                             summary.mean_expected_prefix_tokens, summary.mean_measured_output_tokens)
+    visualize_percentiles_across_request_rates(title, summary, latency_graph_file)
     log.info("Done.")
 
 
 def warn_relative_error(summary: RunSummary):
-    if abs(summary.relative_input_token_error) > 0.05:
+    if abs(summary.relative_input_token_error) > WARNING_LIMIT:
         sign = "more" if summary.relative_input_token_error > 0 else "less"
         log.warning(
             f"On average, the prompts had {abs(int(summary.relative_input_token_error * 100))}% {sign} tokens than expected. The observed latencies might not be representative."
         )
 
-    if abs(summary.relative_output_token_error) > 0.05:
+    if abs(summary.relative_output_token_error) > WARNING_LIMIT:
         sign = "more" if summary.relative_output_token_error > 0 else "less"
         log.warning(
             f"On average, the generated texts had {abs(int(summary.relative_output_token_error * 100))}% {sign} tokens than expected. The observed latencies might not be representative."

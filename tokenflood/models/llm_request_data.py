@@ -4,6 +4,7 @@ from typing import Self
 from litellm.types.utils import ModelResponse
 from pydantic import BaseModel, NonNegativeFloat, NonNegativeInt
 
+from tokenflood.constants import WARNING_LIMIT
 from tokenflood.logging import WARN_ONCE_KEY
 from tokenflood.models.validation_types import NonEmptyString
 from tokenflood.util import calculate_relative_error
@@ -75,11 +76,10 @@ class LLMRequestData(BaseModel, frozen=True):
         )
 
     def warn_on_diverging_measurements(self):
-        threshold = 0.1
         relative_input_token_error = calculate_relative_error(
             [self.measured_input_tokens], [self.expected_input_tokens]
         )
-        if abs(relative_input_token_error) > threshold:
+        if abs(relative_input_token_error) > WARNING_LIMIT:
             longer_or_shorter = (
                 "longer" if relative_input_token_error > 0 else "shorter"
             )
@@ -91,7 +91,7 @@ class LLMRequestData(BaseModel, frozen=True):
         relative_output_token_error = calculate_relative_error(
             [self.measured_output_tokens], [self.expected_output_tokens]
         )
-        if abs(relative_output_token_error) > threshold:
+        if abs(relative_output_token_error) > WARNING_LIMIT:
             longer_or_shorter = (
                 "longer" if relative_output_token_error > 0 else "shorter"
             )

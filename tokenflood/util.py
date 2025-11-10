@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from typing import Callable, Optional, Sequence, TypeVar
 import numpy as np
 
@@ -8,11 +8,12 @@ from tokenflood.models.util import numeric
 
 def get_exact_date_str() -> str:
     # trim microseconds
-    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f")[:-3]
+    datetime_with_milliseconds = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S.%f")[:-3]
+    return f"{datetime_with_milliseconds}(UTC)"
 
 
 def get_date_str() -> str:
-    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
 def get_run_name(date_str: str, endpoint_spec: EndpointSpec):

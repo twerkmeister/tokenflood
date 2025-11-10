@@ -1,4 +1,5 @@
 .env
+scratchpad/
 endpoint*.yml
 run_suite*.yml
 results/
