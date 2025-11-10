@@ -1,6 +1,7 @@
 import asyncio
 import csv
 import os
+from collections import deque
 from io import StringIO
 from typing import Any, Callable, Dict, List, Type, TypeVar
 
@@ -9,9 +10,11 @@ import yaml
 from pydantic import BaseModel
 
 from tokenflood.constants import (
+    ERROR_RING_BUFFER_SIZE,
     RESULTS_FOLDER,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
+from tokenflood.models.error_data import ErrorData
 from tokenflood.models.llm_request_data import LLMRequestData
 from tokenflood.models.ping_request_data import PingData
 from tokenflood.models.run_suite import HeuristicRunSuite
@@ -163,7 +166,15 @@ class CSVFileSink(FileSink):
 
 
 class IOContext:
-    def write_error(self, message: str):
+    def __init__(self):
+        self.state_watch = deque(maxlen=ERROR_RING_BUFFER_SIZE)
+
+    def error_rate(self) -> float:
+        if len(self.state_watch) == 0:
+            return 0.0
+        return sum(self.state_watch) / len(self.state_watch)
+
+    def write_error(self, data: Dict):
         raise NotImplementedError
 
     def write_llm_request(self, data: Dict):
@@ -184,21 +195,22 @@ class IOContext:
 
 class FileIOContext(IOContext):
     def __init__(self, llm_request_file, network_latency_file, error_file):
+        super().__init__()
         self.llm_request_sink = CSVFileSink(
             llm_request_file, columns=get_fields(LLMRequestData)
         )
         self.network_latency_sink = CSVFileSink(
             network_latency_file, columns=get_fields(PingData)
         )
-        self.error_sink = FileSink(error_file)
+        self.error_sink = CSVFileSink(error_file, columns=get_fields(ErrorData))
 
-    def write_error(self, message: str):
-        if not message.endswith("\n"):
-            message += "\n"
-        self.error_sink.write(message)
+    def write_error(self, data: Dict):
+        self.error_sink.write_dict(data)
+        self.state_watch.append(1)
 
     def write_llm_request(self, data: Dict):
         self.llm_request_sink.write_dict(data)
+        self.state_watch.append(0)
 
     def write_network_latency(self, data: Dict):
         self.network_latency_sink.write_dict(data)

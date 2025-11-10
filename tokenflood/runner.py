@@ -9,14 +9,16 @@ from litellm import acompletion
 from litellm.types.utils import ModelResponse, Usage
 from tqdm import tqdm
 
+from tokenflood.constants import ERROR_RATE_LIMIT, ERROR_RING_BUFFER_SIZE
 from tokenflood.heuristic import (
     create_heuristic_messages,
     heuristic_tasks,
     heuristic_token_sets,
 )
-from tokenflood.io import IOContext, error_to_str, exception_group_to_str
+from tokenflood.io import IOContext, exception_group_to_str
 from tokenflood.logging import global_warn_once_filter
 from tokenflood.models.endpoint_spec import EndpointSpec
+from tokenflood.models.error_data import ErrorContext, ErrorData
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.llm_request_data import LLMRequestContext, LLMRequestData
 from tokenflood.models.messages import MessageList, create_message_list_from_prompt
@@ -36,27 +38,35 @@ log = logging.getLogger(__name__)
 litellm.disable_cache()
 
 
-def handle_error(io_context: IOContext) -> Callable[[asyncio.Task], None]:
+def handle_error(
+    io_context: IOContext, error_context: ErrorContext
+) -> Callable[[asyncio.Task], None]:
     """Callback to handle task errors."""
 
     def on_done(task: asyncio.Task):
-        if task.cancelled():
-            io_context.write_error("Request cancelled.")
-        else:
-            error = task.exception()
-            if error is not None:
-                io_context.write_error(error_to_str(error))
+        error = task.exception()
+        if error is not None:
+            io_context.write_error(
+                ErrorData(
+                    datetime=get_exact_date_str(),
+                    type=type(error).__name__,
+                    message=str(error),
+                    request_per_second_phase=error_context.requests_per_second_phase,
+                ).model_dump()
+            )
 
     return on_done
 
 
 def handle_llm_result(
-    io_context: IOContext, llm_request_context: LLMRequestContext
+    io_context: IOContext,
+    llm_request_context: LLMRequestContext,
+    error_context: ErrorContext,
 ) -> Callable[[asyncio.Task[ModelResponse]], None]:
     """Callback to handle llm request results and errors."""
 
     def on_done(task: asyncio.Task[ModelResponse]):
-        handle_error(io_context)(task)
+        handle_error(io_context, error_context)(task)
         if not task.cancelled() and not task.exception():
             model_response: ModelResponse = task.result()
             data = LLMRequestData.from_response_and_context(
@@ -69,12 +79,12 @@ def handle_llm_result(
 
 
 def handle_ping_result(
-    io_context: IOContext, ping_context: PingRequestContext
+    io_context: IOContext, ping_context: PingRequestContext, error_context: ErrorContext
 ) -> Callable[[asyncio.Task[int]], None]:
     """Callback to handle ping request results and errors."""
 
     def on_done(task: asyncio.Task[int]):
-        handle_error(io_context)(task)
+        handle_error(io_context, error_context)(task)
         if not task.cancelled() and not task.exception():
             latency: int = task.result()
             data = PingData.from_context(ping_context, latency)
@@ -113,7 +123,7 @@ async def run_heuristic_test(
     io_context: IOContext,
     token_set: Optional[TokenSet] = None,
     task: Optional[HeuristicTask] = None,
-) -> Optional[str]:
+) -> bool:
     token_set = token_set or heuristic_token_sets[0]
     task = task or heuristic_tasks[0]
     schedule = create_schedule(run_spec)
@@ -122,59 +132,80 @@ async def run_heuristic_test(
     message_lists = create_heuristic_messages(
         prompt_lengths, prefix_lengths, token_set, task
     )
-    error = None
+    error_context = ErrorContext(requests_per_second_phase=run_spec.requests_per_second)
+    error_threshold_tripped = False
+    error_rate = 0.0
     num_pings = 0
-    try:
-        async with asyncio.TaskGroup() as tg:
-            for i in tqdm(range(len(schedule)), desc=test_description):
-                request_context = LLMRequestContext(
-                    datetime=get_exact_date_str(),
-                    expected_input_tokens=prompt_lengths[i],
-                    expected_prefix_tokens=prefix_lengths[i],
-                    expected_output_tokens=output_lengths[i],
-                    requests_per_second_phase=run_spec.requests_per_second,
-                    request_number=i,
-                    model=endpoint_spec.provider_model_str,
-                    prompt=message_lists[i][0]["content"],
-                )
-                t = tg.create_task(
-                    send_llm_request(
-                        endpoint_spec,
-                        message_lists[i],
-                        output_lengths[i],
-                        client_session,
-                    )
-                )
-                t.add_done_callback(handle_llm_result(io_context, request_context))
+    llm_request_tasks = set()
+    ping_tasks = set()
 
-                await asyncio.sleep(schedule[i])
-                # ping at most every second
-                if sum(schedule[: i + 1]) > num_pings:
-                    ping_context = PingRequestContext(
-                        datetime=get_exact_date_str(),
-                        endpoint_url=str(url_observer.url),
-                        requests_per_second_phase=run_spec.requests_per_second,
+    pbar = tqdm(range(len(schedule)), desc=test_description)
+    for i in pbar:
+        error_rate = io_context.error_rate()
+        pbar.set_postfix({"error rate": round(error_rate, 2)})
+        if error_rate > ERROR_RATE_LIMIT:
+            error_threshold_tripped = True
+            break
+        request_context = LLMRequestContext(
+            datetime=get_exact_date_str(),
+            expected_input_tokens=prompt_lengths[i],
+            expected_prefix_tokens=prefix_lengths[i],
+            expected_output_tokens=output_lengths[i],
+            requests_per_second_phase=run_spec.requests_per_second,
+            request_number=i,
+            model=endpoint_spec.provider_model_str,
+            prompt=message_lists[i][0]["content"],
+        )
+        t = asyncio.create_task(
+            send_llm_request(
+                endpoint_spec,
+                message_lists[i],
+                output_lengths[i],
+                client_session,
+            )
+        )
+        t.add_done_callback(
+            handle_llm_result(io_context, request_context, error_context)
+        )
+        llm_request_tasks.add(t)
+        t.add_done_callback(llm_request_tasks.discard)
+
+        await asyncio.sleep(schedule[i])
+        # ping at most every second
+        if sum(schedule[: i + 1]) > num_pings:
+            ping_context = PingRequestContext(
+                datetime=get_exact_date_str(),
+                endpoint_url=str(url_observer.url),
+                requests_per_second_phase=run_spec.requests_per_second,
+            )
+            pt = asyncio.create_task(
+                time_async_func(
+                    option_request_endpoint(
+                        client_session,
+                        str(url_observer.url),
+                        url_observer.headers,
                     )
-                    pt = tg.create_task(
-                        time_async_func(
-                            option_request_endpoint(
-                                client_session,
-                                str(url_observer.url),
-                                url_observer.headers,
-                            )
-                        )
-                    )
-                    pt.add_done_callback(handle_ping_result(io_context, ping_context))
-                    num_pings += 1
-            log.info("Waiting for all requests to come back.")
-    except ExceptionGroup as eg:
-        error = exception_group_to_str(eg)
-        log.error(f"Aborting the phase due to errors: {error}")
+                )
+            )
+            ping_tasks.add(pt)
+            pt.add_done_callback(
+                handle_ping_result(io_context, ping_context, error_context)
+            )
+            pt.add_done_callback(ping_tasks.discard)
+            num_pings += 1
+    log.info("Waiting for all requests to come back.")
+    while llm_request_tasks or ping_tasks:
+        await asyncio.sleep(1.0)
 
     # make sure all data can be flushed
     await io_context.wait_for_pending_writes()
-    log.info("Finished the phase.")
-    return error
+    if error_threshold_tripped:
+        log.error(
+            f"Aborting the phase because the error rate exceeded {int(error_rate * 100)}% for the last {ERROR_RING_BUFFER_SIZE} requests."
+        )
+    else:
+        log.info("Finished the phase.")
+    return error_threshold_tripped
 
 
 async def warm_up_session(endpoint_spec: EndpointSpec, client_session: ClientSession):
@@ -214,10 +245,11 @@ async def get_warm_session(
     url_observer = ObserveURLMiddleware()
     connector = TCPConnector(limit=1000, loop=asyncio.get_running_loop())
     client_session = ClientSession(middlewares=[url_observer], connector=connector)
+    error_context = ErrorContext(requests_per_second_phase=-1.0)
     try:
         async with asyncio.TaskGroup() as tg:
             t = tg.create_task(warm_up_session(endpoint_spec, client_session))
-            t.add_done_callback(handle_error(io_context))
+            t.add_done_callback(handle_error(io_context, error_context))
     except ExceptionGroup as eg:
         error = exception_group_to_str(eg)
     return client_session, url_observer, error
@@ -238,7 +270,7 @@ async def run_suite(
         return
     for phase, run_spec in enumerate(run_specs):
         test_description = make_test_description(suite, phase + 1, run_spec)
-        error = await run_heuristic_test(
+        error_threshold_tripped = await run_heuristic_test(
             test_description,
             run_spec,
             endpoint_spec,
@@ -247,8 +279,8 @@ async def run_suite(
             io_context,
         )
 
-        if error:
-            log.error(f"Ending run due to error: {error}")
+        if error_threshold_tripped:
+            log.error("Ending the run because the error threshold was tripped.")
             break
         global_warn_once_filter.clear()
     await client_session.close()

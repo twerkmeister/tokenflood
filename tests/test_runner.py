@@ -51,7 +51,7 @@ async def test_run_heuristic_test(run_spec, base_endpoint_spec, file_io_context)
     )
     assert error is None
     start = time.time()
-    error = await run_heuristic_test(
+    error_threshold_tripped = await run_heuristic_test(
         "test",
         run_spec,
         base_endpoint_spec,
@@ -61,7 +61,7 @@ async def test_run_heuristic_test(run_spec, base_endpoint_spec, file_io_context)
     )
     end = time.time()
     assert end - start < run_spec.test_length_in_seconds + 5
-    assert error is None
+    assert not error_threshold_tripped
 
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     assert len(df) == run_spec.total_num_requests

@@ -49,6 +49,7 @@ Here's a brief extract of the data in tabular form:
 If you are looking for professional support to
 * optimize your LLM accuracy, latency, throughput, or costs
 * fine tune open models for your use case, 
+* designing and building bespoke AI systems
 
 feel free to reach out to me at thomas@werkmeister.me.
 
@@ -82,7 +83,7 @@ containing:
 * a summary file containing lots of information about the run (`summary.yml`)
 * the original run suite config used for the run (`run_suite.yml`)
 * the original endpoint config used for the run (`endpoint_spec.yml`)
-* an error log (`error.log`)
+* an error log (`errors.csv`)
 
 ## Endpoint Specs
 
@@ -232,6 +233,8 @@ tokenflood has additional safety measurements:
 
 1. Tokenflood always tries to estimate the used tokens for the test upfront and asks you to confirm the start of the tests after seeing the estimation.
 2. There are additional run suite variables that determine the maximum allowed input and output token budget for the test. A test whose token usage estimate exceeds those limits will not be started.
+3. Tokenflood won't start a run were the first warm-up request fails, e.g. due to API key misconfiguration
+4. Tokenflood will end a run once the error rate exceeds 30% for the last 30 requests.
 
 Still, these measures do not provide perfect protection against misconfiguration. 
 Always be careful when using tokenflood.
