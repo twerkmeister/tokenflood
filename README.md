@@ -31,7 +31,10 @@ Here you can see an example of optimizing the prompt parameters for latency and 
 We start with the base case scenario (top left panel) and introduce two improvements:
 * Increasing the number of prefix tokens, e.g. by reordering parts of the prompt. (top right panel)
 * Reducing the number of output tokens, e.g. by changing the output format from verbose JSON to a custom DSL (bottom left pannel)
+
 Finally, the bottom right panel shows both improvements active at the same time. All tests were run on the same hardware and model.
+
+Here's a brief extract of the data in tabular form:
 
 | Scenario           | #Input Tokens | #Prefix Tokens | #Output Tokens | #Mean Latency in ms @ 3 requests per second | 
 |--------------------|---------------|----------------|----------------|---------------------------------------------|
