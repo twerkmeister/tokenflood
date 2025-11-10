@@ -26,7 +26,7 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
 ### Example: Assessing the effects of prompt optimizations 
 Here you can see an example of optimizing the prompt parameters for latency and throughput:
 
-[An example of trying to optimize the prompt style for latency and throughput](./images/self-hosted_combined.png)
+![An example of trying to optimize the prompt style for latency and throughput](/images/self-hosted_combined.png)
 
 We start with the base case scenario (top left panel) and introduce two improvements:
 * Increasing the number of prefix tokens, e.g. by reordering parts of the prompt. (top right panel)
