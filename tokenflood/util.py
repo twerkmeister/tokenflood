@@ -8,7 +8,9 @@ from tokenflood.models.util import numeric
 
 def get_exact_date_str() -> str:
     # trim microseconds
-    datetime_with_milliseconds = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S.%f")[:-3]
+    datetime_with_milliseconds = datetime.datetime.now(datetime.UTC).strftime(
+        "%Y-%m-%d_%H-%M-%S.%f"
+    )[:-3]
     return f"{datetime_with_milliseconds}(UTC)"
 
 

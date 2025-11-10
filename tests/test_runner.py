@@ -171,9 +171,14 @@ def test_check_token_usage_upfront(
         tiny_run_suite
     )
 
+    update = {
+        "input_token_budget": estimated_input_tokens + input_token_diff,
+        "output_token_budget": estimated_output_tokens + output_token_diff,
+    }
+
+    tiny_run_suite = tiny_run_suite.model_copy(update=update)
+
     assert expected_result == check_token_usage_upfront(
         tiny_run_suite,
-        estimated_input_tokens + input_token_diff,
-        estimated_output_tokens + output_token_diff,
         autoaccept,
     )

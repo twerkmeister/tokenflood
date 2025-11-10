@@ -43,6 +43,16 @@ Here's a brief extract of the data in tabular form:
 | shorter output     | 3038          | 1000           | 30             | 921                                         |
 | both changes       | 3038          | 2000           | 30             | 602                                         |
 
+
+## Professional Services
+
+If you are looking for professional support to
+* optimize your LLM accuracy, latency, throughput, or costs
+* fine tune open models for your use case, 
+
+feel free to reach out at thomas@werkmeister.me.
+
+
 ## Installation
 
 ```bash
@@ -166,6 +176,8 @@ percentiles:                # the latency percentiles to report
 - 50
 - 90
 - 99
+input_token_budget: 100000  # the maximum number of input tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
+output_token_budget: 10000  # the maximum number of output tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
 ```
 
 ## Heuristic Load Testing
@@ -220,14 +232,7 @@ Using tokenflood can result in high token spending. To prevent negative surprise
 tokenflood has additional safety measurements:
 
 1. Tokenflood always tries to estimate the used tokens for the test upfront and asks you to confirm the start of the tests after seeing the estimation.
-2. There are additional env variables that determine the max allowed input and output tokens for test. A test whose token usage estimate exceeds those limits will not be started.
+2. There are additional run suite variables that determine the maximum allowed input and output token budget for the test. A test whose token usage estimate exceeds those limits will not be started.
 
 Still, these measures do not provide perfect protection against misconfiguration. 
 Always be careful when using tokenflood.
-
-## Professional Services
-
-If you are looking for professional support to
-* optimize your LLM accuracy, latency, throughput, or costs
-* fine tune open models for your use case, 
-reach out at pro@tokenflood.com.

@@ -22,8 +22,12 @@ def get_phases(data: pd.DataFrame) -> List[float]:
 
 
 def make_super_title(
-    run_suite: HeuristicRunSuite, endpoint_spec: EndpointSpec, date_str: str,
-        mean_input_tokens: int, mean_prefix_tokens: int, mean_output_tokens: int
+    run_suite: HeuristicRunSuite,
+    endpoint_spec: EndpointSpec,
+    date_str: str,
+    mean_input_tokens: int,
+    mean_prefix_tokens: int,
+    mean_output_tokens: int,
 ) -> str:
     return f"run suite: {run_suite.name}\nmodel: {endpoint_spec.provider_model_str}\ndatetime: {date_str}\n⌀ input/prefix/output tokens: {mean_input_tokens}/{mean_prefix_tokens}/{mean_output_tokens}"
 

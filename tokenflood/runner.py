@@ -9,7 +9,6 @@ from litellm import acompletion
 from litellm.types.utils import ModelResponse, Usage
 from tqdm import tqdm
 
-from tokenflood.constants import MAX_INPUT_TOKENS_ENV_VAR, MAX_OUTPUT_TOKENS_ENV_VAR
 from tokenflood.heuristic import (
     create_heuristic_messages,
     heuristic_tasks,
@@ -270,32 +269,33 @@ def estimate_token_usage(suite: HeuristicRunSuite) -> Tuple[int, int]:
 
 def check_token_usage_upfront(
     suite: HeuristicRunSuite,
-    max_input_tokens: int,
-    max_output_tokens: int,
     proceed: bool,
 ) -> bool:
     estimated_input_tokens, estimated_output_tokens = estimate_token_usage(suite)
     log.info("Checking estimated token usage for the run:")
-    input_token_color = get_limit_color(estimated_input_tokens, max_input_tokens)
-    output_token_color = get_limit_color(estimated_output_tokens, max_output_tokens)
+    input_token_color = get_limit_color(
+        estimated_input_tokens, suite.input_token_budget
+    )
+    output_token_color = get_limit_color(
+        estimated_output_tokens, suite.output_token_budget
+    )
     log.info(
         f"Estimated input tokens / configured max input tokens: "
-        f"[{input_token_color}]{estimated_input_tokens}[/] / [blue]{max_input_tokens}[/]"
+        f"[{input_token_color}]{estimated_input_tokens}[/] / [blue]{suite.input_token_budget}[/]"
     )
     log.info(
         f"Estimated output tokens / configured max output tokens: "
-        f"[{output_token_color}]{estimated_output_tokens}[/] / [blue]{max_output_tokens}[/]"
+        f"[{output_token_color}]{estimated_output_tokens}[/] / [blue]{suite.output_token_budget}[/]"
     )
     if (
-        estimated_input_tokens > max_input_tokens
-        or estimated_output_tokens > max_output_tokens
+        estimated_input_tokens > suite.input_token_budget
+        or estimated_output_tokens > suite.output_token_budget
     ):
+        log.info("[red]Estimated tokens beyond configured budget. Aborting the run.[/]")
         log.info(
-            "[red]Estimated tokens beyond configured maximum. Aborting the run.[/]"
-        )
-        log.info(
-            "Increase the maximum tokens you are willing to spend via the env vars "
-            f"[red]{MAX_INPUT_TOKENS_ENV_VAR}[/] and [red]{MAX_OUTPUT_TOKENS_ENV_VAR}[/]"
+            "Increase the maximum tokens you are willing to spend by setting the variables "
+            "[red]input_token_budget[/] and [red]output_token_budget[/] to a higher value "
+            "in your run suite file."
         )
         return False
 
