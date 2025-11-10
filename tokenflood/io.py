@@ -107,22 +107,23 @@ class FileSink:
         self.queue: asyncio.Queue[str] = asyncio.Queue()
         self.destination = destination
         self.consumer_task = None
+        self.closed = False
 
     async def _consume(self):
         async with aiofiles.open(self.destination, "w", encoding="utf-8") as f:
-            while True:
+            while not self.closed:
                 try:
-                    item = await self.queue.get()
+                    item = await asyncio.wait_for(self.queue.get(), timeout=2)
                     await f.write(item)
                     await f.flush()
-                except asyncio.QueueShutDown:
-                    break
+                except asyncio.TimeoutError:
+                    pass
 
     def write(self, item: str):
         self.queue.put_nowait(item)
 
     def close(self):
-        self.queue.shutdown()
+        self.closed = True
 
     def activate(self):
         self.consumer_task = asyncio.create_task(self._consume())
@@ -177,6 +178,9 @@ class IOContext:
     def wait_for_pending_writes(self):
         raise NotImplementedError
 
+    def close(self):
+        raise NotImplementedError
+
 
 class FileIOContext(IOContext):
     def __init__(self, llm_request_file, network_latency_file, error_file):
@@ -208,3 +212,8 @@ class FileIOContext(IOContext):
         await self.error_sink.wait_for_pending_writes()
         await self.llm_request_sink.wait_for_pending_writes()
         await self.network_latency_sink.wait_for_pending_writes()
+
+    def close(self):
+        self.error_sink.close()
+        self.llm_request_sink.close()
+        self.network_latency_sink.close()

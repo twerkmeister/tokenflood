@@ -50,8 +50,7 @@ If you are looking for professional support to
 * optimize your LLM accuracy, latency, throughput, or costs
 * fine tune open models for your use case, 
 
-feel free to reach out at thomas@werkmeister.me.
-
+feel free to reach out to me at thomas@werkmeister.me.
 
 ## Installation
 

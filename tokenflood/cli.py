@@ -202,15 +202,9 @@ def run_and_graph_suite(args: argparse.Namespace):
     summary = create_summary(suite, endpoint_spec, llm_request_data, ping_data)
     write_pydantic_yaml(summary_file, summary)
     warn_relative_error(summary)
-    title = make_super_title(
-        suite,
-        endpoint_spec,
-        date_str,
-        summary.mean_measured_input_tokens,
-        summary.mean_expected_prefix_tokens,
-        summary.mean_measured_output_tokens,
-    )
+    title = make_super_title(suite, endpoint_spec, date_str, summary)
     visualize_percentiles_across_request_rates(title, summary, latency_graph_file)
+    io_context.close()
     log.info("Done.")
 
 
