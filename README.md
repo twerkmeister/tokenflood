@@ -41,7 +41,9 @@ Here is an example of exploring the effects of prompt parameters for latency and
 The following graphs depict different load scenarios. Together they show the impact of hypothetical improvements to the prompt parameters.
 
 The first graph represents the base case, our current prompt parameters: ~3000 input tokens, of which ~1000 are a common prefix that can be cached, and ~60 output tokens.
+
 ![base-case-latency](./images/self-hosted_base_case_latency_percentiles.png)
+
 In the graphs, you can see the mean latency, and the 50th, 90th and 99th percentile latency. 
 These percentile lines indicate the latency below which 50%, 90%, and 99% of LLM requests came in.
 When designing latency sensitive systems, it's important to have an understanding of the distribution and 
@@ -56,6 +58,7 @@ We might have to invest some additional time into prompt tuning again if we chan
 we would like to know how much such a change would improve latency. 
 
 Let's run the test by increasing the number of prefix tokens:
+
 ![more-prefix-cached-tokens-latency](./images/self-hosted_more_prefix_latency_percentiles.png)
 
 We see a meaningful improvement going down to around 1100ms for the 50th percentile,
@@ -68,7 +71,9 @@ so how about checking the pay-off from using a shorter output format before impl
 changes?
 
 Let's start from the base case again and reduce the number of output tokens from 60 to 30:
+
 ![less-output-tokens-latency](./images/self-hosted_shorter_output_latency_percentiles.png)
+
 We again see a good improvement here, going down to 840ms for the 50th, to 1270ms for the 90th, 
 and to 1900 ms for the 99th percentile at 3 requests per second.
 
@@ -77,7 +82,9 @@ all the benefit there is to have.
 
 So we apply both changes, increasing the number of prefix tokens to 2000 and reducing the
 number of output tokens to 30.
+
 ![less-output-more-prefix-latency](./images/self-hosted_shorter_output_more_prefix_latency_percentiles.png)
+
 Indeed, they add up noticeably in our setup having dedicated and limited compute. We reach
 a 50th percentile latency of 570ms, 90th percentile with 770ms, and 99th percentile with 870ms.
 
