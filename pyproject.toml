@@ -1,7 +1,7 @@
 [project]
 name = "tokenflood"
 version = "0.5.0"
-description = "A load testing framework for simulating arbitary loads on instruction-tuned LLMs."
+description = "Tokenflood is a load testing framework for simulating arbitary loads on instruction-tuned LLMs."
 authors = [
     {name = "Thomas Werkmeister",email = "thomas@werkmeister.me"}
 ]

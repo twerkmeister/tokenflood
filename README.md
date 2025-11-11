@@ -205,7 +205,7 @@ test_length_in_seconds: 10  # each phase is 10 seconds long
 load_types:                 # This run suite has two load types with equal weight
 - prompt_length: 512        # prompt length in tokens
   prefix_length: 128        # prompt prefix length in tokens
-  output_length: 64         # output length in tokens
+  output_length: 32         # output length in tokens
   weight: 1                 # sampling weight for this load type
 - prompt_length: 640
   prefix_length: 568

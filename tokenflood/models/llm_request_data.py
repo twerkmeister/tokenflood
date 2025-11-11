@@ -84,7 +84,7 @@ class LLMRequestData(BaseModel, frozen=True):
                 "longer" if relative_input_token_error > 0 else "shorter"
             )
             log.warning(
-                f"Observed input tokens that are more than {abs(int(relative_input_token_error * 100))}% {longer_or_shorter} than what was expected. The measured latencies might not be representative. This warning type will only appear once per phase.",
+                f"Observed input tokens that are {abs(int(relative_input_token_error * 100))}% {longer_or_shorter} than what was expected. The measured latencies might not be representative. This warning type will only appear once per phase.",
                 extra={WARN_ONCE_KEY: "input_tokens_off"},
             )
 
@@ -96,6 +96,6 @@ class LLMRequestData(BaseModel, frozen=True):
                 "longer" if relative_output_token_error > 0 else "shorter"
             )
             log.warning(
-                f"Observed output tokens that are more than {abs(int(relative_output_token_error * 100))}% {longer_or_shorter} than what was expected. The measured latencies might not be representative. This warning type will only appear once per phase.",
+                f"Observed output tokens that are {abs(int(relative_output_token_error * 100))}% {longer_or_shorter} than what was expected. The measured latencies might not be representative. This warning type will only appear once per phase.",
                 extra={WARN_ONCE_KEY: "output_tokens_off"},
             )
