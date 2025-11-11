@@ -36,37 +36,66 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
 3. Assessing the intraday latency variations of hosted LLM providers for your load types.
 4. Assessing and choosing a hosted LLM provider before going into production with them. 
 
-### Example: Assessing the effects of prompt optimizations 
-Here is an example of exploring the effects of prompt parameters for latency and throughput:
+### Example: Assessing the effects of prompt optimizations upfront
+Here is an example of exploring the effects of prompt parameters for latency and throughput.
+The following graphs depict different load scenarios. Together they show the impact of hypothetical improvements to the prompt parameters.
 
-![An example of trying to optimize the prompt style for latency and throughput](/images/self-hosted_combined.png)
-
-Each of the graphs depicts a different load scenario. Together they show the impact of hypothetical improvements to the prompt parameters.
+The first graph represents the base case, our current prompt parameters: ~3000 input tokens, of which ~1000 are a common prefix that can be cached, and ~60 output tokens.
+![base-case-latency](./images/self-hosted_base_case_latency_percentiles.png)
 In the graphs, you can see the mean latency, and the 50th, 90th and 99th percentile latency. 
-Starting with the base case scenario in the top left panel, we introduce two improvements:
-* Increasing the number of prefix tokens, e.g., by reordering parts of the prompt. (top right panel)
-* Reducing the number of output tokens, e.g., by changing the output format from verbose JSON to a custom DSL (bottom left panel)
+These percentile lines indicate the latency below which 50%, 90%, and 99% of LLM requests came in.
+When designing latency sensitive systems, it's important to have an understanding of the distribution and 
+not just the average. At 3 requests per second, our system gives us a latency of around
+1720ms for the 50th percentile, 2700ms for the 90th percentile, and 2950ms for the 99th percentile.
+That means 50% of requests came back in under 1720ms, 90% below 2700ms and 99% of requests
+came back below 2950ms.
 
-Finally, the bottom right panel shows both improvements active at the same time. All tests were run on the same hardware and model.
+Let's say in our hypothetical prompt, we could rearrange things a little bit to increase
+the number of tokens in the beginning that are always the same and thus increase the prefix-cached part.
+We might have to invest some additional time into prompt tuning again if we change things, so
+we would like to know how much such a change would improve latency. 
+
+Let's run the test by increasing the number of prefix tokens:
+![more-prefix-cached-tokens-latency](./images/self-hosted_more_prefix_latency_percentiles.png)
+
+We see a meaningful improvement going down to around 1100ms for the 50th percentile,
+down to 1340ms for the 90th percentile, and down to 1450ms for the 99th percentile at 3 requests per second.
+
+Another option to cut down latency could be to reduce the number of output tokens. Maybe
+our current hypothetical prompt uses JSON output which is very verbose and needs a lot of tokens for 
+all the special characters. It might have more expressiveness than your task really requires,
+so how about checking the pay-off from using a shorter output format before implementing the
+changes?
+
+Let's start from the base case again and reduce the number of output tokens from 60 to 30:
+![less-output-tokens-latency](./images/self-hosted_shorter_output_latency_percentiles.png)
+We again see a good improvement here, going down to 840ms for the 50th, to 1270ms for the 90th, 
+and to 1900 ms for the 99th percentile at 3 requests per second.
+
+Finally, we might wonder to what extend both improvements add up or whether having one of them gets you
+all the benefit there is to have.
+
+So we apply both changes, increasing the number of prefix tokens to 2000 and reducing the
+number of output tokens to 30.
+![less-output-more-prefix-latency](./images/self-hosted_shorter_output_more_prefix_latency_percentiles.png)
+Indeed, they add up noticeably in our setup having dedicated and limited compute. We reach
+a 50th percentile latency of 570ms, 90th percentile with 770ms, and 99th percentile with 870ms.
 
 Here's a brief extract of the data in tabular form:
 
-| Scenario           | #Input Tokens | #Prefix Tokens | #Output Tokens | #Mean Latency in ms @ 3 requests per second | 
-|--------------------|---------------|----------------|----------------|---------------------------------------------|
-| base case          | 3038          | 1000           | 60             | 1758                                        |
-| more prefix tokens | 3038          | 2000           | 60             | 1104                                        |
-| shorter output     | 3038          | 1000           | 30             | 921                                         |
-| both changes       | 3038          | 2000           | 30             | 602                                         |
-
-We can see that both interventions bring a meaningful and complimentary reduction in latency of more than 60%.
-
+| Scenario           | #Input Tokens | #Prefix Tokens | #Output Tokens | #50th percentile latency (@3req/s) | #90th percentile latency (@3req/s) | #99th percentile latency (@3req/s) | 
+|--------------------|---------------|----------------|----------------|------------------------------------|------------------------------------|------------------------------------|
+| base case          | 3038          | 1000           | 60             | 1720ms                             | 2700ms                             | 2950ms                             |
+| more prefix tokens | 3038          | 2000           | 60             | 1100ms                             | 1340ms                             | 1450ms                             |
+| shorter output     | 3038          | 1000           | 30             | 840ms                              | 1270ms                             | 1900ms                             |
+| both changes       | 3038          | 2000           | 30             | 570ms                              | 770ms                              | 870ms                              |
 
 ## 🛠️ Professional Services 🛠️
 
-If you are looking for professional support to
+If you are looking for paid professional support to
 * optimize your LLM accuracy, latency, throughput, or costs
 * fine-tune open models for your use case, 
-* designing and building bespoke AI systems
+* designing and building custom AI systems
 
 feel free to reach out to me at thomas@werkmeister.me or on [linkedin](https://www.linkedin.com/in/twerkmeister/).
 
