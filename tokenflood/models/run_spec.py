@@ -1,5 +1,4 @@
 from typing import List, Self, Tuple
-import random
 
 from pydantic import (
     BaseModel,
@@ -46,6 +45,8 @@ class HeuristicRunSpec(RunSpec, frozen=True):
         return self.sample_n(self.total_num_requests)
 
     def sample_loads(self, n: int) -> List[LoadType]:
-        return random.choices(
-            self.load_types, [lt.weight for lt in self.load_types], k=n
-        )
+        sampled: List[LoadType] = []
+        while len(sampled) < n:
+            for load_type in self.load_types:
+                sampled.extend([load_type] * load_type.weight)
+        return sampled[:n]

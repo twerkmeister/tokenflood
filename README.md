@@ -28,9 +28,9 @@ Here you can see an example of optimizing the prompt parameters for latency and 
 
 ![An example of trying to optimize the prompt style for latency and throughput](/images/self-hosted_combined.png)
 
-We start with the base case scenario (top left panel) and introduce two improvements:
-* Increasing the number of prefix tokens, e.g. by reordering parts of the prompt. (top right panel)
-* Reducing the number of output tokens, e.g. by changing the output format from verbose JSON to a custom DSL (bottom left pannel)
+Starting with the base case scenario in the top left panel, we introduce two improvements:
+* Increasing the number of prefix tokens, e.g., by reordering parts of the prompt. (top right panel)
+* Reducing the number of output tokens, e.g., by changing the output format from verbose JSON to a custom DSL (bottom left panel)
 
 Finally, the bottom right panel shows both improvements active at the same time. All tests were run on the same hardware and model.
 
@@ -43,12 +43,14 @@ Here's a brief extract of the data in tabular form:
 | shorter output     | 3038          | 1000           | 30             | 921                                         |
 | both changes       | 3038          | 2000           | 30             | 602                                         |
 
+We can see that both interventions bring a meaningful and complimentary reduction in latency.
+
 
 ## Professional Services
 
 If you are looking for professional support to
 * optimize your LLM accuracy, latency, throughput, or costs
-* fine tune open models for your use case, 
+* fine-tune open models for your use case, 
 * designing and building bespoke AI systems
 
 feel free to reach out to me at thomas@werkmeister.me.
@@ -167,11 +169,11 @@ load_types:                 # This run suite has two load types with equal weigh
 - prompt_length: 512        # prompt length in tokens
   prefix_length: 128        # prompt prefix length in tokens
   output_length: 64         # output length in tokens
-  weight: 1.0               # sampling weight for this load type
+  weight: 1                 # sampling weight for this load type
 - prompt_length: 640
   prefix_length: 568
   output_length: 12
-  weight: 1.0
+  weight: 1
 percentiles:                # the latency percentiles to report
 - 50
 - 90
@@ -183,7 +185,7 @@ output_token_budget: 10000  # the maximum number of output tokens this test is a
 ## Heuristic Load Testing
 
 Tokenflood does not need specific prompt data to run tests. Instead, it only needs
-metadata about the prompt and task: prompt length, prefix length and output lengths. 
+metadata about the prompt and task: prompt length, prefix length, and output lengths. 
 All counted in tokens. This allows for swift testing of alternative configurations and 
 loads. Changing the token counts in the load types is a matter of seconds as opposed 
 to having to adjust implementations and reobserving prompts of a system. Additionally, 
@@ -201,7 +203,7 @@ output length.
 
 ### Why it works
 
-This type of heuristic testing creates reliable data because the processing time of an
+This type of heuristic testing creates reliable data because the processing time of a
 non-reasoning LLM only depends on the length of input and output and any involved caching 
 mechanisms.
 
@@ -216,7 +218,7 @@ absolute and relative divergences again.
 
 > [!IMPORTANT]
 > You can specify the prefix length, however, whether the prefix is used will depend on the 
-> specific endpoint and its configuration. Some providers, like openai, will only start to
+> specific endpoint and its configuration. Some providers, like OpenAI, will only start to
 > use prefix caching once your total prompt length exceeds 1024 tokens. Additionally,
 > it seems litellm does not always record the usage of prefix caching. When
 > using vllm as the inference server, it never reports any cached tokens. At the same 
@@ -233,7 +235,7 @@ tokenflood has additional safety measurements:
 
 1. Tokenflood always tries to estimate the used tokens for the test upfront and asks you to confirm the start of the tests after seeing the estimation.
 2. There are additional run suite variables that determine the maximum allowed input and output token budget for the test. A test whose token usage estimate exceeds those limits will not be started.
-3. Tokenflood won't start a run were the first warm-up request fails, e.g. due to API key misconfiguration
+3. Tokenflood won't start a run were the first warm-up request fails, e.g., due to API key misconfiguration
 4. Tokenflood will end a run once the error rate exceeds 30% for the last 30 requests.
 
 Still, these measures do not provide perfect protection against misconfiguration. 
