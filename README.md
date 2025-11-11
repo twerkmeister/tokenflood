@@ -16,6 +16,19 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
 > token services. Make sure you only test workloads that are within a reasonable budget.
 > See the safety section for more information.
 
+### Table of Contents
+
+* [Common Usage Scenarios](#common-usage-scenarios)
+  * [Example: Assessing the effects of prompt optimizations](#example-assessing-the-effects-of-prompt-optimizations-)
+* [Professional Services](#-professional-services-)
+* [Installation](#installation)
+* [Quick Start](#quick-start)
+* [Endpoint Specifications](#endpoint-specs)
+  * [Endpoint Examples](#endpoint-examples)
+* [Run Suites](#run-suites)
+* [Heuristic Load Testing Explained](#heuristic-load-testing)
+* [Safety](#-safety-)
+
 ## Common Usage Scenarios
 
 1. Load testing self-hosted LLMs.
@@ -24,10 +37,12 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
 4. Assessing and choosing a hosted LLM provider before going into production with them. 
 
 ### Example: Assessing the effects of prompt optimizations 
-Here you can see an example of optimizing the prompt parameters for latency and throughput:
+Here is an example of exploring the effects of prompt parameters for latency and throughput:
 
 ![An example of trying to optimize the prompt style for latency and throughput](/images/self-hosted_combined.png)
 
+Each of the graphs depicts a different load scenario. Together they show the impact of hypothetical improvements to the prompt parameters.
+In the graphs, you can see the mean latency, and the 50th, 90th and 99th percentile latency. 
 Starting with the base case scenario in the top left panel, we introduce two improvements:
 * Increasing the number of prefix tokens, e.g., by reordering parts of the prompt. (top right panel)
 * Reducing the number of output tokens, e.g., by changing the output format from verbose JSON to a custom DSL (bottom left panel)
@@ -43,17 +58,17 @@ Here's a brief extract of the data in tabular form:
 | shorter output     | 3038          | 1000           | 30             | 921                                         |
 | both changes       | 3038          | 2000           | 30             | 602                                         |
 
-We can see that both interventions bring a meaningful and complimentary reduction in latency.
+We can see that both interventions bring a meaningful and complimentary reduction in latency of more than 60%.
 
 
-## Professional Services
+## 🛠️ Professional Services 🛠️
 
 If you are looking for professional support to
 * optimize your LLM accuracy, latency, throughput, or costs
 * fine-tune open models for your use case, 
 * designing and building bespoke AI systems
 
-feel free to reach out to me at thomas@werkmeister.me.
+feel free to reach out to me at thomas@werkmeister.me or on [linkedin](https://www.linkedin.com/in/twerkmeister/).
 
 ## Installation
 
@@ -115,7 +130,7 @@ To get a better understanding, it's best to have a look at [the official documen
 
 ### Endpoint Examples
 
-**Self-hosted VLLM**
+#### Self-hosted VLLM
 
 ```yaml
 provider: hosted_vllm
@@ -123,22 +138,29 @@ model: meta-llama/Llama-3.1-8B-Instruct
 base_url: http://127.0.0.1:8000/v1
 ```
 
-* Openai
+#### Openai
 
 ```yaml
 provider: openai
 model: gpt-4o-mini
 ```
+Env vars: `OPENAI_API_KEY`
 
-* Bedrock
+#### Bedrock
 ```yaml
-provider: ?
-model: gpt-4o
+provider: bedrock
+model: anthropic.claude-3-sonnet-20240229-v1:0
 ```
+Env vars: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME`
 
-* AWS Sagemaker Inference Endpoints
+#### AWS Sagemaker Inference Endpoints
+```yaml
+provider: sagemaker_chat
+model: your-sagemaker-endpoint
+```
+Env vars: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME`
 
-* Azure
+#### Azure
 
 ```yaml
 provider: azure
@@ -148,9 +170,24 @@ api_version: 2024-06-01
 api_base: https://my-azure-url.openai.azure.com/
 ```
 
-* Gemini
-* Anthropic
+Env vars: `AZURE_API_KEY`
 
+#### Gemini
+
+```yaml
+provider: gemini
+model: gemini-2.5-flash-lite-preview-09-2025
+```
+
+Env vars: `GEMINI_API_KEY`
+
+#### Anthropic
+```yaml
+provider: anthropic
+model: claude-3-5-sonnet-20240620
+```
+
+Env vars: `ANTHROPIC_API_KEY`
 
 ## Run Suites
 
@@ -228,7 +265,7 @@ absolute and relative divergences again.
 > measured ones.
 
 
-## Safety
+## 🚨 Safety 🚨
 
 Using tokenflood can result in high token spending. To prevent negative surprises,
 tokenflood has additional safety measurements:
