@@ -311,3 +311,28 @@ tokenflood has additional safety measurements:
 
 Still, these measures do not provide perfect protection against misconfiguration. 
 Always be careful when using tokenflood.
+
+## 🤝 Contributing
+
+We welcome contributions!
+If you'd like to add new features, fix bugs, or improve the documentation:
+
+1. Fork the repository
+
+2. Create a feature branch:
+
+   ```
+   git checkout -b feature/my-improvement
+   ```
+
+3. Make your changes and add tests if applicable
+
+4. Run tests locally to ensure everything works:
+
+   ```
+   pytest
+   ```
+
+5. Submit a pull request with a clear description of your improvement
+
+If you plan a major change (e.g., new test type or provider integration), please open an issue first to discuss it.
