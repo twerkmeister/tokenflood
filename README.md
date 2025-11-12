@@ -57,7 +57,7 @@ the number of tokens in the beginning that are always the same and thus increase
 We might have to invest some additional time into prompt tuning again if we change things, so
 we would like to know how much such a change would improve latency. 
 
-Let's run the test by increasing the number of prefix tokens:
+Let's run the test by increasing the number of prefix tokens from 1000 to 2000:
 
 ![more-prefix-cached-tokens-latency](./images/self-hosted_more_prefix_latency_percentiles.png)
 
@@ -78,9 +78,7 @@ We again see a good improvement here, going down to 840ms for the 50th, to 1270m
 and to 1900 ms for the 99th percentile at 3 requests per second.
 
 Finally, we might wonder to what extend both improvements add up or whether having one of them gets you
-all the benefit there is to have.
-
-So we apply both changes, increasing the number of prefix tokens to 2000 and reducing the
+all the benefit there is to have. So we apply both changes, increasing the number of prefix tokens to 2000 and reducing the
 number of output tokens to 30.
 
 ![less-output-more-prefix-latency](./images/self-hosted_shorter_output_more_prefix_latency_percentiles.png)
