@@ -319,20 +319,27 @@ If you'd like to add new features, fix bugs, or improve the documentation:
 
 1. Fork the repository
 
-2. Create a feature branch:
+2. Install including dev dependencies
+   
+   ```
+   poetry install --all-groups
+   ```
+
+3. Create a feature branch:
 
    ```
    git checkout -b feature/my-improvement
    ```
 
-3. Make your changes and add tests if applicable
+4. Make your changes and add tests if applicable
 
-4. Run tests locally to ensure everything works:
+5. Run linting and tests locally to ensure everything works:
 
    ```
-   pytest
+   make lint
+   make test
    ```
 
-5. Submit a pull request with a clear description of your improvement
+6. Submit a pull request with a clear description of your improvement
 
 If you plan a major change (e.g., new test type or provider integration), please open an issue first to discuss it.
