@@ -3,6 +3,7 @@ from typing import Dict
 import pytest
 
 from tests.utils import does_not_raise
+from tokenflood.heuristic import builtin_heuristic_tasks, builtin_heuristic_token_sets
 from tokenflood.models.load_type import LoadType
 from tokenflood.models.run_suite import HeuristicRunSuite
 
@@ -15,6 +16,8 @@ def default_run_suite_kwargs() -> Dict:
         test_length_in_seconds=30,
         load_types=(LoadType(prompt_length=1024, prefix_length=400, output_length=12),),
         percentiles=(50, 90, 98),
+        task=builtin_heuristic_tasks[0],
+        token_set=builtin_heuristic_token_sets[0],
     ).model_dump()
 
 

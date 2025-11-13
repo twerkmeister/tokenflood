@@ -251,6 +251,38 @@ percentiles:                # the latency percentiles to report
 - 99
 input_token_budget: 100000  # the maximum number of input tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
 output_token_budget: 10000  # the maximum number of output tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
+error_limit: 0.3            # the fraction of errors that are acceptable for the last 30 requests
+task:                       # The task tokenflood uses to generate a lot of tokens which we can truncate using the max token parameters - makes sure we do not produce too few tokens!
+  task: 'Task: Count up to 10000 naming each individual number like this: 1 2 3 4'
+token_set:                  # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length   
+  tokens:
+  - ' A'
+  - ' B'
+  - ' C'
+  - ' D'
+  - ' E'
+  - ' F'
+  - ' G'
+  - ' H'
+  - ' I'
+  - ' J'
+  - ' K'
+  - ' L'
+  - ' M'
+  - ' N'
+  - ' O'
+  - ' P'
+  - ' Q'
+  - ' R'
+  - ' S'
+  - ' T'
+  - ' U'
+  - ' V'
+  - ' W'
+  - ' X'
+  - ' Y'
+  - ' Z'
+
 ```
 
 ## Heuristic Load Testing
