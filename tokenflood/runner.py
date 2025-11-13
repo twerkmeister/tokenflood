@@ -9,23 +9,19 @@ from litellm import acompletion
 from litellm.types.utils import ModelResponse, Usage
 from tqdm import tqdm
 
-from tokenflood.constants import ERROR_RATE_LIMIT, ERROR_RING_BUFFER_SIZE
+from tokenflood.constants import ERROR_RING_BUFFER_SIZE
 from tokenflood.heuristic import (
     create_heuristic_messages,
-    heuristic_tasks,
-    heuristic_token_sets,
 )
 from tokenflood.io import IOContext, exception_group_to_str
 from tokenflood.logging import global_warn_once_filter
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.error_data import ErrorContext, ErrorData
-from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.llm_request_data import LLMRequestContext, LLMRequestData
 from tokenflood.models.messages import MessageList, create_message_list_from_prompt
 from tokenflood.models.ping_request_data import PingData, PingRequestContext
 from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
-from tokenflood.models.token_set import TokenSet
 from tokenflood.networking import (
     ObserveURLMiddleware,
     option_request_endpoint,
@@ -116,21 +112,18 @@ def create_schedule(run_spec: RunSpec) -> List[float]:
 
 async def run_heuristic_test(
     test_description: str,
+    run_suite: HeuristicRunSuite,
     run_spec: HeuristicRunSpec,
     endpoint_spec: EndpointSpec,
     client_session: ClientSession,
     url_observer: ObserveURLMiddleware,
     io_context: IOContext,
-    token_set: Optional[TokenSet] = None,
-    task: Optional[HeuristicTask] = None,
 ) -> bool:
-    token_set = token_set or heuristic_token_sets[0]
-    task = task or heuristic_tasks[0]
     schedule = create_schedule(run_spec)
 
     prompt_lengths, prefix_lengths, output_lengths = run_spec.sample()
     message_lists = create_heuristic_messages(
-        prompt_lengths, prefix_lengths, token_set, task
+        prompt_lengths, prefix_lengths, run_suite.token_set, run_suite.task
     )
     error_context = ErrorContext(requests_per_second_phase=run_spec.requests_per_second)
     error_threshold_tripped = False
@@ -143,7 +136,7 @@ async def run_heuristic_test(
     for i in pbar:
         error_rate = io_context.error_rate()
         pbar.set_postfix({"error rate": round(error_rate, 2)})
-        if error_rate > ERROR_RATE_LIMIT:
+        if error_rate > run_suite.error_limit:
             error_threshold_tripped = True
             break
         request_context = LLMRequestContext(
@@ -259,6 +252,7 @@ async def run_suite(
     endpoint_spec: EndpointSpec, suite: HeuristicRunSuite, io_context: IOContext
 ):
     io_context.activate()
+    await io_context.wait_for_pending_writes()
     run_specs = suite.create_run_specs()
     log.info("Warming up.")
     client_session, url_observer, error = await get_warm_session(
@@ -272,6 +266,7 @@ async def run_suite(
         test_description = make_test_description(suite, phase + 1, run_spec)
         error_threshold_tripped = await run_heuristic_test(
             test_description,
+            suite,
             run_spec,
             endpoint_spec,
             client_session,

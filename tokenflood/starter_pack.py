@@ -1,3 +1,5 @@
+from tokenflood.constants import DEFAULT_ERROR_RATE_LIMIT
+from tokenflood.heuristic import builtin_heuristic_tasks, builtin_heuristic_token_sets
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.load_type import LoadType
 from tokenflood.models.run_suite import HeuristicRunSuite
@@ -12,6 +14,9 @@ starter_run_suite = HeuristicRunSuite(
         LoadType(prompt_length=640, prefix_length=568, output_length=12, weight=1),
     ),
     percentiles=(50, 90, 99),
+    task=builtin_heuristic_tasks[0],
+    token_set=builtin_heuristic_token_sets[0],
+    error_limit=DEFAULT_ERROR_RATE_LIMIT,
 )
 
 starter_endpoint_spec_filename = "endpoint.yml"

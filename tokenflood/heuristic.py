@@ -4,19 +4,13 @@ from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.messages import MessageList, create_message_list_from_prompt
 from tokenflood.models.token_set import TokenSet
 
-heuristic_tasks = [
+builtin_heuristic_tasks = [
     HeuristicTask(
         task="Task: Count up to 10000 naming each individual number like this: 1 2 3 4"
     ),
-    HeuristicTask(
-        task="Task: Write an intro chapter for a historic novel that is at least 20 pages long."
-    ),
-    HeuristicTask(
-        task="Task: Recite the Bible verse by verse starting with Genesis 1."
-    ),
 ]
 
-heuristic_token_sets = [
+builtin_heuristic_token_sets = [
     TokenSet(tokens=tuple([" " + chr(c) for c in range(65, 91)])),  # " A" - " Z"
 ]
 
