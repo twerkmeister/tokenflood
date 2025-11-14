@@ -13,7 +13,7 @@ from tokenflood.constants import ERROR_RING_BUFFER_SIZE
 from tokenflood.heuristic import (
     create_heuristic_messages,
 )
-from tokenflood.io import IOContext, exception_group_to_str
+from tokenflood.io import IOContext
 from tokenflood.logging import global_warn_once_filter
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.error_data import ErrorContext, ErrorData
@@ -239,12 +239,11 @@ async def get_warm_session(
     connector = TCPConnector(limit=1000, loop=asyncio.get_running_loop())
     client_session = ClientSession(middlewares=[url_observer], connector=connector)
     error_context = ErrorContext(requests_per_second_phase=-1.0)
-    try:
-        async with asyncio.TaskGroup() as tg:
-            t = tg.create_task(warm_up_session(endpoint_spec, client_session))
-            t.add_done_callback(handle_error(io_context, error_context))
-    except ExceptionGroup as eg:
-        error = exception_group_to_str(eg)
+    t = asyncio.create_task(warm_up_session(endpoint_spec, client_session))
+    t.add_done_callback(handle_error(io_context, error_context))
+    result = (await asyncio.gather(t, return_exceptions=True))[0]
+    if isinstance(result, Exception):
+        error = str(result)
     return client_session, url_observer, error
 
 

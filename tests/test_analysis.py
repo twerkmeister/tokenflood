@@ -1,10 +1,14 @@
 import os
 
+import pandas as pd
+import pytest
+
 from tokenflood.constants import (
     LATENCY_GRAPH_FILE,
 )
 from tokenflood.analysis import (
     create_summary,
+    get_percentile_float,
     make_super_title,
     visualize_percentiles_across_request_rates,
 )
@@ -63,3 +67,31 @@ def test_create_summary(
     assert results_run_summary == create_summary(
         results_run_suite, results_endpoint_spec, llm_requests_df, network_latency_df
     )
+
+
+def test_create_empty_summary(results_run_suite, results_endpoint_spec):
+    summary = create_summary(
+        results_run_suite, results_endpoint_spec, pd.DataFrame(), pd.DataFrame()
+    )
+    assert summary.total_num_requests == 0
+    assert summary.run_suite == results_run_suite.name
+    assert summary.endpoint == results_endpoint_spec.provider_model_str
+
+
+@pytest.mark.parametrize(
+    "seq, percentile, expected_result",
+    [
+        ([], 20, 0.0),
+        ([], 50, 0.0),
+        ([1], 20, 1.0),
+        ([1], 50, 1.0),
+        ([1], 80, 1.0),
+        ([2], 20, 2.0),
+        ([2], 50, 2.0),
+        ([2], 80, 2.0),
+        ([0, 100], 50, 50.0),
+        ([0, 100], 90, 90.0),
+    ],
+)
+def test_get_percentile_float(seq, percentile, expected_result):
+    assert expected_result == get_percentile_float(seq, percentile)

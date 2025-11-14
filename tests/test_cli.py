@@ -1,7 +1,16 @@
+import logging
 import os
 import sys
 
-from tokenflood.cli import create_starter_files, main, parse_args, run_and_graph_suite
+import pytest
+
+from tokenflood.cli import (
+    create_starter_files,
+    main,
+    parse_args,
+    run_and_graph_suite,
+    warn_relative_error,
+)
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
     ERROR_FILE,
@@ -118,3 +127,34 @@ def test_load_dotenv(unique_temporary_folder, monkeypatch):
         m.setattr(sys, "argv", [sys.argv[0]])
         main()
         assert os.getenv(env_var) == env_value
+
+
+@pytest.mark.parametrize(
+    "summary_update, should_warn, warn_content",
+    [
+        ({}, False, ""),
+        ({"relative_input_token_error": 0.11}, True, "prompts had 11% more tokens"),
+        ({"relative_input_token_error": -0.20}, True, "prompts had 20% less tokens"),
+        (
+            {"relative_output_token_error": 0.50},
+            True,
+            "generated texts had 50% more tokens",
+        ),
+        (
+            {"relative_output_token_error": -0.66},
+            True,
+            "generated texts had 66% less tokens",
+        ),
+    ],
+)
+def test_warn_relative_error(
+    results_run_summary, summary_update, should_warn, warn_content, caplog
+):
+    summary = results_run_summary.model_copy(update=summary_update)
+    with caplog.at_level(logging.WARNING):
+        warn_relative_error(summary)
+
+    if should_warn:
+        assert warn_content in caplog.text
+    else:
+        assert caplog.text == ""

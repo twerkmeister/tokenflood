@@ -35,9 +35,3 @@ def all_strictly_positive(seq: Sequence[Number]) -> Sequence[Number]:
     if not all([x > 0 for x in seq]):
         raise ValueError("all elements must be larger than 0.")
     return seq
-
-
-def all_positive(seq: Sequence[Number]) -> Sequence[Number]:
-    if not all([x >= 0 for x in seq]):
-        raise ValueError("all elements must be larger or equal 0.")
-    return seq
