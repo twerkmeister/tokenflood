@@ -15,6 +15,7 @@ from tokenflood.runner import (
     create_schedule,
     estimate_token_usage,
     get_warm_session,
+    make_empty_response,
     run_heuristic_test,
     run_suite,
     send_llm_request,
@@ -112,6 +113,23 @@ async def test_run_tiny_suite_bad_endpoint(
     assert len(df) == 0
     assert len(tiny_run_suite.create_run_specs()) > 1
     assert "Connection error" in caplog.text
+
+
+@mock.patch("tokenflood.runner.warm_up_session")
+@pytest.mark.asyncio
+async def test_run_tiny_suite_bad_endpoint_but_fake_warmup(
+    mocked_warm_up, tiny_run_suite, base_endpoint_spec, file_io_context, caplog
+):
+    mocked_warm_up.return_value = make_empty_response()
+    # creating endpoint spec with bad port number
+    bad_endpoint_spec = base_endpoint_spec.model_copy(
+        update={"base_url": "http://127.0.0.1:8001/v1"}
+    )
+    with caplog.at_level(logging.ERROR):
+        await run_suite(bad_endpoint_spec, tiny_run_suite, file_io_context)
+    assert len(caplog.messages) == 2
+    assert caplog.messages[0].startswith("Aborting the phase")
+    assert caplog.messages[1].startswith("Ending the run because")
 
 
 def test_estimate_token_usage_tiny(tiny_run_suite):

@@ -9,7 +9,6 @@ from tokenflood.io import (
     FileSink,
     IOContext,
     add_suffix_to_file_name,
-    error_to_str,
     get_first_available_filename_like,
     list_dir_relative,
     make_run_folder,
@@ -103,12 +102,6 @@ def test_write_read_file(unique_temporary_file):
     text = "ABC"
     write_file(unique_temporary_file, text)
     assert text == read_file(unique_temporary_file)
-
-
-def test_error_to_str():
-    error_text = "Bad value for variable x"
-    err = ValueError(error_text)
-    assert error_text in error_to_str(err)
 
 
 @pytest.mark.asyncio

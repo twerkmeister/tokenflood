@@ -97,14 +97,6 @@ def read_file(filename: str) -> str:
         return f.read()
 
 
-def error_to_str(e: BaseException) -> str:
-    return str(e)
-
-
-def exception_group_to_str(eg: ExceptionGroup) -> str:
-    return "\n".join([error_to_str(e) for e in eg.exceptions])
-
-
 class FileSink:
     def __init__(self, destination: str):
         self.queue: asyncio.Queue[str] = asyncio.Queue()
