@@ -75,8 +75,11 @@ def create_summary(
         phase_ping_data = get_phase_data(ping_data, phase)
         percentiles = {}
         for percentile in run_suite.percentiles:
-            percentiles[f"p{percentile}"] = get_percentile_float(
-                list(phase_llm_request_data["latency"]), percentile
+            percentiles[f"p{percentile}"] = round(
+                get_percentile_float(
+                    list(phase_llm_request_data["latency"]), percentile
+                ),
+                2,
             )
         load_results.append(
             LoadResult(
@@ -134,5 +137,5 @@ def get_percentile_float(seq: Sequence[numeric], percentile: int) -> float:
     if len(seq) == 1:
         value = seq[0]
     elif len(seq) > 1:
-        value = round(float(np.percentile(seq, percentile)), 2)
+        value = float(np.percentile(seq, percentile))
     return value
