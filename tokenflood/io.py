@@ -186,7 +186,7 @@ class IOContext:
     def activate(self):
         raise NotImplementedError
 
-    def wait_for_pending_writes(self):
+    async def wait_for_pending_writes(self):
         raise NotImplementedError
 
     def close(self):

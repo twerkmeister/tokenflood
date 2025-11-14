@@ -3,9 +3,11 @@ import os
 
 import pytest
 
+from tokenflood.constants import ERROR_RING_BUFFER_SIZE
 from tokenflood.io import (
     CSVFileSink,
     FileSink,
+    IOContext,
     add_suffix_to_file_name,
     error_to_str,
     get_first_available_filename_like,
@@ -136,3 +138,29 @@ async def test_csv_file_sink(unique_temporary_file):
 
     with open(unique_temporary_file) as f:
         assert f.read() == "a,b\n1,2\n3,4\n"
+
+
+@pytest.mark.asyncio
+async def test_io_context_abstract_methods():
+    io_context = IOContext()
+
+    assert io_context.state_watch.maxlen == ERROR_RING_BUFFER_SIZE
+    assert len(io_context.state_watch) == 0
+
+    with pytest.raises(NotImplementedError):
+        io_context.write_error({})
+
+    with pytest.raises(NotImplementedError):
+        io_context.write_llm_request({})
+
+    with pytest.raises(NotImplementedError):
+        io_context.write_network_latency({})
+
+    with pytest.raises(NotImplementedError):
+        io_context.activate()
+
+    with pytest.raises(NotImplementedError):
+        await io_context.wait_for_pending_writes()
+
+    with pytest.raises(NotImplementedError):
+        io_context.close()
