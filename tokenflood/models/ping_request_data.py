@@ -9,6 +9,7 @@ class PingRequestContext(BaseModel, frozen=True):
     datetime: NonEmptyString
     endpoint_url: NonEmptyString
     requests_per_second_phase: NonNegativeFloat
+    group_id: NonEmptyString
 
 
 class PingData(BaseModel, frozen=True):
@@ -16,6 +17,7 @@ class PingData(BaseModel, frozen=True):
     endpoint_url: NonEmptyString
     requests_per_second_phase: NonNegativeFloat
     latency: NonNegativeInt
+    group_id: NonEmptyString
 
     @classmethod
     def from_context(cls, context_data: PingRequestContext, latency: int) -> Self:

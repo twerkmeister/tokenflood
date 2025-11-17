@@ -11,15 +11,17 @@ from tokenflood.models.run_summary import LoadResult, RunSummary
 from tokenflood.models.util import numeric
 from tokenflood.util import calculate_relative_error
 
-PHASE_FIELD = "requests_per_second_phase"
+GROUP_FIELD = "group_id"
+REQUESTS_PER_SECOND_FIELD = "requests_per_seconds_phase"
 
 
-def get_phase_data(data: pd.DataFrame, phase: float) -> pd.DataFrame:
-    return data[data[PHASE_FIELD] == phase]
+
+def get_group_data(data: pd.DataFrame, group: str) -> pd.DataFrame:
+    return data[data[GROUP_FIELD] == group]
 
 
-def get_phases(data: pd.DataFrame) -> List[float]:
-    return list(pd.unique(data[PHASE_FIELD]))
+def get_groups(data: pd.DataFrame) -> List[str]:
+    return list(pd.unique(data[GROUP_FIELD]))
 
 
 def make_super_title(
@@ -63,27 +65,29 @@ def visualize_percentiles_across_request_rates(
 def visualize_percentiles_across_time(
     title: str, observation_spec: ObservationSpec, llm_request_data: pd.DataFrame, ping_data: pd.DataFrame, filename: str
 ):
-    phases = get_phases(llm_request_data)
+    groups = get_groups(llm_request_data)
     load_results = []
-    for phase in phases:
-        phase_llm_request_data = get_phase_data(llm_request_data, phase)
-        phase_ping_data = get_phase_data(ping_data, phase)
+    group_labels = []
+    for group in groups:
+        group_llm_request_data = get_group_data(llm_request_data, group)
+        group_labels.append(group_llm_request_data.reset_index()["datetime"][0][:-9])
+        group_ping_data = get_group_data(ping_data, group)
         percentiles = {}
         for percentile in observation_spec.percentiles:
             percentiles[f"p{percentile}"] = round(
                 get_percentile_float(
-                    list(phase_llm_request_data["latency"]), percentile
+                    list(group_llm_request_data["latency"]), percentile
                 ),
                 2,
             )
         load_results.append(
             LoadResult(
-                requests_per_second=float(phase),
+                requests_per_second=float(group),
                 mean_request_latency=round(
-                    float(np.average(phase_llm_request_data["latency"])), 2
+                    float(np.average(group_llm_request_data["latency"])), 2
                 ),
                 mean_network_latency=round(
-                    float(np.average(phase_ping_data["latency"])), 2
+                    float(np.average(group_ping_data["latency"])), 2
                 ),
                 percentile_latency=percentiles,
             )
@@ -91,16 +95,17 @@ def visualize_percentiles_across_time(
 
     for percentile in observation_spec.percentiles:
         y = [lr.percentile_latency[f"p{percentile}"] for lr in load_results]
-        plt.plot(phases, y, marker="o", markersize=3, label=f"{percentile} latency")
+        plt.plot(groups, y, marker="o", markersize=3, label=f"{percentile} latency")
 
     avg_latencies = [lr.mean_request_latency for lr in load_results]
-    plt.plot(phases, avg_latencies, marker="o", markersize=3, label="mean latency")
+    plt.plot(groups, avg_latencies, marker="o", markersize=3, label="mean latency")
     ping_latencies = [lr.mean_network_latency for lr in load_results]
     plt.plot(
-        phases, ping_latencies, marker="o", markersize=3, label="mean network latency"
+        groups, ping_latencies, marker="o", markersize=3, label="mean network latency"
     )
-    plt.subplots_adjust(top=0.75)
-    plt.xlabel("Requests per Second")
+    plt.xticks(range(len(group_labels)), group_labels, size="small", rotation=45)
+    plt.subplots_adjust(top=0.75, bottom=0.25)
+    plt.xlabel("datetime")
     plt.ylabel("Latency in ms")
     plt.suptitle(title, ha="left", x=0.125)
     plt.title("Latency percentiles across time")
@@ -120,10 +125,10 @@ def create_summary(
     if total_num_requests == 0:
         return RunSummary.create_empty(run_suite.name, endpoint_spec.provider_model_str)
     load_results = []
-    phases = get_phases(llm_request_data)
-    for phase in phases:
-        phase_llm_request_data = get_phase_data(llm_request_data, phase)
-        phase_ping_data = get_phase_data(ping_data, phase)
+    groups = get_groups(llm_request_data)
+    for group in groups:
+        phase_llm_request_data = get_group_data(llm_request_data, group)
+        phase_ping_data = get_group_data(ping_data, group)
         percentiles = {}
         for percentile in run_suite.percentiles:
             percentiles[f"p{percentile}"] = round(
@@ -134,7 +139,7 @@ def create_summary(
             )
         load_results.append(
             LoadResult(
-                requests_per_second=float(phase),
+                requests_per_second=float(phase_llm_request_data[REQUESTS_PER_SECOND_FIELD][0]),
                 mean_request_latency=round(
                     float(np.average(phase_llm_request_data["latency"])), 2
                 ),

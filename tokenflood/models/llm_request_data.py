@@ -41,6 +41,7 @@ class LLMRequestContext(BaseModel, frozen=True):
     requests_per_second_phase: NonNegativeFloat
     request_number: NonNegativeInt
     model: NonEmptyString
+    group_id: NonEmptyString
     prompt: str
 
 
@@ -58,6 +59,7 @@ class LLMRequestData(BaseModel, frozen=True):
     measured_prefix_tokens: NonNegativeInt
     expected_output_tokens: NonNegativeInt
     measured_output_tokens: NonNegativeInt
+    group_id: NonEmptyString
     generated_text: str
     prompt: str
 

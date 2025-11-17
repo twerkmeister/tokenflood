@@ -8,7 +8,9 @@ class ErrorData(BaseModel, frozen=True):
     request_per_second_phase: float
     type: str
     message: str
+    group_id: NonEmptyString
 
 
 class ErrorContext(BaseModel, frozen=True):
     requests_per_second_phase: float
+    group_id: NonEmptyString

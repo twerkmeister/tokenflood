@@ -11,6 +11,7 @@ def default_llm_request_data():
     return LLMRequestData(
         datetime=get_exact_date_str(),
         requests_per_second_phase=1.0,
+        group_id="1",
         request_number=1,
         model="hf/standard",
         latency=100,

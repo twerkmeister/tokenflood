@@ -57,21 +57,24 @@ async def run_observation(
         prefix_lengths,
         observation_spec.token_set, observation_spec.task
     )
+    request_per_second_phase = observation_spec.num_requests / observation_spec.within_seconds
     i = 0
     burst_pauses = create_even_schedule(observation_spec.num_requests, observation_spec.within_seconds)
     inter_polling_pause = observation_spec.polling_interval_minutes * 60 - observation_spec.within_seconds
+    log.info(f"Doing {observation_spec.num_polls()} polls in total.")
     for poll_idx in range(observation_spec.num_polls()):
-        error_context = ErrorContext(requests_per_second_phase=poll_idx)
+        error_context = ErrorContext(requests_per_second_phase=request_per_second_phase, group_id=str(poll_idx))
         for burst_idx in range(observation_spec.num_requests):
             request_context = LLMRequestContext(
                 datetime=get_exact_date_str(),
                 expected_input_tokens=prompt_lengths[i],
                 expected_prefix_tokens=prefix_lengths[i],
                 expected_output_tokens=output_lengths[i],
-                requests_per_second_phase=poll_idx,
+                requests_per_second_phase=request_per_second_phase,
                 request_number=i,
                 model=endpoint_spec.provider_model_str,
                 prompt=message_lists[i][0]["content"],
+                group_id=str(poll_idx)
             )
             log.info(f"starting request {i}")
             t = asyncio.create_task(
@@ -86,12 +89,13 @@ async def run_observation(
             llm_request_tasks.add(t)
             t.add_done_callback(llm_request_tasks.discard)
 
-            # ping at most every second
+            # ping once per poll
             if poll_idx >= num_pings:
                 ping_context = PingRequestContext(
                     datetime=get_exact_date_str(),
                     endpoint_url=str(url_observer.url),
-                    requests_per_second_phase=poll_idx,
+                    requests_per_second_phase=request_per_second_phase,
+                    group_id=str(poll_idx)
                 )
                 pt = asyncio.create_task(
                     time_async_func(
@@ -110,7 +114,14 @@ async def run_observation(
                 num_pings += 1
             await asyncio.sleep(burst_pauses[0])
             i+=1
-        if poll_idx <= observation_spec.num_polls() - 1:
+        if poll_idx < observation_spec.num_polls() - 1:
             log.info(f"Sleeping {inter_polling_pause}s until next polling phase")
             await asyncio.sleep(inter_polling_pause)
             global_warn_once_filter.clear()
+
+    log.info("Waiting for all requests to come back.")
+    while llm_request_tasks or ping_tasks:
+        await asyncio.sleep(1.0)
+
+    # make sure all data can be flushed
+    await io_context.wait_for_pending_writes()
