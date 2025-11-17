@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from tokenflood.models.endpoint_spec import EndpointSpec
+from tokenflood.models.observation_spec import ObservationSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.run_summary import LoadResult, RunSummary
 from tokenflood.models.util import numeric
@@ -57,6 +58,56 @@ def visualize_percentiles_across_request_rates(
     plt.legend()
     plt.savefig(filename)
     plt.close()
+
+
+def visualize_percentiles_across_time(
+    title: str, observation_spec: ObservationSpec, llm_request_data: pd.DataFrame, ping_data: pd.DataFrame, filename: str
+):
+    phases = get_phases(llm_request_data)
+    load_results = []
+    for phase in phases:
+        phase_llm_request_data = get_phase_data(llm_request_data, phase)
+        phase_ping_data = get_phase_data(ping_data, phase)
+        percentiles = {}
+        for percentile in observation_spec.percentiles:
+            percentiles[f"p{percentile}"] = round(
+                get_percentile_float(
+                    list(phase_llm_request_data["latency"]), percentile
+                ),
+                2,
+            )
+        load_results.append(
+            LoadResult(
+                requests_per_second=float(phase),
+                mean_request_latency=round(
+                    float(np.average(phase_llm_request_data["latency"])), 2
+                ),
+                mean_network_latency=round(
+                    float(np.average(phase_ping_data["latency"])), 2
+                ),
+                percentile_latency=percentiles,
+            )
+        )
+
+    for percentile in observation_spec.percentiles:
+        y = [lr.percentile_latency[f"p{percentile}"] for lr in load_results]
+        plt.plot(phases, y, marker="o", markersize=3, label=f"{percentile} latency")
+
+    avg_latencies = [lr.mean_request_latency for lr in load_results]
+    plt.plot(phases, avg_latencies, marker="o", markersize=3, label="mean latency")
+    ping_latencies = [lr.mean_network_latency for lr in load_results]
+    plt.plot(
+        phases, ping_latencies, marker="o", markersize=3, label="mean network latency"
+    )
+    plt.subplots_adjust(top=0.75)
+    plt.xlabel("Requests per Second")
+    plt.ylabel("Latency in ms")
+    plt.suptitle(title, ha="left", x=0.125)
+    plt.title("Latency percentiles across time")
+    plt.legend()
+    plt.savefig(filename)
+    plt.close()
+
 
 
 def create_summary(

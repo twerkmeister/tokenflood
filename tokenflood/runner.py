@@ -100,8 +100,8 @@ def make_empty_response() -> ModelResponse:
     )
 
 
-def create_schedule(run_spec: RunSpec) -> List[float]:
-    """Create a randomized schedule with a guaranteed total length."""
+def create_bursty_schedule(run_spec: RunSpec) -> List[float]:
+    """Create a bursty randomized schedule with a guaranteed total length."""
     pauses = np.random.exponential(
         1 / run_spec.requests_per_second, size=run_spec.total_num_requests
     )
@@ -119,7 +119,7 @@ async def run_heuristic_test(
     url_observer: ObserveURLMiddleware,
     io_context: IOContext,
 ) -> bool:
-    schedule = create_schedule(run_spec)
+    schedule = create_bursty_schedule(run_spec)
 
     prompt_lengths, prefix_lengths, output_lengths = run_spec.sample()
     message_lists = create_heuristic_messages(

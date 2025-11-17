@@ -16,6 +16,7 @@ from tokenflood.constants import (
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.error_data import ErrorData
 from tokenflood.models.llm_request_data import LLMRequestData
+from tokenflood.models.observation_spec import ObservationSpec
 from tokenflood.models.ping_request_data import PingData
 from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.util import get_fields
@@ -57,6 +58,9 @@ def read_endpoint_spec(filename: str) -> EndpointSpec:
 
 def read_run_suite(filename: str) -> HeuristicRunSuite:
     return read_pydantic_yaml(HeuristicRunSuite)(filename)
+
+def read_observation_spec(filename: str) -> ObservationSpec:
+    return read_pydantic_yaml(ObservationSpec)(filename)
 
 
 def make_run_folder(run_name: str) -> str:

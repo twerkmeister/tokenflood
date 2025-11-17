@@ -12,7 +12,7 @@ from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_spec import RunSpec
 from tokenflood.runner import (
     check_token_usage_upfront,
-    create_schedule,
+    create_bursty_schedule,
     estimate_token_usage,
     get_warm_session,
     make_empty_response,
@@ -30,7 +30,7 @@ def test_create_schedule(requests_per_second: float, test_length_in_seconds: int
         requests_per_second=requests_per_second,
         test_length_in_seconds=test_length_in_seconds,
     )
-    schedule = create_schedule(run_spec)
+    schedule = create_bursty_schedule(run_spec)
     assert np.allclose(sum(schedule), test_length_in_seconds)
     assert len(schedule) == int(requests_per_second * test_length_in_seconds)
 

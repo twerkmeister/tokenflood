@@ -21,6 +21,7 @@ from tokenflood.constants import (
     LATENCY_GRAPH_FILE,
     NETWORK_LATENCY_FILE,
     LLM_REQUESTS_FILE,
+    OBSERVATION_SPEC_FILE,
     RUN_SUITE_FILE,
     SUMMARY_FILE,
     WARNING_LIMIT,
@@ -29,17 +30,20 @@ from tokenflood.analysis import (
     create_summary,
     make_super_title,
     visualize_percentiles_across_request_rates,
+    visualize_percentiles_across_time,
 )
 from tokenflood.io import (
     FileIOContext,
     get_first_available_filename_like,
     make_run_folder,
     read_endpoint_spec,
+    read_observation_spec,
     read_run_suite,
     write_pydantic_yaml,
 )
 from tokenflood.logging import global_warn_once_filter
 from tokenflood.models.run_summary import RunSummary
+from tokenflood.observer import run_observation
 from tokenflood.runner import check_token_usage_upfront, run_suite
 from tokenflood.starter_pack import (
     starter_endpoint_spec_filename,
@@ -96,7 +100,7 @@ def create_argument_parser():
 
     # RUN
     run_cmd_parser = subparsers.add_parser(
-        "run", help="[blue]Execute a run suite and graph results[/]"
+        "run", help="[blue]Execute a load test run suite and graph the results[/]"
     )
     run_cmd_parser.add_argument("run_suite", type=str)
     run_cmd_parser.add_argument("endpoint", type=str)
@@ -107,6 +111,20 @@ def create_argument_parser():
         action="store_true",
     )
     run_cmd_parser.set_defaults(func=run_and_graph_suite)
+
+    # OBSERVE
+    run_cmd_parser = subparsers.add_parser(
+        "observe", help="[blue]observe an endpoint over a longer period of time.[/]"
+    )
+    run_cmd_parser.add_argument("observation_spec", type=str)
+    run_cmd_parser.add_argument("endpoint", type=str)
+    run_cmd_parser.add_argument(
+        "-y",
+        "--autoaccept",
+        help="Auto accept run start if tokens are within configured limits.",
+        action="store_true",
+    )
+    run_cmd_parser.set_defaults(func=observe_endpoint)
 
     # Initialization
     init_cmd_parser = subparsers.add_parser(
@@ -204,6 +222,47 @@ def run_and_graph_suite(args: argparse.Namespace):
     warn_relative_error(summary)
     title = make_super_title(suite, endpoint_spec, date_str, summary)
     visualize_percentiles_across_request_rates(title, summary, latency_graph_file)
+    io_context.close()
+    log.info("Done.")
+
+
+def observe_endpoint(args: argparse.Namespace):
+    endpoint_spec = read_endpoint_spec(args.endpoint)
+    observation_spec = read_observation_spec(args.observation_spec)
+    date_str = get_date_str()
+    run_name = get_run_name(date_str, endpoint_spec)
+
+    run_folder = make_run_folder(run_name)
+    log.info(f"Preparing run folder: [blue]{run_folder}[/]")
+
+    endpoint_spec_file = os.path.join(run_folder, ENDPOINT_SPEC_FILE)
+    log.info(f"Writing endpoint spec to: [blue]{endpoint_spec_file}[/]")
+    write_pydantic_yaml(endpoint_spec_file, endpoint_spec)
+
+    run_suite_file = os.path.join(run_folder, OBSERVATION_SPEC_FILE)
+    log.info(f"Writing observation spec to: [blue]{run_suite_file}[/]")
+    write_pydantic_yaml(run_suite_file, observation_spec)
+
+    error_file = os.path.join(run_folder, ERROR_FILE)
+    llm_requests_file = os.path.join(run_folder, LLM_REQUESTS_FILE)
+    network_latency_file = os.path.join(run_folder, NETWORK_LATENCY_FILE)
+    io_context = FileIOContext(llm_requests_file, network_latency_file, error_file)
+    log.info("Starting load test")
+    log.info(f"Streaming any errors to: [blue]{error_file}[/]")
+    log.info(f"Streaming LLM request data to: [blue]{llm_requests_file}[/]")
+    log.info(f"Streaming network latency data to: [blue]{network_latency_file}[/]")
+
+    asyncio.run(run_observation(endpoint_spec, observation_spec, io_context))
+    log.info("Analyzing data.")
+    llm_request_data = pd.read_csv(llm_requests_file)
+    ping_data = pd.read_csv(network_latency_file)
+    # summary_file = os.path.join(run_folder, SUMMARY_FILE)
+    latency_graph_file = os.path.join(run_folder, LATENCY_GRAPH_FILE)
+    # summary = create_summary(suite, endpoint_spec, llm_request_data, ping_data)
+    # write_pydantic_yaml(summary_file, summary)
+    # warn_relative_error(summary)
+    # title = make_super_title(suite, endpoint_spec, date_str, summary)
+    visualize_percentiles_across_time("", observation_spec, llm_request_data, ping_data, latency_graph_file)
     io_context.close()
     log.info("Done.")
 
