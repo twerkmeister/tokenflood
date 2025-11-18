@@ -215,7 +215,6 @@ async def send_llm_request(
     num_generation_tokens: int,
     client_session: ClientSession,
 ) -> ModelResponse:
-    print(endpoint_spec)
     return await acompletion(
         model=endpoint_spec.provider_model_str,
         messages=messages,
