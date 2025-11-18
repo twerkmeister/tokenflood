@@ -25,7 +25,7 @@ dependencies = [
     "structlog (>=25.4.0,<26.0.0)",
     "rich (>=14.2.0,<15.0.0)",
     "aiofiles (>=22.0,<25.0)",
-    "gradio (==6.0.0.dev4)",
+    "gradio (<6.0.0)",
 ]
 
 
