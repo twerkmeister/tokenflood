@@ -206,7 +206,7 @@ async def run_heuristic_test(
 
 async def warm_up_session(endpoint_spec: EndpointSpec, client_session: ClientSession):
     message_list = create_message_list_from_prompt("ping")
-    return await send_llm_request(endpoint_spec, message_list, 1, client_session)
+    return await send_llm_request(endpoint_spec, message_list, 10, client_session)
 
 
 async def send_llm_request(
@@ -215,6 +215,7 @@ async def send_llm_request(
     num_generation_tokens: int,
     client_session: ClientSession,
 ) -> ModelResponse:
+    print(endpoint_spec)
     return await acompletion(
         model=endpoint_spec.provider_model_str,
         messages=messages,
@@ -225,6 +226,7 @@ async def send_llm_request(
         extra_headers=endpoint_spec.extra_headers,
         max_retries=0,
         shared_session=client_session,
+        reasoning_effort=endpoint_spec.reasoning_effort
     )
 
 

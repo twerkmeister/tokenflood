@@ -10,6 +10,7 @@ class EndpointSpec(BaseModel):
     api_key_env_var: Optional[str] = None
     deployment: Optional[str] = None
     extra_headers: Dict = {}
+    reasoning_effort: Optional[str] = None
 
     @property
     def provider_model_str_as_folder_name(self) -> str:

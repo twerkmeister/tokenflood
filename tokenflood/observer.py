@@ -42,7 +42,7 @@ async def run_observation(
     )
 
     if error:
-        log.error(f"Not starting run due to error: {error}")
+        log.error(f"Not starting observation due to error: {error}")
         await client_session.close()
         return
 

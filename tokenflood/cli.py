@@ -247,7 +247,7 @@ def observe_endpoint(args: argparse.Namespace):
     llm_requests_file = os.path.join(run_folder, LLM_REQUESTS_FILE)
     network_latency_file = os.path.join(run_folder, NETWORK_LATENCY_FILE)
     io_context = FileIOContext(llm_requests_file, network_latency_file, error_file)
-    log.info("Starting load test")
+    log.info("Starting observation test")
     log.info(f"Streaming any errors to: [blue]{error_file}[/]")
     log.info(f"Streaming LLM request data to: [blue]{llm_requests_file}[/]")
     log.info(f"Streaming network latency data to: [blue]{network_latency_file}[/]")

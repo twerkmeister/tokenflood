@@ -12,7 +12,7 @@ from tokenflood.models.util import numeric
 from tokenflood.util import calculate_relative_error
 
 GROUP_FIELD = "group_id"
-REQUESTS_PER_SECOND_FIELD = "requests_per_seconds_phase"
+REQUESTS_PER_SECOND_FIELD = "requests_per_second_phase"
 
 
 
