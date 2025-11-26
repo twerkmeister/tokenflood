@@ -3,7 +3,6 @@ scratchpad/
 endpoint*.yml
 run_suite*.yml
 observation_*.yml
-tiny_suite_result.png
 results/
 .idea/
 .DS_Store

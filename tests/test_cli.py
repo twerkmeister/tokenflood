@@ -14,12 +14,10 @@ from tokenflood.cli import (
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
     ERROR_FILE,
-    LATENCY_GRAPH_FILE,
     NETWORK_LATENCY_FILE,
     RESULTS_FOLDER,
     LLM_REQUESTS_FILE,
     RUN_SUITE_FILE,
-    SUMMARY_FILE,
 )
 from tokenflood.io import (
     list_dir_relative,
@@ -89,15 +87,13 @@ def test_run_and_graph_suite(
     run_folders = list_dir_relative(RESULTS_FOLDER)
     assert len(run_folders) == 1
     result_files = os.listdir(run_folders[0])
-    assert len(result_files) == 7
+    assert len(result_files) == 5
     assert set(result_files) == {
         LLM_REQUESTS_FILE,
         NETWORK_LATENCY_FILE,
         ERROR_FILE,
-        LATENCY_GRAPH_FILE,
         RUN_SUITE_FILE,
         ENDPOINT_SPEC_FILE,
-        SUMMARY_FILE,
     }
 
 

@@ -13,12 +13,10 @@ from tokenflood.constants import (
     LLM_REQUESTS_FILE,
     NETWORK_LATENCY_FILE,
     RUN_SUITE_FILE,
-    SUMMARY_FILE,
 )
 from tokenflood.io import (
     FileIOContext,
     read_endpoint_spec,
-    read_pydantic_yaml,
     read_run_suite,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
@@ -26,7 +24,6 @@ from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.load_type import LoadType
 from tokenflood.models.run_spec import HeuristicRunSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
-from tokenflood.models.run_summary import RunSummary
 from tokenflood.models.token_set import TokenSet
 
 
@@ -66,10 +63,6 @@ def results_folder(data_folder: str) -> str:
     return folder
 
 
-@pytest.fixture(scope="session")
-def results_plot_file(results_folder: str) -> str:
-    file = os.path.join(results_folder, "tiny_suite_result.png")
-    return file
 
 
 @pytest.fixture
@@ -99,13 +92,6 @@ def network_latency_csv_file(results_folder) -> str:
 
 
 @pytest.fixture
-def summary_file(results_folder) -> str:
-    filename = os.path.join(results_folder, SUMMARY_FILE)
-    assert os.path.isfile(filename)
-    return filename
-
-
-@pytest.fixture
 def llm_requests_df(llm_requests_csv_file) -> pd.DataFrame:
     return pd.read_csv(llm_requests_csv_file)
 
@@ -113,11 +99,6 @@ def llm_requests_df(llm_requests_csv_file) -> pd.DataFrame:
 @pytest.fixture
 def network_latency_df(network_latency_csv_file) -> pd.DataFrame:
     return pd.read_csv(network_latency_csv_file)
-
-
-@pytest.fixture
-def results_run_summary(summary_file) -> RunSummary:
-    return read_pydantic_yaml(RunSummary)(summary_file)
 
 
 @pytest.fixture

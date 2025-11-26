@@ -1,13 +1,26 @@
 RESULTS_FOLDER = "results"
-LATENCY_GRAPH_FILE = "latency_percentiles.png"
 LLM_REQUESTS_FILE = "llm_requests.csv"
 NETWORK_LATENCY_FILE = "network_latency.csv"
 ENDPOINT_SPEC_FILE = "endpoint_spec.yml"
 RUN_SUITE_FILE = "run_suite.yml"
 OBSERVATION_SPEC_FILE = "observation_spec.yml"
 ERROR_FILE = "errors.csv"
-SUMMARY_FILE = "summary.yml"
 REQUESTS_PER_SECOND_COLUMN_NAME = "requests_per_second_at_the_time"
+
+COMMON_RESULT_FILES = {
+    LLM_REQUESTS_FILE,
+    NETWORK_LATENCY_FILE,
+    ENDPOINT_SPEC_FILE,
+    ERROR_FILE
+}
+
+RUN_RESULT_FILES = {
+    RUN_SUITE_FILE
+}
+
+OBSERVATION_RESULT_FILES = {
+    OBSERVATION_SPEC_FILE
+}
 
 MAX_INPUT_TOKENS_DEFAULT = 1000000
 MAX_OUTPUT_TOKENS_DEFAULT = 10000

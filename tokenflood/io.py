@@ -3,15 +3,18 @@ import csv
 import os
 from collections import deque
 from io import StringIO
-from typing import Any, Callable, Dict, List, Type, TypeVar
+from typing import Any, Callable, Dict, List, Set, Type, TypeVar
 
 import aiofiles
 import yaml
 from pydantic import BaseModel
 
 from tokenflood.constants import (
+    COMMON_RESULT_FILES,
     ERROR_RING_BUFFER_SIZE,
+    OBSERVATION_RESULT_FILES,
     RESULTS_FOLDER,
+    RUN_RESULT_FILES,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.error_data import ErrorData
@@ -100,6 +103,23 @@ def read_file(filename: str) -> str:
     with open(filename) as f:
         return f.read()
 
+def folder_contains_file(folder: str, filename: str) -> bool:
+    target_file = os.path.join(folder, filename)
+    return os.path.isdir(folder) and os.path.isfile(target_file)
+
+def folder_contains_files(folder: str, filenames: Set[str]) -> bool:
+    for f in filenames:
+        if not folder_contains_file(folder, f):
+            return False
+    return True
+
+def is_observation_result_folder(folder: str) -> bool:
+    return folder_contains_files(folder, COMMON_RESULT_FILES) and folder_contains_files(folder, OBSERVATION_RESULT_FILES)
+
+def is_run_result_folder(folder) -> bool:
+    return folder_contains_files(folder, COMMON_RESULT_FILES) and folder_contains_files(
+        folder, RUN_RESULT_FILES
+    )
 
 class FileSink:
     def __init__(self, destination: str):

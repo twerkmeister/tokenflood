@@ -5,7 +5,6 @@ import sys
 from io import StringIO
 from typing import List
 
-import pandas as pd
 from rich import print
 import logging
 
@@ -18,19 +17,11 @@ from dotenv import load_dotenv
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
     ERROR_FILE,
-    LATENCY_GRAPH_FILE,
     NETWORK_LATENCY_FILE,
     LLM_REQUESTS_FILE,
     OBSERVATION_SPEC_FILE,
     RUN_SUITE_FILE,
-    SUMMARY_FILE,
     WARNING_LIMIT,
-)
-from tokenflood.analysis import (
-    create_summary,
-    make_super_title,
-    visualize_percentiles_across_request_rates,
-    visualize_percentiles_across_time,
 )
 from tokenflood.io import (
     FileIOContext,
@@ -212,16 +203,6 @@ def run_and_graph_suite(args: argparse.Namespace):
     log.info(f"Streaming network latency data to: [blue]{network_latency_file}[/]")
 
     asyncio.run(run_suite(endpoint_spec, suite, io_context))
-    log.info("Analyzing data.")
-    llm_request_data = pd.read_csv(llm_requests_file)
-    ping_data = pd.read_csv(network_latency_file)
-    summary_file = os.path.join(run_folder, SUMMARY_FILE)
-    latency_graph_file = os.path.join(run_folder, LATENCY_GRAPH_FILE)
-    summary = create_summary(suite, endpoint_spec, llm_request_data, ping_data)
-    write_pydantic_yaml(summary_file, summary)
-    warn_relative_error(summary)
-    title = make_super_title(suite, endpoint_spec, date_str, summary)
-    visualize_percentiles_across_request_rates(title, summary, latency_graph_file)
     io_context.close()
     log.info("Done.")
 
@@ -253,16 +234,6 @@ def observe_endpoint(args: argparse.Namespace):
     log.info(f"Streaming network latency data to: [blue]{network_latency_file}[/]")
 
     asyncio.run(run_observation(endpoint_spec, observation_spec, io_context))
-    log.info("Analyzing data.")
-    llm_request_data = pd.read_csv(llm_requests_file)
-    ping_data = pd.read_csv(network_latency_file)
-    # summary_file = os.path.join(run_folder, SUMMARY_FILE)
-    latency_graph_file = os.path.join(run_folder, LATENCY_GRAPH_FILE)
-    # summary = create_summary(suite, endpoint_spec, llm_request_data, ping_data)
-    # write_pydantic_yaml(summary_file, summary)
-    # warn_relative_error(summary)
-    # title = make_super_title(suite, endpoint_spec, date_str, summary)
-    visualize_percentiles_across_time("", observation_spec, llm_request_data, ping_data, latency_graph_file)
     io_context.close()
     log.info("Done.")
 
