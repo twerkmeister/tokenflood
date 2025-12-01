@@ -1,4 +1,0 @@
-datetime,endpoint_url,requests_per_second_phase,latency
-2025-11-07_15-52-36.950,http://127.0.0.1:8000/v1/chat/completions,1.0,23
-2025-11-07_15-52-37.530,http://127.0.0.1:8000/v1/chat/completions,2.0,45
-2025-11-07_15-52-39.088,http://127.0.0.1:8000/v1/chat/completions,2.0,19

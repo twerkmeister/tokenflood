@@ -57,8 +57,8 @@ def endpoint_specs_folder(data_folder: str) -> str:
 
 
 @pytest.fixture(scope="session")
-def results_folder(data_folder: str) -> str:
-    folder = os.path.join(data_folder, "test_results")
+def run_suite_results_folder(data_folder: str) -> str:
+    folder = os.path.join(data_folder, "run_suite_results")
     assert os.path.isdir(folder)
     return folder
 
@@ -78,15 +78,15 @@ def tiny_run_suite(run_suites_folder) -> HeuristicRunSuite:
 
 
 @pytest.fixture
-def llm_requests_csv_file(results_folder) -> str:
-    filename = os.path.join(results_folder, LLM_REQUESTS_FILE)
+def llm_requests_csv_file(run_suite_results_folder) -> str:
+    filename = os.path.join(run_suite_results_folder, LLM_REQUESTS_FILE)
     assert os.path.isfile(filename)
     return filename
 
 
 @pytest.fixture
-def network_latency_csv_file(results_folder) -> str:
-    filename = os.path.join(results_folder, NETWORK_LATENCY_FILE)
+def network_latency_csv_file(run_suite_results_folder) -> str:
+    filename = os.path.join(run_suite_results_folder, NETWORK_LATENCY_FILE)
     assert os.path.isfile(filename)
     return filename
 
@@ -108,14 +108,14 @@ def base_endpoint_spec(endpoint_specs_folder) -> EndpointSpec:
 
 
 @pytest.fixture
-def results_endpoint_spec(results_folder) -> EndpointSpec:
-    filename = os.path.join(results_folder, ENDPOINT_SPEC_FILE)
+def results_endpoint_spec(run_suite_results_folder) -> EndpointSpec:
+    filename = os.path.join(run_suite_results_folder, ENDPOINT_SPEC_FILE)
     return read_endpoint_spec(filename)
 
 
 @pytest.fixture
-def results_run_suite(results_folder) -> HeuristicRunSuite:
-    filename = os.path.join(results_folder, RUN_SUITE_FILE)
+def results_run_suite(run_suite_results_folder) -> HeuristicRunSuite:
+    filename = os.path.join(run_suite_results_folder, RUN_SUITE_FILE)
     return read_run_suite(filename)
 
 

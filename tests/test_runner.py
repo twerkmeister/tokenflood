@@ -56,6 +56,7 @@ async def test_run_heuristic_test(
     start = time.time()
     error_threshold_tripped = await run_heuristic_test(
         "test",
+        0,
         base_run_suite,
         run_spec,
         base_endpoint_spec,

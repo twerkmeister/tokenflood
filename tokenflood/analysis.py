@@ -10,10 +10,10 @@ GROUP_FIELD = "group_id"
 REQUESTS_PER_SECOND_FIELD = "requests_per_second_phase"
 
 def get_group_data(data: pd.DataFrame, group: str) -> pd.DataFrame:
-    return data[data[GROUP_FIELD] == group]
+    return data[data[GROUP_FIELD].astype("str") == group]
 
 def get_groups(data: pd.DataFrame) -> List[str]:
-    return list(pd.unique(data[GROUP_FIELD]))
+    return [str(g) for g in pd.unique(data[GROUP_FIELD])]
 
 def aggregate(data: pd.DataFrame, field: str, aggregation_func: Callable[[pd.Series], numeric]) -> numeric:
     return aggregation_func(data[field])

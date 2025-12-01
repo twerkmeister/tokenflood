@@ -113,6 +113,7 @@ def create_bursty_schedule(run_spec: RunSpec) -> List[float]:
 
 async def run_heuristic_test(
     test_description: str,
+    phase: int,
     run_suite: HeuristicRunSuite,
     run_spec: HeuristicRunSpec,
     endpoint_spec: EndpointSpec,
@@ -126,7 +127,7 @@ async def run_heuristic_test(
     message_lists = create_heuristic_messages(
         prompt_lengths, prefix_lengths, run_suite.token_set, run_suite.task
     )
-    error_context = ErrorContext(requests_per_second_phase=run_spec.requests_per_second, group_id=test_description)
+    error_context = ErrorContext(requests_per_second_phase=run_spec.requests_per_second, group_id=str(phase))
     error_threshold_tripped = False
     error_rate = 0.0
     num_pings = 0
@@ -149,7 +150,7 @@ async def run_heuristic_test(
             request_number=i,
             model=endpoint_spec.provider_model_str,
             prompt=message_lists[i][0]["content"],
-            group_id=test_description
+            group_id=str(phase)
         )
         t = asyncio.create_task(
             send_llm_request(
@@ -172,7 +173,7 @@ async def run_heuristic_test(
                 datetime=get_exact_date_str(),
                 endpoint_url=str(url_observer.url),
                 requests_per_second_phase=run_spec.requests_per_second,
-                group_id=test_description
+                group_id=str(phase)
             )
             pt = asyncio.create_task(
                 time_async_func(
@@ -269,6 +270,7 @@ async def run_suite(
         test_description = make_test_description(suite, phase + 1, run_spec)
         error_threshold_tripped = await run_heuristic_test(
             test_description,
+            phase,
             suite,
             run_spec,
             endpoint_spec,
