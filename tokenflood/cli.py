@@ -21,7 +21,6 @@ from tokenflood.constants import (
     LLM_REQUESTS_FILE,
     OBSERVATION_SPEC_FILE,
     RUN_SUITE_FILE,
-    WARNING_LIMIT,
 )
 from tokenflood.io import (
     FileIOContext,
@@ -33,7 +32,6 @@ from tokenflood.io import (
     write_pydantic_yaml,
 )
 from tokenflood.logging import global_warn_once_filter
-from tokenflood.models.run_summary import RunSummary
 from tokenflood.observer import run_observation
 from tokenflood.runner import check_token_usage_upfront, run_suite
 from tokenflood.starter_pack import (
@@ -236,20 +234,6 @@ def observe_endpoint(args: argparse.Namespace):
     asyncio.run(run_observation(endpoint_spec, observation_spec, io_context))
     io_context.close()
     log.info("Done.")
-
-
-def warn_relative_error(summary: RunSummary):
-    if abs(summary.relative_input_token_error) > WARNING_LIMIT:
-        sign = "more" if summary.relative_input_token_error > 0 else "less"
-        log.warning(
-            f"On average, the prompts had {abs(int(summary.relative_input_token_error * 100))}% {sign} tokens than expected. The observed latencies might not be representative."
-        )
-
-    if abs(summary.relative_output_token_error) > WARNING_LIMIT:
-        sign = "more" if summary.relative_output_token_error > 0 else "less"
-        log.warning(
-            f"On average, the generated texts had {abs(int(summary.relative_output_token_error * 100))}% {sign} tokens than expected. The observed latencies might not be representative."
-        )
 
 
 def main():
