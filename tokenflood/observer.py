@@ -13,26 +13,38 @@ from tokenflood.models.llm_request_data import LLMRequestContext
 from tokenflood.models.observation_spec import ObservationSpec
 from tokenflood.models.ping_request_data import PingRequestContext
 from tokenflood.networking import option_request_endpoint, time_async_func
-from tokenflood.runner import get_warm_session, handle_llm_result, handle_ping_result, \
-    send_llm_request
+from tokenflood.runner import (
+    get_warm_session,
+    handle_llm_result,
+    handle_ping_result,
+    send_llm_request,
+)
 from tokenflood.util import get_exact_date_str
 
 log = logging.getLogger(__name__)
+
 
 def create_even_schedule(num_requests: int, within_seconds: float) -> List[float]:
     if num_requests <= 1:
         return []
     return list(np.diff(np.linspace(0, within_seconds, num_requests)))
 
+
 def create_schedule(observation_spec: ObservationSpec) -> List[float]:
-    burst_pauses = create_even_schedule(observation_spec.num_requests, observation_spec.within_seconds)
-    inter_polling_pause = observation_spec.polling_interval_minutes * 60 - sum(burst_pauses)
+    burst_pauses = create_even_schedule(
+        observation_spec.num_requests, observation_spec.within_seconds
+    )
+    inter_polling_pause = observation_spec.polling_interval_minutes * 60 - sum(
+        burst_pauses
+    )
     section = [round(pause, 2) for pause in burst_pauses + [inter_polling_pause]]
     return section * observation_spec.num_polls()
 
 
 async def run_observation(
-    endpoint_spec: EndpointSpec, observation_spec: ObservationSpec, io_context: IOContext
+    endpoint_spec: EndpointSpec,
+    observation_spec: ObservationSpec,
+    io_context: IOContext,
 ):
     io_context.activate()
     await io_context.wait_for_pending_writes()
@@ -49,21 +61,36 @@ async def run_observation(
     llm_request_tasks = set()
     ping_tasks = set()
     num_pings = 0
-    prompt_lengths = [observation_spec.load_type.prompt_length] * observation_spec.total_num_requests()
-    prefix_lengths = [observation_spec.load_type.prefix_length] * observation_spec.total_num_requests()
-    output_lengths = [observation_spec.load_type.output_length] * observation_spec.total_num_requests()
+    prompt_lengths = [
+        observation_spec.load_type.prompt_length
+    ] * observation_spec.total_num_requests()
+    prefix_lengths = [
+        observation_spec.load_type.prefix_length
+    ] * observation_spec.total_num_requests()
+    output_lengths = [
+        observation_spec.load_type.output_length
+    ] * observation_spec.total_num_requests()
     message_lists = create_heuristic_messages(
         prompt_lengths,
         prefix_lengths,
-        observation_spec.token_set, observation_spec.task
+        observation_spec.token_set,
+        observation_spec.task,
     )
-    request_per_second_phase = observation_spec.num_requests / observation_spec.within_seconds
+    request_per_second_phase = (
+        observation_spec.num_requests / observation_spec.within_seconds
+    )
     i = 0
-    burst_pauses = create_even_schedule(observation_spec.num_requests, observation_spec.within_seconds)
-    inter_polling_pause = observation_spec.polling_interval_minutes * 60 - observation_spec.within_seconds
+    burst_pauses = create_even_schedule(
+        observation_spec.num_requests, observation_spec.within_seconds
+    )
+    inter_polling_pause = (
+        observation_spec.polling_interval_minutes * 60 - observation_spec.within_seconds
+    )
     log.info(f"Doing {observation_spec.num_polls()} polls in total.")
     for poll_idx in range(observation_spec.num_polls()):
-        error_context = ErrorContext(requests_per_second_phase=request_per_second_phase, group_id=str(poll_idx))
+        error_context = ErrorContext(
+            requests_per_second_phase=request_per_second_phase, group_id=str(poll_idx)
+        )
         for burst_idx in range(observation_spec.num_requests):
             request_context = LLMRequestContext(
                 datetime=get_exact_date_str(),
@@ -74,7 +101,7 @@ async def run_observation(
                 request_number=i,
                 model=endpoint_spec.provider_model_str,
                 prompt=message_lists[i][0]["content"],
-                group_id=str(poll_idx)
+                group_id=str(poll_idx),
             )
             log.info(f"starting request {i}")
             t = asyncio.create_task(
@@ -85,7 +112,9 @@ async def run_observation(
                     client_session,
                 )
             )
-            t.add_done_callback(handle_llm_result(io_context, request_context, error_context))
+            t.add_done_callback(
+                handle_llm_result(io_context, request_context, error_context)
+            )
             llm_request_tasks.add(t)
             t.add_done_callback(llm_request_tasks.discard)
 
@@ -95,7 +124,7 @@ async def run_observation(
                     datetime=get_exact_date_str(),
                     endpoint_url=str(url_observer.url),
                     requests_per_second_phase=request_per_second_phase,
-                    group_id=str(poll_idx)
+                    group_id=str(poll_idx),
                 )
                 pt = asyncio.create_task(
                     time_async_func(
@@ -113,7 +142,7 @@ async def run_observation(
                 pt.add_done_callback(ping_tasks.discard)
                 num_pings += 1
             await asyncio.sleep(burst_pauses[0])
-            i+=1
+            i += 1
         if poll_idx < observation_spec.num_polls() - 1:
             log.info(f"Sleeping {inter_polling_pause}s until next polling phase")
             await asyncio.sleep(inter_polling_pause)

@@ -48,7 +48,7 @@ def handle_error(
                     type=type(error).__name__,
                     message=str(error),
                     request_per_second_phase=error_context.requests_per_second_phase,
-                    group_id=error_context.group_id
+                    group_id=error_context.group_id,
                 ).model_dump()
             )
 
@@ -127,7 +127,9 @@ async def run_heuristic_test(
     message_lists = create_heuristic_messages(
         prompt_lengths, prefix_lengths, run_suite.token_set, run_suite.task
     )
-    error_context = ErrorContext(requests_per_second_phase=run_spec.requests_per_second, group_id=str(phase))
+    error_context = ErrorContext(
+        requests_per_second_phase=run_spec.requests_per_second, group_id=str(phase)
+    )
     error_threshold_tripped = False
     error_rate = 0.0
     num_pings = 0
@@ -150,7 +152,7 @@ async def run_heuristic_test(
             request_number=i,
             model=endpoint_spec.provider_model_str,
             prompt=message_lists[i][0]["content"],
-            group_id=str(phase)
+            group_id=str(phase),
         )
         t = asyncio.create_task(
             send_llm_request(
@@ -173,7 +175,7 @@ async def run_heuristic_test(
                 datetime=get_exact_date_str(),
                 endpoint_url=str(url_observer.url),
                 requests_per_second_phase=run_spec.requests_per_second,
-                group_id=str(phase)
+                group_id=str(phase),
             )
             pt = asyncio.create_task(
                 time_async_func(
@@ -226,7 +228,7 @@ async def send_llm_request(
         extra_headers=endpoint_spec.extra_headers,
         max_retries=0,
         shared_session=client_session,
-        reasoning_effort=endpoint_spec.reasoning_effort
+        reasoning_effort=endpoint_spec.reasoning_effort,
     )
 
 

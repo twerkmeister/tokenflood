@@ -176,6 +176,7 @@ def test_folder_contains_file(unique_temporary_folder):
     write_file(os.path.join(unique_temporary_folder, filename), "This is a test")
     assert folder_contains_file(unique_temporary_folder, filename)
 
+
 def test_folder_contains_files(unique_temporary_folder):
     filenames = ["test.txt", "test2.txt"]
     # before writing any files
@@ -193,8 +194,10 @@ def test_folder_contains_files(unique_temporary_folder):
     write_file(os.path.join(unique_temporary_folder, "test3.xt"), "Test3")
     assert folder_contains_files(unique_temporary_folder, set(filenames))
 
+
 def test_is_run_result_folder(run_suite_results_folder):
     assert is_run_result_folder(run_suite_results_folder)
+
 
 def test_is_observation_result_folder(observation_results_folder):
     assert is_observation_result_folder(observation_results_folder)

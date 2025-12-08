@@ -47,6 +47,7 @@ def test_folder() -> str:
 def data_folder(test_folder: str) -> str:
     return join_folder_checked(test_folder, "data")
 
+
 @pytest.fixture(scope="session")
 def run_suites_folder(data_folder: str) -> str:
     return join_folder_checked(data_folder, "run_suites")
@@ -56,17 +57,21 @@ def run_suites_folder(data_folder: str) -> str:
 def observation_specs_folder(data_folder: str) -> str:
     return join_folder_checked(data_folder, "observation_specs")
 
+
 @pytest.fixture(scope="session")
 def endpoint_specs_folder(data_folder: str) -> str:
     return join_folder_checked(data_folder, "endpoint_specs")
+
 
 @pytest.fixture(scope="session")
 def results_folder(data_folder: str) -> str:
     return join_folder_checked(data_folder, "results")
 
+
 @pytest.fixture(scope="session")
 def run_suite_results_folder(results_folder: str) -> str:
     return join_folder_checked(results_folder, "run_results")
+
 
 @pytest.fixture(scope="session")
 def observation_results_folder(results_folder: str) -> str:
@@ -77,6 +82,7 @@ def observation_results_folder(results_folder: str) -> str:
 def short_observation_spec(observation_specs_folder) -> ObservationSpec:
     filename = os.path.join(observation_specs_folder, "short.yml")
     return read_observation_spec(filename)
+
 
 @pytest.fixture
 def base_run_suite(run_suites_folder) -> HeuristicRunSuite:

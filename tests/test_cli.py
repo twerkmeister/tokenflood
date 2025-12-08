@@ -1,8 +1,6 @@
-import logging
 import os
 import sys
 
-import pytest
 
 from tokenflood.cli import (
     create_starter_files,

@@ -1,11 +1,12 @@
-from typing import List
-
 from pydantic import BaseModel, NonNegativeFloat
 
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.load_type import LoadType
 from tokenflood.models.token_set import TokenSet
-from tokenflood.models.validation_types import NonNegativeInteger
+from tokenflood.models.validation_types import (
+    NonNegativeInteger,
+    PositiveUniqueIntegers,
+)
 
 
 class ObservationSpec(BaseModel, frozen=True):
@@ -17,7 +18,7 @@ class ObservationSpec(BaseModel, frozen=True):
     within_seconds: NonNegativeFloat
     task: HeuristicTask
     token_set: TokenSet
-    percentiles: List[int]
+    percentiles: PositiveUniqueIntegers
 
     def num_polls(self) -> int:
         return int((self.duration_hours * 60) / self.polling_interval_minutes)

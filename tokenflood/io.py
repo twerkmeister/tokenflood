@@ -62,6 +62,7 @@ def read_endpoint_spec(filename: str) -> EndpointSpec:
 def read_run_suite(filename: str) -> HeuristicRunSuite:
     return read_pydantic_yaml(HeuristicRunSuite)(filename)
 
+
 def read_observation_spec(filename: str) -> ObservationSpec:
     return read_pydantic_yaml(ObservationSpec)(filename)
 
@@ -103,9 +104,11 @@ def read_file(filename: str) -> str:
     with open(filename) as f:
         return f.read()
 
+
 def folder_contains_file(folder: str, filename: str) -> bool:
     target_file = os.path.join(folder, filename)
     return os.path.isdir(folder) and os.path.isfile(target_file)
+
 
 def folder_contains_files(folder: str, filenames: Set[str]) -> bool:
     for f in filenames:
@@ -113,13 +116,18 @@ def folder_contains_files(folder: str, filenames: Set[str]) -> bool:
             return False
     return True
 
+
 def is_observation_result_folder(folder: str) -> bool:
-    return folder_contains_files(folder, COMMON_RESULT_FILES) and folder_contains_files(folder, OBSERVATION_RESULT_FILES)
+    return folder_contains_files(folder, COMMON_RESULT_FILES) and folder_contains_files(
+        folder, OBSERVATION_RESULT_FILES
+    )
+
 
 def is_run_result_folder(folder) -> bool:
     return folder_contains_files(folder, COMMON_RESULT_FILES) and folder_contains_files(
         folder, RUN_RESULT_FILES
     )
+
 
 class FileSink:
     def __init__(self, destination: str):
