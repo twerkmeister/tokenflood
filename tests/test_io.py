@@ -9,7 +9,11 @@ from tokenflood.io import (
     FileSink,
     IOContext,
     add_suffix_to_file_name,
+    folder_contains_file,
+    folder_contains_files,
     get_first_available_filename_like,
+    is_observation_result_folder,
+    is_run_result_folder,
     list_dir_relative,
     make_run_folder,
     read_file,
@@ -157,3 +161,40 @@ async def test_io_context_abstract_methods():
 
     with pytest.raises(NotImplementedError):
         io_context.close()
+
+
+def test_read_short_observation_spec(short_observation_spec):
+    assert short_observation_spec.duration_hours == 0.03
+    assert short_observation_spec.polling_interval_minutes == 1
+    assert short_observation_spec.num_requests == 2
+    assert short_observation_spec.within_seconds == 1
+
+
+def test_folder_contains_file(unique_temporary_folder):
+    filename = "test.txt"
+    assert not folder_contains_file(unique_temporary_folder, filename)
+    write_file(os.path.join(unique_temporary_folder, filename), "This is a test")
+    assert folder_contains_file(unique_temporary_folder, filename)
+
+def test_folder_contains_files(unique_temporary_folder):
+    filenames = ["test.txt", "test2.txt"]
+    # before writing any files
+    assert not folder_contains_files(unique_temporary_folder, set(filenames))
+
+    # writing one file
+    write_file(os.path.join(unique_temporary_folder, filenames[0]), "Test1")
+    assert not folder_contains_files(unique_temporary_folder, set(filenames))
+
+    # writing second file
+    write_file(os.path.join(unique_temporary_folder, filenames[1]), "Test2")
+    assert folder_contains_files(unique_temporary_folder, set(filenames))
+
+    # writing another unrelated file
+    write_file(os.path.join(unique_temporary_folder, "test3.xt"), "Test3")
+    assert folder_contains_files(unique_temporary_folder, set(filenames))
+
+def test_is_run_result_folder(run_suite_results_folder):
+    assert is_run_result_folder(run_suite_results_folder)
+
+def test_is_observation_result_folder(observation_results_folder):
+    assert is_observation_result_folder(observation_results_folder)

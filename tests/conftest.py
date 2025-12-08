@@ -17,14 +17,22 @@ from tokenflood.constants import (
 from tokenflood.io import (
     FileIOContext,
     read_endpoint_spec,
+    read_observation_spec,
     read_run_suite,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.heuristic_task import HeuristicTask
 from tokenflood.models.load_type import LoadType
+from tokenflood.models.observation_spec import ObservationSpec
 from tokenflood.models.run_spec import HeuristicRunSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.token_set import TokenSet
+
+
+def join_folder_checked(path: str, folder: str) -> str:
+    new_folder = os.path.join(path, folder)
+    assert os.path.isdir(new_folder)
+    return new_folder
 
 
 @pytest.fixture(scope="session")
@@ -37,33 +45,38 @@ def test_folder() -> str:
 
 @pytest.fixture(scope="session")
 def data_folder(test_folder: str) -> str:
-    folder = os.path.join(test_folder, "data")
-    assert os.path.isdir(folder)
-    return folder
-
+    return join_folder_checked(test_folder, "data")
 
 @pytest.fixture(scope="session")
 def run_suites_folder(data_folder: str) -> str:
-    folder = os.path.join(data_folder, "run_suites")
-    assert os.path.isdir(folder)
-    return folder
+    return join_folder_checked(data_folder, "run_suites")
 
+
+@pytest.fixture(scope="session")
+def observation_specs_folder(data_folder: str) -> str:
+    return join_folder_checked(data_folder, "observation_specs")
 
 @pytest.fixture(scope="session")
 def endpoint_specs_folder(data_folder: str) -> str:
-    folder = os.path.join(data_folder, "endpoint_specs")
-    assert os.path.isdir(folder)
-    return folder
-
+    return join_folder_checked(data_folder, "endpoint_specs")
 
 @pytest.fixture(scope="session")
-def run_suite_results_folder(data_folder: str) -> str:
-    folder = os.path.join(data_folder, "run_suite_results")
-    assert os.path.isdir(folder)
-    return folder
+def results_folder(data_folder: str) -> str:
+    return join_folder_checked(data_folder, "results")
+
+@pytest.fixture(scope="session")
+def run_suite_results_folder(results_folder: str) -> str:
+    return join_folder_checked(results_folder, "run_results")
+
+@pytest.fixture(scope="session")
+def observation_results_folder(results_folder: str) -> str:
+    return join_folder_checked(results_folder, "observation_results")
 
 
-
+@pytest.fixture
+def short_observation_spec(observation_specs_folder) -> ObservationSpec:
+    filename = os.path.join(observation_specs_folder, "short.yml")
+    return read_observation_spec(filename)
 
 @pytest.fixture
 def base_run_suite(run_suites_folder) -> HeuristicRunSuite:

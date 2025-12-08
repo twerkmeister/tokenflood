@@ -1,5 +1,0 @@
-datetime,endpoint_url,requests_per_second_phase,latency,group_id
-2025-12-01_09-52-01.493(UTC),http://127.0.0.1:8000/v1/chat/completions,1.0,8,0
-2025-12-01_09-52-01.730(UTC),http://127.0.0.1:8000/v1/chat/completions,1.0,1,0
-2025-12-01_09-52-02.816(UTC),http://127.0.0.1:8000/v1/chat/completions,2.0,3,1
-2025-12-01_09-52-03.827(UTC),http://127.0.0.1:8000/v1/chat/completions,2.0,2,1
