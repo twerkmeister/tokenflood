@@ -138,15 +138,15 @@ def test_load_runs_from_disc(
     results_folder, observation_results_folder, run_suite_results_folder
 ):
     assert load_runs_from_disc(results_folder) == [
-        run_suite_results_folder,
-        observation_results_folder,
+        os.path.basename(run_suite_results_folder),
+        os.path.basename(observation_results_folder),
     ]
 
 
-def test_update_dropdown(results_folder, observation_results_folder):
-    dropdown = update_dropdown(results_folder, observation_results_folder)
+def test_update_dropdown(results_folder, run_suite_results_folder):
+    dropdown = update_dropdown(results_folder)
     assert len(dropdown.choices) == len(load_runs_from_disc(results_folder))
-    assert dropdown.value == observation_results_folder
+    assert dropdown.value == os.path.basename(run_suite_results_folder)
 
 
 @pytest.mark.parametrize("val", [1.0, "a", 5, [1, 2, 3]])

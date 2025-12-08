@@ -22,6 +22,7 @@ from tokenflood.constants import (
     OBSERVATION_SPEC_FILE,
     RUN_SUITE_FILE,
 )
+from tokenflood.gradio import visualize_results
 from tokenflood.io import (
     FileIOContext,
     get_first_available_filename_like,
@@ -102,18 +103,27 @@ def create_argument_parser():
     run_cmd_parser.set_defaults(func=run_and_graph_suite)
 
     # OBSERVE
-    run_cmd_parser = subparsers.add_parser(
+    observe_cmd_parser = subparsers.add_parser(
         "observe", help="[blue]observe an endpoint over a longer period of time.[/]"
     )
-    run_cmd_parser.add_argument("observation_spec", type=str)
-    run_cmd_parser.add_argument("endpoint", type=str)
-    run_cmd_parser.add_argument(
+    observe_cmd_parser.add_argument("observation_spec", type=str)
+    observe_cmd_parser.add_argument("endpoint", type=str)
+    observe_cmd_parser.add_argument(
         "-y",
         "--autoaccept",
         help="Auto accept run start if tokens are within configured limits.",
         action="store_true",
     )
-    run_cmd_parser.set_defaults(func=observe_endpoint)
+    observe_cmd_parser.set_defaults(func=observe_endpoint)
+
+    # Visualize
+    viz_cmd_parser = subparsers.add_parser(
+        "viz", help="[blue]visualize the results files.[/]"
+    )
+    viz_cmd_parser.add_argument(
+        "results_folder", type=str, nargs="?", default="./results"
+    )
+    viz_cmd_parser.set_defaults(func=start_visualization)
 
     # Initialization
     init_cmd_parser = subparsers.add_parser(
@@ -140,6 +150,10 @@ def print_help_of(arg_parser: argparse.ArgumentParser):
         print(s.read())
 
     return print_help
+
+
+def start_visualization(args: argparse.Namespace):
+    visualize_results(args.results_folder)
 
 
 def create_starter_files(args: argparse.Namespace):

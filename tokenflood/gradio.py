@@ -84,6 +84,7 @@ def get_desired_percentiles(folder: str) -> Optional[Tuple[int, ...]]:
 
 
 def get_data(folder: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    print(folder)
     percentiles = get_desired_percentiles(folder)
     if percentiles is None:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
@@ -132,6 +133,8 @@ def make_observation_latency_plot(data: pd.DataFrame) -> gr.LinePlot:
         y_title="latency in ms",
         x_label_angle=45,
         height=500,
+        show_export_button=True,
+        show_fullscreen_button=True,
     )
 
 
@@ -145,6 +148,8 @@ def make_run_latency_plot(data: pd.DataFrame) -> gr.LinePlot:
         x_title="requests per second",
         y_title="latency in ms",
         height=500,
+        show_export_button=True,
+        show_fullscreen_button=True,
     )
 
 
@@ -178,12 +183,13 @@ def load_runs_from_disc(folder: str) -> List[str]:
         for run in runs
         if is_observation_result_folder(run) or is_run_result_folder(run)
     ]
+    runs = [os.path.basename(run) for run in runs]
     return runs
 
 
-def update_dropdown(results_folder: str, current_run: str) -> gr.Dropdown:
+def update_dropdown(results_folder: str) -> gr.Dropdown:
     runs = load_runs_from_disc(results_folder)
-    return gr.Dropdown(runs, value=current_run, filterable=True, label="Run Folder")
+    return gr.Dropdown(runs)
 
 
 T = TypeVar("T")
@@ -212,7 +218,10 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
         timer = gr.Timer(10)
         stored_choice = gr.BrowserState(latest_run)
         dropdown_element = gr.Dropdown(
-            runs, value=latest_run, filterable=True, label="Run Folder"
+            runs,
+            value=latest_run,
+            filterable=True,
+            label="Run Folder",
         )
         line_plot_element, llm_request_data_table, ping_data_table, error_data_table = (
             update_components(results_folder, latest_run)
@@ -220,14 +229,20 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
         dropdown_element.change(
             reload_on_folder_change,
             inputs=[dropdown_element],
-            outputs=[line_plot_element, llm_request_data_table, ping_data_table],
+            outputs=[
+                line_plot_element,
+                llm_request_data_table,
+                ping_data_table,
+                error_data_table,
+            ],
         )
         dropdown_element.change(
             id_func, inputs=[dropdown_element], outputs=[stored_choice]
         )
+        dropdown_element.focus(lambda: gr.Timer(active=False), outputs=[timer])
+        dropdown_element.blur(lambda: gr.Timer(active=True), outputs=[timer])
         timer.tick(
             reload_dropdown_values_from_disc,
-            inputs=[dropdown_element],
             outputs=[dropdown_element],
         )
         data_visualization.load(
@@ -236,6 +251,6 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
     return data_visualization
 
 
-def visualize_data(results_folder: str):
+def visualize_results(results_folder: str):
     data_visualization = create_gradio_blocks(results_folder)
     data_visualization.launch()
