@@ -65,7 +65,7 @@ def endpoint_specs_folder(data_folder: str) -> str:
 
 @pytest.fixture(scope="session")
 def results_folder(data_folder: str) -> str:
-    return join_folder_checked(data_folder, "results")
+    return join_folder_checked(data_folder, "testing_results")
 
 
 @pytest.fixture(scope="session")

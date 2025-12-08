@@ -1,9 +1,10 @@
 import functools
 import os
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, TypeVar
 
 import pandas as pd
 import gradio as gr
+from gradio import Blocks
 
 from tokenflood.analysis import (
     calculate_percentile,
@@ -29,22 +30,40 @@ from tokenflood.io import (
 from tokenflood.models.util import numeric
 
 
-def prepare_observation_data(
+def get_group_labels(
+    llm_request_data: pd.DataFrame, label_func: Callable[[pd.DataFrame], str]
+) -> Dict[str, str]:
+    return {
+        g: label_func(get_group_data(llm_request_data, g).reset_index())
+        for g in get_groups(llm_request_data)
+    }
+
+
+def get_observation_group_labels(llm_request_data: pd.DataFrame) -> Dict[str, str]:
+    return get_group_labels(llm_request_data, lambda df: df["datetime"][0][:-9])
+
+
+def get_run_group_labels(llm_request_data: pd.DataFrame) -> Dict[str, str]:
+    return get_group_labels(
+        llm_request_data, lambda df: df["requests_per_second_phase"][0]
+    )
+
+
+def merge_stats(
     llm_request_data: pd.DataFrame,
     all_stats: Dict[str, List[numeric]],
     stat_names: List[str],
+    group_label_func: Callable[[pd.DataFrame], Dict[str, str]],
+    x_label: str,
 ) -> pd.DataFrame:
-    group_labels = {
-        g: get_group_data(llm_request_data, g).reset_index()["datetime"][0][:-9]
-        for g in get_groups(llm_request_data)
-    }
+    group_labels = group_label_func(llm_request_data)
     group_ids = sorted(group_labels.keys())
     dataframes = []
     for i, name in enumerate(stat_names):
         dataframes.append(
             pd.DataFrame(
                 {
-                    "datetime": [group_labels[g] for g in group_ids],
+                    x_label: [group_labels[g] for g in group_ids],
                     "latency": [all_stats[g][i] for g in group_ids],
                     "metric": name,
                 }
@@ -54,41 +73,19 @@ def prepare_observation_data(
     return pd.concat(dataframes, ignore_index=True)
 
 
-def prepare_run_data(
-    llm_request_data: pd.DataFrame,
-    all_stats: Dict[str, List[numeric]],
-    stat_names: List[str],
-) -> pd.DataFrame:
-    group_labels = {
-        g: get_group_data(llm_request_data, g).reset_index()[
-            "requests_per_second_phase"
-        ][0]
-        for g in get_groups(llm_request_data)
-    }
-    group_ids = sorted(group_labels.keys())
-    dataframes = []
-    for i, name in enumerate(stat_names):
-        dataframes.append(
-            pd.DataFrame(
-                {
-                    "rps": [group_labels[g] for g in group_ids],
-                    "latency": [all_stats[g][i] for g in group_ids],
-                    "metric": name,
-                }
-            )
-        )
-
-    return pd.concat(dataframes, ignore_index=True)
+def get_desired_percentiles(folder: str) -> Optional[Tuple[int, ...]]:
+    if is_run_result_folder(folder):
+        return read_run_suite(os.path.join(folder, RUN_SUITE_FILE)).percentiles
+    elif is_observation_result_folder(folder):
+        return read_observation_spec(
+            os.path.join(folder, OBSERVATION_SPEC_FILE)
+        ).percentiles
+    return None
 
 
 def get_data(folder: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    if is_run_result_folder(folder):
-        percentiles = read_run_suite(os.path.join(folder, RUN_SUITE_FILE)).percentiles
-    elif is_observation_result_folder(folder):
-        percentiles = read_observation_spec(
-            os.path.join(folder, OBSERVATION_SPEC_FILE)
-        ).percentiles
-    else:
+    percentiles = get_desired_percentiles(folder)
+    if percentiles is None:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
     llm_request_data = pd.read_csv(os.path.join(folder, LLM_REQUESTS_FILE))
@@ -107,12 +104,19 @@ def get_data(folder: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         + [f"p{p} request latency" for p in percentiles]
         + ["mean network latency"]
     )
+    combined = pd.DataFrame()
     if is_run_result_folder(folder):
-        combined = prepare_run_data(llm_request_data, all_stats, stat_names)
+        combined = merge_stats(
+            llm_request_data, all_stats, stat_names, get_run_group_labels, "rps"
+        )
     elif is_observation_result_folder(folder):
-        combined = prepare_observation_data(llm_request_data, all_stats, stat_names)
-    else:
-        combined = pd.DataFrame()
+        combined = merge_stats(
+            llm_request_data,
+            all_stats,
+            stat_names,
+            get_observation_group_labels,
+            "datetime",
+        )
 
     return combined, llm_request_data, ping_data
 
@@ -149,11 +153,13 @@ def update_components(
 ) -> Tuple[gr.LinePlot, gr.DataFrame, gr.DataFrame, gr.DataFrame]:
     run_folder = os.path.join(results_folder, run)
     combined, llm_request_data, ping_data = get_data(run_folder)
-    error_data = pd.read_csv(os.path.join(run_folder, ERROR_FILE))
+    error_data = pd.DataFrame()
     if is_run_result_folder(run_folder):
         plot = make_run_latency_plot(combined)
+        error_data = pd.read_csv(os.path.join(run_folder, ERROR_FILE))
     elif is_observation_result_folder(run_folder):
         plot = make_observation_latency_plot(combined)
+        error_data = pd.read_csv(os.path.join(run_folder, ERROR_FILE))
     else:
         plot = gr.LinePlot()
     return (
@@ -175,13 +181,16 @@ def load_runs_from_disc(folder: str) -> List[str]:
     return runs
 
 
-def regularly_update_dropdown(results_folder: str, current_run: str) -> gr.Dropdown:
+def update_dropdown(results_folder: str, current_run: str) -> gr.Dropdown:
     runs = load_runs_from_disc(results_folder)
     return gr.Dropdown(runs, value=current_run, filterable=True, label="Run Folder")
 
 
-def store_choice(choice: str) -> str:
-    return choice
+T = TypeVar("T")
+
+
+def id_func(x: T) -> T:
+    return x
 
 
 def load_state(latest_run: str, state: str) -> str:
@@ -190,12 +199,12 @@ def load_state(latest_run: str, state: str) -> str:
     return latest_run
 
 
-def visualize_data(results_folder: str):
+def create_gradio_blocks(results_folder: str) -> Blocks:
     runs = load_runs_from_disc(results_folder)
     latest_run = runs[0]
     reload_on_folder_change = functools.partial(update_components, results_folder)
     reload_dropdown_values_from_disc = functools.partial(
-        regularly_update_dropdown, results_folder
+        update_dropdown, results_folder
     )
     initial_load = functools.partial(load_state, latest_run)
 
@@ -214,7 +223,7 @@ def visualize_data(results_folder: str):
             outputs=[line_plot_element, llm_request_data_table, ping_data_table],
         )
         dropdown_element.change(
-            store_choice, inputs=[dropdown_element], outputs=[stored_choice]
+            id_func, inputs=[dropdown_element], outputs=[stored_choice]
         )
         timer.tick(
             reload_dropdown_values_from_disc,
@@ -224,5 +233,9 @@ def visualize_data(results_folder: str):
         data_visualization.load(
             initial_load, inputs=[stored_choice], outputs=[dropdown_element]
         )
+    return data_visualization
 
+
+def visualize_data(results_folder: str):
+    data_visualization = create_gradio_blocks(results_folder)
     data_visualization.launch()
