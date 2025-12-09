@@ -2,6 +2,7 @@ import os
 
 import pandas as pd
 import pytest
+import requests
 
 from tokenflood.analysis import get_groups
 from tokenflood.constants import ERROR_FILE, LLM_REQUESTS_FILE, NETWORK_LATENCY_FILE
@@ -19,6 +20,7 @@ from tokenflood.gradio import (
     make_run_latency_plot,
     update_components,
     update_dropdown,
+    visualize_results,
 )
 
 
@@ -165,3 +167,10 @@ def test_load_state(state, latest_run, expected_result):
 def test_create_gradio_blocks(results_folder):
     data_visualization = create_gradio_blocks(results_folder)
     assert len(data_visualization.blocks) == 8
+
+
+@pytest.mark.asyncio
+async def test_visualize_results(results_folder):
+    app, url = visualize_results(results_folder, True)
+    response = requests.get(url)
+    assert response.status_code == 200

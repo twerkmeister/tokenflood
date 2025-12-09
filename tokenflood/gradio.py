@@ -2,6 +2,7 @@ import functools
 import os
 from typing import Callable, Dict, List, Optional, Tuple, TypeVar
 
+import gradio.routes
 import pandas as pd
 import gradio as gr
 from gradio import Blocks
@@ -251,6 +252,11 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
     return data_visualization
 
 
-def visualize_results(results_folder: str):
+def visualize_results(
+    results_folder: str, prevent_thread_lock: bool = False
+) -> Tuple[gradio.routes.App, str]:
     data_visualization = create_gradio_blocks(results_folder)
-    data_visualization.launch()
+    app, url, _ = data_visualization.launch(
+        prevent_thread_lock=prevent_thread_lock, share=False
+    )
+    return app, url

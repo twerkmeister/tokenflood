@@ -3,8 +3,9 @@ import asyncio
 import os
 import sys
 from io import StringIO
-from typing import List
+from typing import List, Tuple
 
+import gradio.routes
 from rich import print
 import logging
 
@@ -151,8 +152,10 @@ def print_help_of(arg_parser: argparse.ArgumentParser):
     return print_help
 
 
-def start_visualization(args: argparse.Namespace):
-    visualize_results(args.results_folder)
+def start_visualization(
+    args: argparse.Namespace, unblocked=False
+) -> Tuple[gradio.routes.App, str]:
+    return visualize_results(args.results_folder, unblocked)
 
 
 def create_starter_files(args: argparse.Namespace):

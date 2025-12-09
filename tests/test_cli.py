@@ -1,6 +1,8 @@
 import os
+import shutil
 import sys
 
+import requests
 
 from tokenflood.cli import (
     create_starter_files,
@@ -8,6 +10,7 @@ from tokenflood.cli import (
     observe_endpoint,
     parse_args,
     flood_endpoint,
+    start_visualization,
 )
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
@@ -134,3 +137,17 @@ def test_load_dotenv(unique_temporary_folder, monkeypatch):
         m.setattr(sys, "argv", [sys.argv[0]])
         main()
         assert os.getenv(env_var) == env_value
+
+
+def test_start_visualization(monkeypatch, unique_temporary_folder, results_folder):
+    monkeypatch.chdir(unique_temporary_folder)
+    copy_of_results_folder = os.path.join(unique_temporary_folder, "results")
+    shutil.copytree(results_folder, copy_of_results_folder)
+    assert "results" in os.listdir(unique_temporary_folder)
+    assert "run_results" in os.listdir(copy_of_results_folder)
+
+    args = parse_args(["viz"])
+    app, url = start_visualization(args, True)
+
+    response = requests.get(url)
+    assert response.status_code == 200
