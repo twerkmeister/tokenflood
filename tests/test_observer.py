@@ -1,9 +1,14 @@
+import logging
+import os
+from unittest import mock
+
+import pandas as pd
 import pytest
 
 from tokenflood.heuristic import builtin_heuristic_tasks, builtin_heuristic_token_sets
 from tokenflood.models.load_type import LoadType
 from tokenflood.models.observation_spec import ObservationSpec
-from tokenflood.observer import create_even_schedule, create_schedule
+from tokenflood.observer import create_even_schedule, create_schedule, run_observation
 
 
 @pytest.fixture
@@ -39,3 +44,42 @@ def test_create_even_schedule(num_requests, within_seconds, expected_result):
 def test_create_schedule(spec_updates, expected_result, default_observation_spec):
     observation_spec = default_observation_spec.model_copy(update=spec_updates)
     assert create_schedule(observation_spec) == expected_result
+
+
+@pytest.mark.asyncio
+async def test_run_observation(
+    superfast_observation_spec, base_endpoint_spec, file_io_context
+):
+    await run_observation(
+        base_endpoint_spec, superfast_observation_spec, file_io_context
+    )
+
+    df = pd.read_csv(file_io_context.llm_request_sink.destination)
+    assert len(df) == superfast_observation_spec.total_num_requests()
+
+    ping_df = pd.read_csv(file_io_context.network_latency_sink.destination)
+    assert len(ping_df) == superfast_observation_spec.num_polls()
+
+    error_df = pd.read_csv(file_io_context.error_sink.destination)
+    assert len(error_df) == 0
+
+
+@pytest.mark.asyncio
+@mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
+async def test_run_observation_openai_missing_api_key(
+    superfast_observation_spec, openai_endpoint_spec, file_io_context, caplog
+):
+    with caplog.at_level(logging.ERROR):
+        await run_observation(
+            openai_endpoint_spec, superfast_observation_spec, file_io_context
+        )
+    assert "API key" in caplog.text
+
+    df = pd.read_csv(file_io_context.llm_request_sink.destination)
+    assert len(df) == 0
+
+    ping_df = pd.read_csv(file_io_context.network_latency_sink.destination)
+    assert len(ping_df) == 0
+
+    error_df = pd.read_csv(file_io_context.error_sink.destination)
+    assert len(error_df) == 1

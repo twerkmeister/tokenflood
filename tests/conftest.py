@@ -85,6 +85,12 @@ def short_observation_spec(observation_specs_folder) -> ObservationSpec:
 
 
 @pytest.fixture
+def superfast_observation_spec(observation_specs_folder) -> ObservationSpec:
+    filename = os.path.join(observation_specs_folder, "superfast.yml")
+    return read_observation_spec(filename)
+
+
+@pytest.fixture
 def base_run_suite(run_suites_folder) -> HeuristicRunSuite:
     filename = os.path.join(run_suites_folder, "base.yml")
     return read_run_suite(filename)

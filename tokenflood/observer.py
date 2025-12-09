@@ -141,7 +141,8 @@ async def run_observation(
                 )
                 pt.add_done_callback(ping_tasks.discard)
                 num_pings += 1
-            await asyncio.sleep(burst_pauses[0])
+            if len(burst_pauses) > 0:
+                await asyncio.sleep(burst_pauses[0])
             i += 1
         if poll_idx < observation_spec.num_polls() - 1:
             log.info(f"Sleeping {inter_polling_pause}s until next polling phase")

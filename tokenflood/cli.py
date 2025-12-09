@@ -37,11 +37,9 @@ from tokenflood.observer import run_observation
 from tokenflood.runner import run_suite
 from tokenflood.cost import check_token_usage_upfront
 from tokenflood.starter_pack import (
-    starter_endpoint_spec_filename,
     starter_endpoint_spec_vllm,
     starter_model_id,
     starter_run_suite,
-    starter_run_suite_filename,
 )
 from tokenflood.util import get_date_str, get_run_name
 
@@ -101,7 +99,7 @@ def create_argument_parser():
         help="Auto accept run start if tokens are within configured limits.",
         action="store_true",
     )
-    run_cmd_parser.set_defaults(func=load_test_endpoint)
+    run_cmd_parser.set_defaults(func=flood_endpoint)
 
     # OBSERVE
     observe_cmd_parser = subparsers.add_parser(
@@ -159,11 +157,9 @@ def start_visualization(args: argparse.Namespace):
 
 def create_starter_files(args: argparse.Namespace):
     available_endpoint_spec_filename = get_first_available_filename_like(
-        starter_endpoint_spec_filename
+        ENDPOINT_SPEC_FILE
     )
-    available_run_suite_filename = get_first_available_filename_like(
-        starter_run_suite_filename
-    )
+    available_run_suite_filename = get_first_available_filename_like(RUN_SUITE_FILE)
     log.info(
         "Creating starter files for run suite and endpoint specifications: \n"
         f"[green]* {available_run_suite_filename} [/]\n"
@@ -181,7 +177,7 @@ def create_starter_files(args: argparse.Namespace):
     )
 
 
-def load_test_endpoint(args: argparse.Namespace):
+def flood_endpoint(args: argparse.Namespace):
     endpoint_spec = read_endpoint_spec(args.endpoint)
     suite = read_run_suite(args.run_suite)
     date_str = get_date_str()

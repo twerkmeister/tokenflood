@@ -4,7 +4,6 @@ from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.load_type import LoadType
 from tokenflood.models.run_suite import HeuristicRunSuite
 
-starter_run_suite_filename = "run_suite.yml"
 starter_run_suite = HeuristicRunSuite(
     name="ripple",
     requests_per_second_rates=(1, 2),
@@ -19,7 +18,6 @@ starter_run_suite = HeuristicRunSuite(
     error_limit=DEFAULT_ERROR_RATE_LIMIT,
 )
 
-starter_endpoint_spec_filename = "endpoint.yml"
 starter_model_id = "HuggingFaceTB/SmolLM-135M-Instruct"
 starter_endpoint_spec_vllm = EndpointSpec(
     provider="hosted_vllm", model=starter_model_id, base_url="http://127.0.0.1:8000/v1"

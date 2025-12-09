@@ -16,7 +16,7 @@ from tokenflood.models.validation_types import (
 class ObservationSpec(BaseModel, TokenCostAware, frozen=True):
     name: str
     duration_hours: NonNegativeFloat
-    polling_interval_minutes: NonNegativeInteger
+    polling_interval_minutes: NonNegativeFloat
     load_type: LoadType
     num_requests: NonNegativeInteger
     within_seconds: NonNegativeFloat

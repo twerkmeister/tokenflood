@@ -5,28 +5,27 @@ import sys
 from tokenflood.cli import (
     create_starter_files,
     main,
+    observe_endpoint,
     parse_args,
-    load_test_endpoint,
+    flood_endpoint,
 )
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
-    ERROR_FILE,
-    NETWORK_LATENCY_FILE,
+    OBSERVATION_SPEC_FILE,
     RESULTS_FOLDER,
-    LLM_REQUESTS_FILE,
     RUN_SUITE_FILE,
 )
 from tokenflood.io import (
+    is_observation_result_folder,
+    is_run_result_folder,
     list_dir_relative,
     read_endpoint_spec,
     read_run_suite,
     write_pydantic_yaml,
 )
 from tokenflood.starter_pack import (
-    starter_endpoint_spec_filename,
     starter_endpoint_spec_vllm,
     starter_run_suite,
-    starter_run_suite_filename,
 )
 
 
@@ -36,7 +35,7 @@ def test_parse_args_run():
     args = parse_args(["run", run_suite, endpoint_spec])
     assert args.endpoint == endpoint_spec
     assert args.run_suite == run_suite
-    assert args.func.__name__ == load_test_endpoint.__name__
+    assert args.func.__name__ == flood_endpoint.__name__
 
 
 def test_parse_args_ripple(unique_temporary_folder, monkeypatch):
@@ -53,10 +52,10 @@ def test_init(unique_temporary_folder, monkeypatch):
     monkeypatch.chdir(unique_temporary_folder)
     args = parse_args(["init"])
     create_starter_files(args)
-    os.path.isfile(starter_run_suite_filename)
-    os.path.isfile(starter_endpoint_spec_filename)
-    run_suite = read_run_suite(starter_run_suite_filename)
-    endpoint_spec = read_endpoint_spec(starter_endpoint_spec_filename)
+    os.path.isfile(RUN_SUITE_FILE)
+    os.path.isfile(ENDPOINT_SPEC_FILE)
+    run_suite = read_run_suite(RUN_SUITE_FILE)
+    endpoint_spec = read_endpoint_spec(ENDPOINT_SPEC_FILE)
     assert run_suite == starter_run_suite
     assert endpoint_spec == starter_endpoint_spec_vllm
 
@@ -70,42 +69,57 @@ def test_init_does_not_override(unique_temporary_folder, monkeypatch):
     assert len(os.listdir(unique_temporary_folder)) == 4
 
 
-def test_run_and_graph_suite(
+def test_flood_endpoint(
     monkeypatch, unique_temporary_folder, tiny_run_suite, base_endpoint_spec
 ):
     monkeypatch.chdir(unique_temporary_folder)
-    write_pydantic_yaml(starter_run_suite_filename, tiny_run_suite)
-    write_pydantic_yaml(starter_endpoint_spec_filename, base_endpoint_spec)
-    args = parse_args(
-        ["run", starter_run_suite_filename, starter_endpoint_spec_filename, "-y"]
-    )
-    load_test_endpoint(args)
+    write_pydantic_yaml(RUN_SUITE_FILE, tiny_run_suite)
+    write_pydantic_yaml(ENDPOINT_SPEC_FILE, base_endpoint_spec)
+    args = parse_args(["run", RUN_SUITE_FILE, ENDPOINT_SPEC_FILE, "-y"])
+    flood_endpoint(args)
     assert os.path.exists(RESULTS_FOLDER)
     run_folders = list_dir_relative(RESULTS_FOLDER)
     assert len(run_folders) == 1
-    result_files = os.listdir(run_folders[0])
-    assert len(result_files) == 5
-    assert set(result_files) == {
-        LLM_REQUESTS_FILE,
-        NETWORK_LATENCY_FILE,
-        ERROR_FILE,
-        RUN_SUITE_FILE,
-        ENDPOINT_SPEC_FILE,
-    }
+    assert is_run_result_folder(run_folders[0])
 
 
-def test_run_and_graph_suite_decline(
+def test_flood_endpoint_decline(
     monkeypatch, unique_temporary_folder, tiny_run_suite, base_endpoint_spec
 ):
     monkeypatch.chdir(unique_temporary_folder)
     monkeypatch.setattr("builtins.input", lambda _: "no")
 
-    write_pydantic_yaml(starter_run_suite_filename, tiny_run_suite)
-    write_pydantic_yaml(starter_endpoint_spec_filename, base_endpoint_spec)
-    args = parse_args(
-        ["run", starter_run_suite_filename, starter_endpoint_spec_filename]
-    )
-    load_test_endpoint(args)
+    write_pydantic_yaml(RUN_SUITE_FILE, tiny_run_suite)
+    write_pydantic_yaml(ENDPOINT_SPEC_FILE, base_endpoint_spec)
+    args = parse_args(["run", RUN_SUITE_FILE, ENDPOINT_SPEC_FILE])
+    flood_endpoint(args)
+    assert not os.path.exists(RESULTS_FOLDER)
+
+
+def test_observe_endpoint(
+    monkeypatch, unique_temporary_folder, superfast_observation_spec, base_endpoint_spec
+):
+    monkeypatch.chdir(unique_temporary_folder)
+
+    write_pydantic_yaml(OBSERVATION_SPEC_FILE, superfast_observation_spec)
+    write_pydantic_yaml(ENDPOINT_SPEC_FILE, base_endpoint_spec)
+    args = parse_args(["observe", OBSERVATION_SPEC_FILE, ENDPOINT_SPEC_FILE, "-y"])
+    observe_endpoint(args)
+    assert os.path.exists(RESULTS_FOLDER)
+    run_folders = list_dir_relative(RESULTS_FOLDER)
+    assert len(run_folders) == 1
+    assert is_observation_result_folder(run_folders[0])
+
+
+def test_observe_endpoint_decline(
+    monkeypatch, unique_temporary_folder, superfast_observation_spec, base_endpoint_spec
+):
+    monkeypatch.chdir(unique_temporary_folder)
+    monkeypatch.setattr("builtins.input", lambda _: "no")
+    write_pydantic_yaml(OBSERVATION_SPEC_FILE, superfast_observation_spec)
+    write_pydantic_yaml(ENDPOINT_SPEC_FILE, base_endpoint_spec)
+    args = parse_args(["observe", OBSERVATION_SPEC_FILE, ENDPOINT_SPEC_FILE])
+    observe_endpoint(args)
     assert not os.path.exists(RESULTS_FOLDER)
 
 
