@@ -34,7 +34,8 @@ from tokenflood.io import (
 )
 from tokenflood.logging import global_warn_once_filter
 from tokenflood.observer import run_observation
-from tokenflood.runner import check_token_usage_upfront, run_suite
+from tokenflood.runner import run_suite
+from tokenflood.cost import check_token_usage_upfront
 from tokenflood.starter_pack import (
     starter_endpoint_spec_filename,
     starter_endpoint_spec_vllm,
@@ -100,7 +101,7 @@ def create_argument_parser():
         help="Auto accept run start if tokens are within configured limits.",
         action="store_true",
     )
-    run_cmd_parser.set_defaults(func=run_and_graph_suite)
+    run_cmd_parser.set_defaults(func=load_test_endpoint)
 
     # OBSERVE
     observe_cmd_parser = subparsers.add_parser(
@@ -180,7 +181,7 @@ def create_starter_files(args: argparse.Namespace):
     )
 
 
-def run_and_graph_suite(args: argparse.Namespace):
+def load_test_endpoint(args: argparse.Namespace):
     endpoint_spec = read_endpoint_spec(args.endpoint)
     suite = read_run_suite(args.run_suite)
     date_str = get_date_str()
@@ -188,6 +189,7 @@ def run_and_graph_suite(args: argparse.Namespace):
 
     accepted_token_usage = check_token_usage_upfront(
         suite,
+        suite.budget,
         args.autoaccept,
     )
     if not accepted_token_usage:
@@ -195,7 +197,7 @@ def run_and_graph_suite(args: argparse.Namespace):
         return
 
     run_folder = make_run_folder(run_name)
-    log.info(f"Preparing run folder: [blue]{run_folder}[/]")
+    log.info(f"Preparing results folder: [blue]{run_folder}[/]")
 
     endpoint_spec_file = os.path.join(run_folder, ENDPOINT_SPEC_FILE)
     log.info(f"Writing endpoint spec to: [blue]{endpoint_spec_file}[/]")
@@ -213,7 +215,6 @@ def run_and_graph_suite(args: argparse.Namespace):
     log.info(f"Streaming any errors to: [blue]{error_file}[/]")
     log.info(f"Streaming LLM request data to: [blue]{llm_requests_file}[/]")
     log.info(f"Streaming network latency data to: [blue]{network_latency_file}[/]")
-
     asyncio.run(run_suite(endpoint_spec, suite, io_context))
     io_context.close()
     log.info("Done.")
@@ -225,8 +226,17 @@ def observe_endpoint(args: argparse.Namespace):
     date_str = get_date_str()
     run_name = get_run_name(date_str, endpoint_spec)
 
+    accepted_token_usage = check_token_usage_upfront(
+        observation_spec,
+        observation_spec.budget,
+        args.autoaccept,
+    )
+    if not accepted_token_usage:
+        log.info("Stopping because token usage was not accepted.")
+        return
+
     run_folder = make_run_folder(run_name)
-    log.info(f"Preparing run folder: [blue]{run_folder}[/]")
+    log.info(f"Preparing results folder: [blue]{run_folder}[/]")
 
     endpoint_spec_file = os.path.join(run_folder, ENDPOINT_SPEC_FILE)
     log.info(f"Writing endpoint spec to: [blue]{endpoint_spec_file}[/]")

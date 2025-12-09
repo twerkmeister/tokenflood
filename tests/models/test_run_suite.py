@@ -1,5 +1,6 @@
 from typing import Dict
 
+import numpy as np
 import pytest
 
 from tests.utils import does_not_raise
@@ -55,3 +56,29 @@ def test_create_run_specs(default_run_suite_kwargs):
         ]
     )
     assert all([rs.load_types == run_suite.load_types for rs in run_specs])
+
+
+def test_estimate_token_usage_tiny(tiny_run_suite):
+    estimated_input_tokens, estimated_output_tokens = (
+        tiny_run_suite.get_input_output_token_cost()
+    )
+    num_requests = 8
+    assert estimated_input_tokens == 256 * num_requests
+    assert estimated_output_tokens == 2 * num_requests
+
+
+def test_estimate_token_usage_base(base_run_suite):
+    estimated_input_tokens, estimated_output_tokens = (
+        base_run_suite.get_input_output_token_cost()
+    )
+    num_requests = 300
+    input_tokens_diff = abs(
+        estimated_input_tokens - np.average([1024, 1024, 1200]) * num_requests
+    )
+    # less than 1% diff
+    assert input_tokens_diff / estimated_input_tokens < 0.01
+
+    output_tokens_diff = abs(
+        estimated_output_tokens - np.average([16, 16, 40]) * num_requests
+    )
+    assert output_tokens_diff / estimated_output_tokens < 0.05

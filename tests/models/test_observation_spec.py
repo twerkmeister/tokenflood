@@ -44,3 +44,9 @@ def test_num_polls(spec_update, expected_result, default_observation_spec):
 def test_total_num_requests(spec_update, expected_result, default_observation_spec):
     observation_spec = default_observation_spec.model_copy(update=spec_update)
     assert observation_spec.total_num_requests() == expected_result
+
+
+def test_get_input_output_token_cost(default_observation_spec):
+    input_tokens, output_tokens = default_observation_spec.get_input_output_token_cost()
+    assert input_tokens == 24 * 3 * 4 * 1024
+    assert output_tokens == 24 * 3 * 4 * 20

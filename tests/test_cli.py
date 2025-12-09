@@ -6,7 +6,7 @@ from tokenflood.cli import (
     create_starter_files,
     main,
     parse_args,
-    run_and_graph_suite,
+    load_test_endpoint,
 )
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
@@ -36,7 +36,7 @@ def test_parse_args_run():
     args = parse_args(["run", run_suite, endpoint_spec])
     assert args.endpoint == endpoint_spec
     assert args.run_suite == run_suite
-    assert args.func.__name__ == run_and_graph_suite.__name__
+    assert args.func.__name__ == load_test_endpoint.__name__
 
 
 def test_parse_args_ripple(unique_temporary_folder, monkeypatch):
@@ -79,7 +79,7 @@ def test_run_and_graph_suite(
     args = parse_args(
         ["run", starter_run_suite_filename, starter_endpoint_spec_filename, "-y"]
     )
-    run_and_graph_suite(args)
+    load_test_endpoint(args)
     assert os.path.exists(RESULTS_FOLDER)
     run_folders = list_dir_relative(RESULTS_FOLDER)
     assert len(run_folders) == 1
@@ -105,7 +105,7 @@ def test_run_and_graph_suite_decline(
     args = parse_args(
         ["run", starter_run_suite_filename, starter_endpoint_spec_filename]
     )
-    run_and_graph_suite(args)
+    load_test_endpoint(args)
     assert not os.path.exists(RESULTS_FOLDER)
 
 
