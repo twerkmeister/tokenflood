@@ -18,8 +18,8 @@ def get_date_str() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
-def get_run_name(date_str: str, endpoint_spec: EndpointSpec):
-    return f"{date_str}_{endpoint_spec.provider_model_str_as_folder_name}"
+def get_run_name(date_str: str, task_type: str, endpoint_spec: EndpointSpec):
+    return f"{date_str}_{task_type}_{endpoint_spec.provider_model_str_as_folder_name}"
 
 
 def calculate_mean_error(

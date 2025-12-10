@@ -51,8 +51,9 @@ def test_calculate_relative_error(observations, targets, expected_result):
 
 def test_get_run_name(base_endpoint_spec):
     date_str = get_date_str()
-    run_name = get_run_name(date_str, base_endpoint_spec)
-    assert run_name.startswith(date_str)
+    task_type = "xtestx"
+    run_name = get_run_name(date_str, task_type, base_endpoint_spec)
+    assert run_name.startswith(f"{date_str}_{task_type}_")
     assert run_name.endswith(base_endpoint_spec.provider_model_str_as_folder_name)
 
 

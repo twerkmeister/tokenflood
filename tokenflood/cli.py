@@ -192,7 +192,7 @@ def flood_endpoint(args: argparse.Namespace):
     endpoint_spec = read_endpoint_spec(args.endpoint)
     suite = read_run_suite(args.run_suite)
     date_str = get_date_str()
-    run_name = get_run_name(date_str, endpoint_spec)
+    run_name = get_run_name(date_str, "flood", endpoint_spec)
 
     accepted_token_usage = check_token_usage_upfront(
         suite,
@@ -231,7 +231,7 @@ def observe_endpoint(args: argparse.Namespace):
     endpoint_spec = read_endpoint_spec(args.endpoint)
     observation_spec = read_observation_spec(args.observation_spec)
     date_str = get_date_str()
-    run_name = get_run_name(date_str, endpoint_spec)
+    run_name = get_run_name(date_str, "observe", endpoint_spec)
 
     accepted_token_usage = check_token_usage_upfront(
         observation_spec,
