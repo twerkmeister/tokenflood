@@ -40,6 +40,7 @@ from tokenflood.cost import check_token_usage_upfront
 from tokenflood.starter_pack import (
     starter_endpoint_spec_vllm,
     starter_model_id,
+    starter_observation_spec,
     starter_run_suite,
 )
 from tokenflood.util import get_date_str, get_run_name
@@ -163,20 +164,27 @@ def create_starter_files(args: argparse.Namespace):
         ENDPOINT_SPEC_FILE
     )
     available_run_suite_filename = get_first_available_filename_like(RUN_SUITE_FILE)
+    available_observation_spec_file = get_first_available_filename_like(
+        OBSERVATION_SPEC_FILE
+    )
     log.info(
-        "Creating starter files for run suite and endpoint specifications: \n"
+        "Creating starter files for run suite, observation and endpoint specifications: \n"
         f"[green]* {available_run_suite_filename} [/]\n"
-        f"[green]* {available_endpoint_spec_filename} [/]"
+        f"[green]* {available_endpoint_spec_filename} [/]\n"
+        f"[green]* {available_observation_spec_file} [/]"
     )
 
     write_pydantic_yaml(available_endpoint_spec_filename, starter_endpoint_spec_vllm)
     write_pydantic_yaml(available_run_suite_filename, starter_run_suite)
+    write_pydantic_yaml(available_observation_spec_file, starter_observation_spec)
 
     log.info(
         "Inspect those files, boot up a vllm server with a tiny model using \n"
         f"[blue]vllm serve {starter_model_id}[/]\n"
         "and run a first load test against it using\n"
-        f"[blue]tokenflood run {available_run_suite_filename} {available_endpoint_spec_filename}[/]"
+        f"[blue]tokenflood run {available_run_suite_filename} {available_endpoint_spec_filename}[/]\n"
+        "or do a longer term observation using\n"
+        f"[blue]tokenflood observe {available_observation_spec_file} {available_endpoint_spec_filename}[/]"
     )
 
 

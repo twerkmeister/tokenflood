@@ -23,11 +23,13 @@ from tokenflood.io import (
     is_run_result_folder,
     list_dir_relative,
     read_endpoint_spec,
+    read_observation_spec,
     read_run_suite,
     write_pydantic_yaml,
 )
 from tokenflood.starter_pack import (
     starter_endpoint_spec_vllm,
+    starter_observation_spec,
     starter_run_suite,
 )
 
@@ -57,19 +59,22 @@ def test_init(unique_temporary_folder, monkeypatch):
     create_starter_files(args)
     os.path.isfile(RUN_SUITE_FILE)
     os.path.isfile(ENDPOINT_SPEC_FILE)
+    os.path.isfile(OBSERVATION_SPEC_FILE)
     run_suite = read_run_suite(RUN_SUITE_FILE)
     endpoint_spec = read_endpoint_spec(ENDPOINT_SPEC_FILE)
+    observation_spec = read_observation_spec(OBSERVATION_SPEC_FILE)
     assert run_suite == starter_run_suite
     assert endpoint_spec == starter_endpoint_spec_vllm
+    assert observation_spec == starter_observation_spec
 
 
 def test_init_does_not_override(unique_temporary_folder, monkeypatch):
     monkeypatch.chdir(unique_temporary_folder)
     args = parse_args(["init"])
     create_starter_files(args)
-    assert len(os.listdir(unique_temporary_folder)) == 2
+    assert len(os.listdir(unique_temporary_folder)) == 3
     create_starter_files(args)
-    assert len(os.listdir(unique_temporary_folder)) == 4
+    assert len(os.listdir(unique_temporary_folder)) == 6
 
 
 def test_flood_endpoint(
