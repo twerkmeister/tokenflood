@@ -23,6 +23,7 @@ from tokenflood.constants import (
     NETWORK_LATENCY_FILE,
     OBSERVATION_SPEC_FILE,
     RUN_SUITE_FILE,
+    WARNING_LIMIT_PERCENTAGE,
 )
 from tokenflood.io import (
     is_observation_result_folder,
@@ -30,6 +31,7 @@ from tokenflood.io import (
     read_observation_spec,
     read_run_suite,
 )
+from tokenflood.models.divergence import TokenDivergence
 from tokenflood.models.util import numeric
 
 log = logging.getLogger(__name__)
@@ -157,11 +159,35 @@ def make_run_latency_plot(data: pd.DataFrame) -> gr.LinePlot:
     )
 
 
+def get_warning_emoji(relative_error: float) -> str:
+    if abs(relative_error) > WARNING_LIMIT_PERCENTAGE:
+        return "⚠️"
+    return ""
+
+
+def get_markdown_summary(llm_request_data: pd.DataFrame) -> str:
+    if len(llm_request_data) == 0:
+        return "Empty data."
+    td = TokenDivergence(llm_request_data=llm_request_data)
+    return f"""
+    ## Token Heuristic Accuracy Stats
+    #### Input Tokens {get_warning_emoji(td.relative_input_token_error)}
+    On average **{td.mean_expected_input_tokens}** (expected) vs **{td.mean_measured_input_tokens}** (measured) ({td.relative_input_token_error}% error) 
+    
+    #### Output Tokens {get_warning_emoji(td.relative_output_token_error)}
+    On average **{td.mean_expected_output_tokens}** (expected) vs **{td.mean_measured_output_tokens}** (measured) ({td.relative_output_token_error}% error) 
+    
+    #### Prefix Tokens
+    On average **{td.mean_expected_prefix_tokens}** (expected) vs **{td.mean_measured_prefix_tokens}** (measured) ({td.relative_prefix_token_error}% error)
+    """
+
+
 def update_components(
     results_folder: str, run: str
-) -> Tuple[gr.LinePlot, gr.DataFrame, gr.DataFrame, gr.DataFrame]:
+) -> Tuple[gr.Markdown, gr.LinePlot, gr.DataFrame, gr.DataFrame, gr.DataFrame]:
     run_folder = os.path.join(results_folder, run)
     combined, llm_request_data, ping_data = get_data(run_folder)
+    markdown = gr.Markdown(get_markdown_summary(llm_request_data))
     error_data = pd.DataFrame()
     if is_run_result_folder(run_folder):
         plot = make_run_latency_plot(combined)
@@ -172,6 +198,7 @@ def update_components(
     else:
         plot = gr.LinePlot()
     return (
+        markdown,
         plot,
         gr.DataFrame(
             llm_request_data,
@@ -248,13 +275,18 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             filterable=True,
             label="Run Folder",
         )
-        line_plot_element, llm_request_data_table, ping_data_table, error_data_table = (
-            update_components(results_folder, latest_run)
-        )
+        (
+            markdown_element,
+            line_plot_element,
+            llm_request_data_table,
+            ping_data_table,
+            error_data_table,
+        ) = update_components(results_folder, latest_run)
         dropdown_element.change(
             reload_on_folder_change,
             inputs=[dropdown_element],
             outputs=[
+                markdown_element,
                 line_plot_element,
                 llm_request_data_table,
                 ping_data_table,

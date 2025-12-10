@@ -120,8 +120,11 @@ def test_make_run_latency_plot(run_suite_results_folder):
 def test_update_components(results_folder, folder_fixture, empty_result, request):
     folder = request.getfixturevalue(folder_fixture)
     run_name = os.path.basename(folder)
-    plot, request_df, ping_df, error_df = update_components(results_folder, run_name)
+    markdown, plot, request_df, ping_df, error_df = update_components(
+        results_folder, run_name
+    )
     if empty_result:
+        assert markdown.value == "Empty data."
         assert plot.value is None
         assert len(request_df.value["data"]) == 0
         assert len(ping_df.value["data"]) == 0
@@ -130,6 +133,7 @@ def test_update_components(results_folder, folder_fixture, empty_result, request
         llm_requests_df = pd.read_csv(os.path.join(folder, LLM_REQUESTS_FILE))
         ping_data_df = pd.read_csv(os.path.join(folder, NETWORK_LATENCY_FILE))
         error_data_df = pd.read_csv(os.path.join(folder, ERROR_FILE))
+        assert "Empty" not in markdown.value
         assert llm_requests_df.values.tolist() == request_df.value["data"]
         assert ping_data_df.values.tolist() == ping_df.value["data"]
         assert error_data_df.values.tolist() == error_df.value["data"]
@@ -166,7 +170,7 @@ def test_load_state(state, latest_run, expected_result):
 
 def test_create_gradio_blocks(results_folder):
     data_visualization = create_gradio_blocks(results_folder)
-    assert len(data_visualization.blocks) == 8
+    assert len(data_visualization.blocks) == 9
 
 
 @pytest.mark.asyncio

@@ -46,7 +46,7 @@ def test_calculate_mean_error(observations, targets, expected_result):
     ],
 )
 def test_calculate_relative_error(observations, targets, expected_result):
-    assert calculate_relative_error(observations, targets) == expected_result
+    assert round(calculate_relative_error(observations, targets), 2) == expected_result
 
 
 def test_get_run_name(base_endpoint_spec):

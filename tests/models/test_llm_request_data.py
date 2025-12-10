@@ -30,10 +30,10 @@ def default_llm_request_data():
     "data_update, should_warn, warning_content",
     [
         ({}, False, ""),
-        ({"measured_input_tokens": 1200}, True, "input tokens that are 20% longer"),
-        ({"measured_input_tokens": 700}, True, "input tokens that are 30% shorter"),
-        ({"measured_output_tokens": 64}, True, "output tokens that are 100% longer"),
-        ({"measured_output_tokens": 16}, True, "output tokens that are 50% shorter"),
+        ({"measured_input_tokens": 1200}, True, "input tokens that are 20.00% longer"),
+        ({"measured_input_tokens": 700}, True, "input tokens that are 30.00% shorter"),
+        ({"measured_output_tokens": 64}, True, "output tokens that are 100.00% longer"),
+        ({"measured_output_tokens": 16}, True, "output tokens that are 50.00% shorter"),
     ],
 )
 def test_warn_on_diverging_measurements(
