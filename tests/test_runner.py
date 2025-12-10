@@ -67,6 +67,8 @@ async def test_run_heuristic_test(
     assert not error_threshold_tripped
 
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
+    # TODO: FLAKY
+    # FAILED tests/test_runner.py::test_run_heuristic_test - assert 1 == 2
     assert len(df) == run_spec.total_num_requests
 
 
