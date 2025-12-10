@@ -154,9 +154,9 @@ def print_help_of(arg_parser: argparse.ArgumentParser):
 
 
 def start_visualization(
-    args: argparse.Namespace, unblocked=False
+    args: argparse.Namespace, keep_running: bool = True, go_to_browser: bool = True
 ) -> Tuple[gradio.routes.App, str]:
-    return visualize_results(args.results_folder, unblocked)
+    return visualize_results(args.results_folder, keep_running, go_to_browser)
 
 
 def create_starter_files(args: argparse.Namespace):
@@ -274,4 +274,7 @@ def main():
     log.info(
         the_wave,
     )
-    args.func(args)
+    try:
+        args.func(args)
+    except KeyboardInterrupt:
+        log.info("Stopping...")

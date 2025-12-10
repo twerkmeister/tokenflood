@@ -1,4 +1,6 @@
+import asyncio
 import functools
+import logging
 import os
 from typing import Callable, Dict, List, Optional, Tuple, TypeVar
 
@@ -29,6 +31,8 @@ from tokenflood.io import (
     read_run_suite,
 )
 from tokenflood.models.util import numeric
+
+log = logging.getLogger(__name__)
 
 
 def get_group_labels(
@@ -273,10 +277,14 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
 
 
 def visualize_results(
-    results_folder: str, prevent_thread_lock: bool = False
+    results_folder: str, keep_running: bool = True, go_to_browser: bool = True
 ) -> Tuple[gradio.routes.App, str]:
     data_visualization = create_gradio_blocks(results_folder)
     app, url, _ = data_visualization.launch(
-        prevent_thread_lock=prevent_thread_lock, share=False
+        prevent_thread_lock=True, quiet=True, inbrowser=go_to_browser
     )
+    log.info(f"Gradio server running at [blue]{url}[/]")
+    if keep_running:
+        asyncio.get_event_loop().run_forever()
+
     return app, url

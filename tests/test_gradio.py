@@ -171,6 +171,6 @@ def test_create_gradio_blocks(results_folder):
 
 @pytest.mark.asyncio
 async def test_visualize_results(results_folder):
-    app, url = visualize_results(results_folder, True)
+    app, url = visualize_results(results_folder, False, go_to_browser=False)
     response = requests.get(url)
     assert response.status_code == 200

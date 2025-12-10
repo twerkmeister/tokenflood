@@ -152,7 +152,7 @@ def test_start_visualization(monkeypatch, unique_temporary_folder, results_folde
     assert "run_results" in os.listdir(copy_of_results_folder)
 
     args = parse_args(["viz"])
-    app, url = start_visualization(args, True)
+    app, url = start_visualization(args, False, False)
 
     response = requests.get(url)
     assert response.status_code == 200
