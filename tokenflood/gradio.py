@@ -85,7 +85,6 @@ def get_desired_percentiles(folder: str) -> Optional[Tuple[int, ...]]:
 
 
 def get_data(folder: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    print(folder)
     percentiles = get_desired_percentiles(folder)
     if percentiles is None:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
@@ -170,9 +169,9 @@ def update_components(
         plot = gr.LinePlot()
     return (
         plot,
-        gr.DataFrame(llm_request_data, label="llm request data"),
-        gr.DataFrame(ping_data, label="ping data"),
-        gr.DataFrame(error_data, label="error data"),
+        gr.DataFrame(llm_request_data, label="llm request data", show_fullscreen_button=True, show_copy_button=True, show_row_numbers=True, show_search="filter"),
+        gr.DataFrame(ping_data, label="ping data", show_fullscreen_button=True, show_copy_button=True, show_row_numbers=True, show_search="filter"),
+        gr.DataFrame(error_data, label="error data", show_fullscreen_button=True, show_copy_button=True, show_row_numbers=True, show_search="filter"),
     )
 
 
