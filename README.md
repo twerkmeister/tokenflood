@@ -36,71 +36,36 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
 3. Assessing the intraday latency variations of hosted LLM providers for your load types.
 4. Assessing and choosing a hosted LLM provider before going into production with them. 
 
-### Example: Assessing the effects of prompt optimizations upfront
-Here is an example of exploring the effects of prompt parameters for latency and throughput.
-The following graphs depict different load scenarios. Together they show the impact of hypothetical improvements to the prompt parameters.
+### Example 1: Assessing the effects of potential prompt optimizations
 
-The first graph represents the base case, our current prompt parameters: ~3000 input tokens, of which ~1000 are a common prefix that can be cached, and ~60 output tokens.
+![latency-comparison](./images/run_comparison.png)
 
-![base-case-latency](./images/self-hosted_base_case_latency_percentiles.png)
+The left graph represents the base case, our current prompt parameters: ~3000 input tokens, of which ~1000 are a common prefix that can be cached, and ~60 output tokens.
 
-In the graphs, you can see the mean latency, and the 50th, 90th and 99th percentile latency. 
-These percentile lines indicate the latency below which 50%, 90%, and 99% of LLM requests came in.
-When designing latency sensitive systems, it's important to have an understanding of the distribution and 
-not just the average. At 3 requests per second, our system gives us a latency of around
-1720ms for the 50th percentile, 2700ms for the 90th percentile, and 2950ms for the 99th percentile.
-That means 50% of requests came back in under 1720ms, 90% below 2700ms and 99% of requests
-came back below 2950ms.
+The right graph represents a hypothetical improvement to prompt parameters: the same 3000 input tokens, but now 2000 common prefix tokens achieved by rearranging or standardizing parts, and a reduction to 45 output tokens.
+ 
+The result is a more than 50% reduction in latency while at the same time meaningfully increasing amount of prompts that can be served on the same hardware without latency going through the roof.
 
-Let's say in our hypothetical prompt, we could rearrange things a little bit to increase
-the number of tokens in the beginning that are always the same and thus increase the prefix-cached part.
-We might have to invest some additional time into prompt tuning again if we change things, so
-we would like to know how much such a change would improve latency. 
+Tokenflood allows you to find worthwhile goals for prompt parameter improvements before going there.
 
-Let's run the test by increasing the number of prefix tokens from 1000 to 2000:
+### Example 2: Observing the West Coast effect
 
-![more-prefix-cached-tokens-latency](./images/self-hosted_more_prefix_latency_percentiles.png)
+Load testing large providers does not really make sense if you value your money as their datacenters are huge, shared resources. While a single company or user usually does not have much effect on them,
+these shared resources are subject to intra-day latency variations, oftentimes coinciding with daily business hours.
 
-We see a meaningful improvement going down to around 1100ms for the 50th percentile,
-down to 1340ms for the 90th percentile, and down to 1450ms for the 99th percentile at 3 requests per second.
+[!observing-intraday-latency-variation](./images/observe.png)
 
-Another option to cut down latency could be to reduce the number of output tokens. Maybe
-our current hypothetical prompt uses JSON output which is very verbose and needs a lot of tokens for 
-all the special characters. It might have more expressiveness than your task really requires,
-so how about checking the pay-off from using a shorter output format before implementing the
-changes?
+Here we see that once business starts on the West Coast the latency of this openai model drops by 500-1000ms for our chosen prompt parameters. 
 
-Let's start from the base case again and reduce the number of output tokens from 60 to 30:
-
-![less-output-tokens-latency](./images/self-hosted_shorter_output_latency_percentiles.png)
-
-We again see a good improvement here, going down to 840ms for the 50th, to 1270ms for the 90th, 
-and to 1900 ms for the 99th percentile at 3 requests per second.
-
-Finally, we might wonder to what extend both improvements add up or whether having one of them gets you
-all the benefit there is to have. So we apply both changes, increasing the number of prefix tokens to 2000 and reducing the
-number of output tokens to 30.
-
-![less-output-more-prefix-latency](./images/self-hosted_shorter_output_more_prefix_latency_percentiles.png)
-
-Indeed, they add up noticeably in our setup having dedicated and limited compute. We reach
-a 50th percentile latency of 570ms, 90th percentile with 770ms, and 99th percentile with 870ms.
-
-Here's a brief extract of the data in tabular form:
-
-| Scenario           | #Input Tokens | #Prefix Tokens | #Output Tokens | #50th percentile latency (@3req/s) | #90th percentile latency (@3req/s) | #99th percentile latency (@3req/s) | 
-|--------------------|---------------|----------------|----------------|------------------------------------|------------------------------------|------------------------------------|
-| base case          | 3038          | 1000           | 60             | 1720ms                             | 2700ms                             | 2950ms                             |
-| more prefix tokens | 3038          | 2000           | 60             | 1100ms                             | 1340ms                             | 1450ms                             |
-| shorter output     | 3038          | 1000           | 30             | 840ms                              | 1270ms                             | 1900ms                             |
-| both changes       | 3038          | 2000           | 30             | 570ms                              | 770ms                              | 870ms                              |
+Tokenflood allows you to assess these patterns before going into production with a vendor. 
 
 ## 🛠️ Professional Services 🛠️
 
-If you are looking for paid professional support to
+If you are looking for professional support to
 * optimize your LLM accuracy, latency, throughput, or costs
-* fine-tune open models for your use case, 
-* designing and building custom AI systems
+* fine-tune open models for your use case
+* improve your LLM observability
+* design and build custom AI systems
 
 feel free to reach out to me at thomas@werkmeister.me or on [linkedin](https://www.linkedin.com/in/twerkmeister/).
 
@@ -120,23 +85,19 @@ vllm serve HuggingFaceTB/SmolLM-135M-Instruct
 
 Afterward, create the basic config files and do a first run:
 ```bash
-# This creates config files for a tiny first run: run.yml and endpoint.yml
+# This creates tiny starter files: run_suite.yml, observation_spec.yml and endpoint_spec.yml
 tokenflood init
-# Afterwards you can inspect those files and run them
-tokenflood run run_suite.yml endpoint.yml
-```
+# Afterwards you can inspect those files, and then do a load test
+tokenflood run run_suite.yml endpoint_spec.yml
+# Or observe the endpoint
+tokenflood observe observation_spec.yml endpoint_spec.yml
+# start the data visualisation frontend
+tokenflood viz
+``` 
 
-Finally, in the `results` folder you should find your run folder
-containing:
-* a graph visualizing the latency quantiles across the difference request rates and the network latency (`latency_quantiles.png`)
-* the raw data points collected from the LLM calls (`llm_requests.csv`)
-* the raw data points collected from assessing network latency (`network_latency.csv`)
-* a summary file containing lots of information about the run (`summary.yml`)
-* the original run suite config used for the run (`run_suite.yml`)
-* the original endpoint config used for the run (`endpoint_spec.yml`)
-* an error log (`errors.csv`)
+## Configuration
 
-## Endpoint Specs
+### Endpoint Specs
 
 With the endpoint spec file you can determine the target of the load test. 
 Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports 
@@ -162,9 +123,9 @@ Explanation of the parameters:
 Tokenflood passes all these parameters right through to litellm's completion call. 
 To get a better understanding, it's best to have a look at [the official documentation of the litellm completion call](https://docs.litellm.ai/docs/completion/input). 
 
-### Endpoint Examples
+#### Endpoint Examples
 
-#### Self-hosted VLLM
+##### Self-hosted VLLM
 
 ```yaml
 provider: hosted_vllm
@@ -172,7 +133,7 @@ model: meta-llama/Llama-3.1-8B-Instruct
 base_url: http://127.0.0.1:8000/v1
 ```
 
-#### Openai
+##### Openai
 
 ```yaml
 provider: openai
@@ -180,21 +141,21 @@ model: gpt-4o-mini
 ```
 Env vars: `OPENAI_API_KEY`
 
-#### Bedrock
+##### Bedrock
 ```yaml
 provider: bedrock
 model: anthropic.claude-3-sonnet-20240229-v1:0
 ```
 Env vars: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME`
 
-#### AWS Sagemaker Inference Endpoints
+##### AWS Sagemaker Inference Endpoints
 ```yaml
 provider: sagemaker_chat
 model: your-sagemaker-endpoint
 ```
 Env vars: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME`
 
-#### Azure
+##### Azure
 
 ```yaml
 provider: azure
@@ -206,7 +167,7 @@ api_base: https://my-azure-url.openai.azure.com/
 
 Env vars: `AZURE_API_KEY`
 
-#### Gemini
+##### Gemini
 
 ```yaml
 provider: gemini
@@ -215,7 +176,7 @@ model: gemini-2.5-flash-lite-preview-09-2025
 
 Env vars: `GEMINI_API_KEY`
 
-#### Anthropic
+##### Anthropic
 ```yaml
 provider: anthropic
 model: claude-3-5-sonnet-20240620
@@ -223,15 +184,15 @@ model: claude-3-5-sonnet-20240620
 
 Env vars: `ANTHROPIC_API_KEY`
 
-## Run Suites
+### Run Suites
 
-With a run suite you define the specific test you want to run. Each test can have multiple
+With a run suite you define a load test that you want to run. Each test can have multiple
 phases with a different number of requests per second. All phases share the same length in 
 seconds and the type of loads that are being sent.
 
 Here is the run suite that is being created for you upon calling `tokenflood init`:
 ```yaml
-name: ripple
+name: starter
 requests_per_second_rates:  # Defines the phases with the different request rates
 - 1.0
 - 2.0
@@ -249,11 +210,12 @@ percentiles:                # the latency percentiles to report
 - 50
 - 90
 - 99
-input_token_budget: 100000  # the maximum number of input tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
-output_token_budget: 10000  # the maximum number of output tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
-error_limit: 0.3            # the fraction of errors that are acceptable for the last 30 requests
+budget:
+  input_tokens: 100000      # the maximum number of input tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
+  output_tokens: 10000      # the maximum number of output tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
+error_limit: 0.3            # the fraction of errors in requests that are acceptable for the last 30 requests. The test will end once this limit is breached.
 task:                       # The task tokenflood uses to generate a lot of tokens which we can truncate using the max token parameters - makes sure we do not produce too few tokens!
-  task: 'Task: Count up to 10000 naming each individual number like this: 1 2 3 4'
+  task: 'Task: Count up to 1000 naming each individual number like this: 1 2 3 4'
 token_set:                  # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length   
   tokens:
   - ' A'
@@ -285,6 +247,65 @@ token_set:                  # The 1-token strings tokenflood uses to fill up the
 
 ```
 
+### Observation Specs
+
+With an observation spec you define a longer running observation of an endpoint. 
+You can define a total length of your observation in hours and a polling interval 
+in minutes as well as how many and what type of requests you want to send at those 
+points in time.
+
+Here is the observation spec that is generated by running `tokenflood init`:
+
+```yaml
+name: starter
+duration_hours: 1.0             # total test length: 1 hour
+polling_interval_minutes: 15.0  # send requests every 15 minutes
+load_type:                      # observation runs just have one load type
+  prompt_length: 512            # prompt length in tokens
+  prefix_length: 128            # prompt prefix length in tokens
+  output_length: 32             # output length in tokens
+num_requests: 5                 # how many requests to send at the start of an interval
+within_seconds: 2.0             # within how many seconds to send the requests at the start of an interval (useful to manage rate limits)
+percentiles:                    # the latency percentiles to report
+- 50
+- 90
+- 99
+budget:
+  input_tokens: 1000000         # the maximum number of input tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
+  output_tokens: 10000          # the maximum number of output tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
+task:                           # The task tokenflood uses to generate a lot of tokens which we can truncate using the max token parameters - makes sure we do not produce too few tokens!
+  task: 'Task: Count up to 1000 naming each individual number like this: 1 2 3 4'
+token_set:                      # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length 
+  tokens:
+  - ' A'
+  - ' B'
+  - ' C'
+  - ' D'
+  - ' E'
+  - ' F'
+  - ' G'
+  - ' H'
+  - ' I'
+  - ' J'
+  - ' K'
+  - ' L'
+  - ' M'
+  - ' N'
+  - ' O'
+  - ' P'
+  - ' Q'
+  - ' R'
+  - ' S'
+  - ' T'
+  - ' U'
+  - ' V'
+  - ' W'
+  - ' X'
+  - ' Y'
+  - ' Z'
+```
+
+
 ## Heuristic Load Testing
 
 Tokenflood does not need specific prompt data to run tests. Instead, it only needs
@@ -314,10 +335,8 @@ mechanisms.
 
 Heuristic load testing comes with the risk of not perfectly achieving the desired token 
 counts for specific models. If that happens, tokenflood will warn you during a run if 
-any request diverges more than 10% from the expected input or output token lengths. At 
-the end of a run, you will also be warned about the average divergence if it is more 
-than 10% from the expected token count. In the summary file of a run, you can see the 
-absolute and relative divergences again.
+any request diverges more than 10% from the expected input or output token lengths. The
+visualisation frontend also shows absolute and relative token errors.
 
 > [!IMPORTANT]
 > You can specify the prefix length, however, whether the prefix is used will depend on the 

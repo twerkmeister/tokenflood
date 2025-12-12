@@ -6,7 +6,7 @@ from tokenflood.models.token_set import TokenSet
 
 builtin_heuristic_tasks = [
     HeuristicTask(
-        task="Task: Count up to 10000 naming each individual number like this: 1 2 3 4"
+        task="Task: Count up to 1000 naming each individual number like this: 1 2 3 4"
     ),
 ]
 
