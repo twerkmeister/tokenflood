@@ -33,8 +33,8 @@ def check_token_usage_upfront(
         log.info("[red]Estimated tokens beyond configured budget. Aborting the run.[/]")
         log.info(
             "Increase the maximum tokens you are willing to spend by setting the variables "
-            "[red]input_token_budget[/] and [red]output_token_budget[/] to a higher value "
-            "in your run suite file."
+            "[red]budget.input_tokens[/] and [red]budget.output_tokens[/] to a higher value "
+            f"in your {costly_operation.__class__.__name__} file."
         )
         return False
 
