@@ -19,13 +19,16 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
 ### Table of Contents
 
 * [Common Usage Scenarios](#common-usage-scenarios)
-  * [Example: Assessing the effects of prompt optimizations](#example-assessing-the-effects-of-prompt-optimizations-)
+  * [Example: Assessing the effects of prompt optimizations](#example-1-assessing-the-effects-of-potential-prompt-optimizations)
+  * [Example: Observing the West Coast effect](#example-2-observing-the-west-coast-effect)
 * [Professional Services](#-professional-services-)
 * [Installation](#installation)
 * [Quick Start](#quick-start)
-* [Endpoint Specifications](#endpoint-specs)
-  * [Endpoint Examples](#endpoint-examples)
-* [Run Suites](#run-suites)
+* [Configuration](#configuration)
+  * [Endpoint Specifications](#endpoint-specs)
+    * [Endpoint Examples](#endpoint-examples)
+  * [Run Suites](#run-suites)
+  * [Observation Specs](#observation-specs)
 * [Heuristic Load Testing Explained](#heuristic-load-testing)
 * [Safety](#-safety-)
 
@@ -53,7 +56,7 @@ Tokenflood allows you to find worthwhile goals for prompt parameter improvements
 Load testing large providers does not really make sense if you value your money as their datacenters are huge, shared resources. While a single company or user usually does not have much effect on them,
 these shared resources are subject to intra-day latency variations, oftentimes coinciding with daily business hours.
 
-[!observing-intraday-latency-variation](./images/observe.png)
+![observing-intraday-latency-variation](./images/observe.png)
 
 Here we see that once business starts on the West Coast the latency of this openai model drops by 500-1000ms for our chosen prompt parameters. 
 
