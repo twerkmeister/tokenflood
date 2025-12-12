@@ -20,7 +20,7 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
 
 * [Common Usage Scenarios](#common-usage-scenarios)
   * [Example: Assessing the effects of prompt optimizations](#example-1-assessing-the-effects-of-potential-prompt-optimizations)
-  * [Example: Observing the West Coast effect](#example-2-observing-the-west-coast-effect)
+  * [Example: Observing the West Coast effect](#example-2-find-out-when-people-start-stealing-your-latency)
 * [Professional Services](#-professional-services-)
 * [Installation](#installation)
 * [Quick Start](#quick-start)
