@@ -100,13 +100,13 @@ def test_get_data(folder_fixture, x_label, empty_result, request):
 def test_make_observation_latency_plot(observation_results_folder):
     combined, llm_request_data, ping_data = get_data(observation_results_folder)
     plot = make_observation_latency_plot(combined)
-    assert plot.value["data"] == combined.values.tolist()
+    assert plot.value["type"] == "plotly"
 
 
 def test_make_run_latency_plot(run_suite_results_folder):
     combined, llm_request_data, ping_data = get_data(run_suite_results_folder)
     plot = make_run_latency_plot(combined)
-    assert plot.value["data"] == combined.values.tolist()
+    assert plot.value["type"] == "plotly"
 
 
 @pytest.mark.parametrize(
@@ -137,7 +137,7 @@ def test_update_components(results_folder, folder_fixture, empty_result, request
         assert llm_requests_df.values.tolist() == request_df.value["data"]
         assert ping_data_df.values.tolist() == ping_df.value["data"]
         assert error_data_df.values.tolist() == error_df.value["data"]
-        assert len(plot.value["data"]) > 0
+        assert plot.value["type"] == "plotly"
 
 
 def test_load_runs_from_disc(

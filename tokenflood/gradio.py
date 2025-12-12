@@ -5,6 +5,7 @@ import os
 from typing import Callable, Dict, List, Optional, Tuple, TypeVar
 
 import gradio.routes
+import plotly.express as px  # type:ignore[import-untyped]
 import pandas as pd
 import gradio as gr
 from gradio import Blocks
@@ -128,35 +129,41 @@ def get_data(folder: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     return combined, llm_request_data, ping_data
 
 
-def make_observation_latency_plot(data: pd.DataFrame) -> gr.LinePlot:
-    return gr.LinePlot(
+def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
+    fig = px.line(
         data,
-        title="Latency over time.",
         x="datetime",
         y="latency",
         color="metric",
-        x_title="UTC datetime",
-        y_title="latency in ms",
-        x_label_angle=45,
+        markers=True,
+        title="Latency over time.",
         height=500,
-        show_export_button=True,
-        show_fullscreen_button=True,
     )
+    fig.update_layout(
+        xaxis_title="UTC datetime",
+        yaxis_title="latency in ms",
+    )
+    fig.update_xaxes(tickangle=45)
+    fig.layout.template = "plotly_dark"
+    return gr.Plot(fig)
 
 
-def make_run_latency_plot(data: pd.DataFrame) -> gr.LinePlot:
-    return gr.LinePlot(
+def make_run_latency_plot(data: pd.DataFrame) -> gr.Plot:
+    fig = px.line(
         data,
-        title="Latency across request rates.",
         x="rps",
         y="latency",
         color="metric",
-        x_title="requests per second",
-        y_title="latency in ms",
+        markers=True,
+        title="Latency across request rates.",
         height=500,
-        show_export_button=True,
-        show_fullscreen_button=True,
     )
+    fig.update_layout(
+        xaxis_title="requests per second",
+        yaxis_title="latency in ms",
+    )
+    fig.layout.template = "plotly_dark"
+    return gr.Plot(fig)
 
 
 def get_warning_emoji(relative_error: float) -> str:
@@ -184,7 +191,7 @@ def get_markdown_summary(llm_request_data: pd.DataFrame) -> str:
 
 def update_components(
     results_folder: str, run: str
-) -> Tuple[gr.Markdown, gr.LinePlot, gr.DataFrame, gr.DataFrame, gr.DataFrame]:
+) -> Tuple[gr.Markdown, gr.Plot, gr.DataFrame, gr.DataFrame, gr.DataFrame]:
     run_folder = os.path.join(results_folder, run)
     combined, llm_request_data, ping_data = get_data(run_folder)
     markdown = gr.Markdown(get_markdown_summary(llm_request_data))
@@ -196,31 +203,34 @@ def update_components(
         plot = make_observation_latency_plot(combined)
         error_data = pd.read_csv(os.path.join(run_folder, ERROR_FILE))
     else:
-        plot = gr.LinePlot()
+        plot = gr.Plot()
     return (
         markdown,
         plot,
         gr.DataFrame(
             llm_request_data,
             label="llm request data",
-            show_fullscreen_button=True,
-            show_copy_button=True,
+            buttons=["fullscreen", "copy"],
+            # show_fullscreen_button=True,
+            # show_copy_button=True,
             show_row_numbers=True,
             show_search="filter",
         ),
         gr.DataFrame(
             ping_data,
             label="ping data",
-            show_fullscreen_button=True,
-            show_copy_button=True,
+            buttons=["fullscreen", "copy"],
+            # show_fullscreen_button=True,
+            # show_copy_button=True,
             show_row_numbers=True,
             show_search="filter",
         ),
         gr.DataFrame(
             error_data,
             label="error data",
-            show_fullscreen_button=True,
-            show_copy_button=True,
+            buttons=["fullscreen", "copy"],
+            # show_fullscreen_button=True,
+            # show_copy_button=True,
             show_row_numbers=True,
             show_search="filter",
         ),
