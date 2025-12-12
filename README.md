@@ -51,14 +51,14 @@ The result is a more than 50% reduction in latency while at the same time meanin
 
 Tokenflood allows you to find worthwhile goals for prompt parameter improvements before going there.
 
-### Example 2: Observing the West Coast effect
+### Example 2: Find out when people start stealing your latency
 
 Load testing large providers does not really make sense if you value your money as their datacenters are huge, shared resources. While a single company or user usually does not have much effect on them,
 these shared resources are subject to intra-day latency variations, oftentimes coinciding with daily business hours.
 
 ![observing-intraday-latency-variation](./images/observe.png)
 
-Here we see that once business starts on the West Coast the latency of this openai model drops by 500-1000ms for our chosen prompt parameters. 
+Here we see that once business starts in the US latency of this openai-hosted model drops by 500-1000ms for our chosen prompt parameters. 
 
 Tokenflood allows you to assess these patterns before going into production with a vendor. 
 
