@@ -21,6 +21,7 @@ from tokenflood.gradio import (
     load_runs_from_disc,
     load_state,
     make_observation_latency_plot,
+    make_percentile_labels,
     make_run_latency_plot,
     percentiles_to_str,
     str_to_percentiles,
@@ -57,18 +58,26 @@ def test_get_run_group_labels(run_suite_results_folder):
     assert group_labels == {"0": 1.0, "1": 2.0}
 
 
+def test_make_percentile_labels():
+    assert make_percentile_labels([50, 90]) == [
+        "p50 request latency",
+        "p90 request latency",
+    ]
+
+
 @pytest.mark.parametrize(
-    "folder_fixture, x_label, empty_result",
+    "folder_fixture, x_label, percentiles_str, empty_result",
     [
-        ("run_suite_results_folder", "rps", False),
-        ("observation_results_folder", "datetime", False),
-        ("unique_temporary_folder", "", True),
+        ("run_suite_results_folder", "rps", DEFAULT_PERCENTILES_STR, False),
+        ("run_suite_results_folder", "rps", "", False),
+        ("observation_results_folder", "datetime", DEFAULT_PERCENTILES_STR, False),
+        ("unique_temporary_folder", "", DEFAULT_PERCENTILES_STR, True),
     ],
 )
-def test_get_data(folder_fixture, x_label, empty_result, request):
+def test_get_data(folder_fixture, x_label, percentiles_str, empty_result, request):
     folder = request.getfixturevalue(folder_fixture)
     combined, llm_request_data, ping_data = get_data(
-        folder, str_to_percentiles(DEFAULT_PERCENTILES_STR)
+        folder, str_to_percentiles(percentiles_str)
     )
     if empty_result:
         assert combined.empty
@@ -79,16 +88,12 @@ def test_get_data(folder_fixture, x_label, empty_result, request):
         ping_data_df = pd.read_csv(os.path.join(folder, NETWORK_LATENCY_FILE))
         assert llm_request_data.equals(llm_requests_df)
         assert ping_data.equals(ping_data_df)
-
-        metrics = {
+        metrics = [
             "mean request latency",
-            "p50 request latency",
-            "p90 request latency",
-            "p99 request latency",
             "mean network latency",
-        }
+        ] + make_percentile_labels(str_to_percentiles(percentiles_str))
         assert all(combined.columns == [x_label, "latency", "metric"])
-        assert set(combined["metric"].unique()) == metrics
+        assert set(combined["metric"].unique()) == set(metrics)
         assert len(combined) == len(get_groups(llm_requests_df)) * len(metrics)
 
 
@@ -202,6 +207,8 @@ async def test_visualize_results(results_folder):
         ("50, 90, 99, 150", [50, 90, 99]),
         ("0, 50, 90, 99", [50, 90, 99]),
         ("-20, 50, 90, 99", [20, 50, 90, 99]),
+        ("", []),
+        ("xyz", []),
         (",".join([str(i) for i in range(1, 101)]), list(range(1, 101))),
     ],
 )

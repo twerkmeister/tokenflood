@@ -79,6 +79,10 @@ def merge_stats(
     return pd.concat(dataframes, ignore_index=True)
 
 
+def make_percentile_labels(percentiles: List[int]) -> List[str]:
+    return [f"p{p} request latency" for p in percentiles]
+
+
 def get_data(
     folder: str, percentiles: List[int]
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -97,7 +101,7 @@ def get_data(
     all_stats = extend_group_stats(request_stats, network_stats)
     stat_names = (
         ["mean request latency"]
-        + [f"p{p} request latency" for p in percentiles]
+        + make_percentile_labels(percentiles)
         + ["mean network latency"]
     )
     combined = pd.DataFrame()
@@ -334,7 +338,21 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                 error_data_table,
             ],
         )
+        percentiles_textbox.submit(
+            reload_on_folder_change,
+            inputs=[dropdown_element, percentiles_textbox],
+            outputs=[
+                markdown_element,
+                line_plot_element,
+                llm_request_data_table,
+                ping_data_table,
+                error_data_table,
+            ],
+        )
         percentiles_textbox.blur(
+            id_func, inputs=[percentiles_textbox], outputs=[stored_percentiles]
+        )
+        percentiles_textbox.submit(
             id_func, inputs=[percentiles_textbox], outputs=[stored_percentiles]
         )
         data_visualization.load(
