@@ -9,7 +9,6 @@ from tokenflood.models.token_cost_aware import TokenCostAware
 from tokenflood.models.token_set import TokenSet
 from tokenflood.models.validation_types import (
     NonNegativeInteger,
-    PositiveUniqueIntegers,
 )
 
 
@@ -22,7 +21,6 @@ class ObservationSpec(BaseModel, TokenCostAware, frozen=True):
     within_seconds: NonNegativeFloat
     task: HeuristicTask
     token_set: TokenSet
-    percentiles: PositiveUniqueIntegers
     budget: Budget = Budget()
 
     def num_polls(self) -> int:

@@ -13,7 +13,6 @@ from tokenflood.models.validation_types import (
     NonEmptyString,
     PositiveInteger,
     PositiveUniqueFloats,
-    PositiveUniqueIntegers,
 )
 
 
@@ -22,7 +21,6 @@ class HeuristicRunSuite(BaseModel, TokenCostAware, frozen=True):
     requests_per_second_rates: PositiveUniqueFloats
     test_length_in_seconds: PositiveInteger
     load_types: NonEmptyLoadTypes
-    percentiles: PositiveUniqueIntegers
     task: HeuristicTask
     token_set: TokenSet
     error_limit: NonNegativeFloat = DEFAULT_ERROR_RATE_LIMIT

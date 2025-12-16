@@ -8,10 +8,6 @@ load_type:
   prefix_length: 64
   output_length: 2
   weight: 1
-percentiles:
-- 50
-- 90
-- 99
 task:
   task: 'Task: Count up to 10000 naming each individual number like this: 1 2 3 4'
 token_set:

@@ -13,7 +13,6 @@ starter_run_suite = HeuristicRunSuite(
         LoadType(prompt_length=512, prefix_length=128, output_length=32, weight=1),
         LoadType(prompt_length=640, prefix_length=568, output_length=12, weight=1),
     ),
-    percentiles=(50, 90, 99),
     task=builtin_heuristic_tasks[0],
     token_set=builtin_heuristic_token_sets[0],
     error_limit=DEFAULT_ERROR_RATE_LIMIT,
@@ -33,5 +32,4 @@ starter_observation_spec = ObservationSpec(
     within_seconds=2.0,
     task=builtin_heuristic_tasks[0],
     token_set=builtin_heuristic_token_sets[0],
-    percentiles=(50, 90, 99),
 )
