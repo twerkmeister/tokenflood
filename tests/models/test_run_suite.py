@@ -16,7 +16,6 @@ def default_run_suite_kwargs() -> Dict:
         requests_per_second_rates=(1, 2, 3, 4),
         test_length_in_seconds=30,
         load_types=(LoadType(prompt_length=1024, prefix_length=400, output_length=12),),
-        percentiles=(50, 90, 98),
         task=builtin_heuristic_tasks[0],
         token_set=builtin_heuristic_token_sets[0],
     ).model_dump()
@@ -34,8 +33,6 @@ def default_run_suite_kwargs() -> Dict:
         ({"test_length_in_seconds": -5}, pytest.raises(ValueError)),
         ({"test_length_in_seconds": 0}, pytest.raises(ValueError)),
         ({"load_types": ()}, pytest.raises(ValueError)),
-        ({"percentiles": ()}, pytest.raises(ValueError)),
-        ({"percentiles": (-50, 90)}, pytest.raises(ValueError)),
     ],
 )
 def test_run_suite_validation(kwargs_override, expectation, default_run_suite_kwargs):
