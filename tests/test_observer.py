@@ -22,7 +22,6 @@ def default_observation_spec():
         within_seconds=1.0,
         task=builtin_heuristic_tasks[0],
         token_set=builtin_heuristic_token_sets[0],
-        percentiles=[50, 90, 99],
     )
 
 

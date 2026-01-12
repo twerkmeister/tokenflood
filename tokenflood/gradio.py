@@ -2,7 +2,8 @@ import asyncio
 import functools
 import logging
 import os
-from typing import Callable, Dict, List, Optional, Tuple, TypeVar
+import re
+from typing import Callable, Dict, List, Tuple, TypeVar
 
 import gradio.routes
 import plotly.express as px  # type:ignore[import-untyped]
@@ -19,18 +20,15 @@ from tokenflood.analysis import (
     mean_int,
 )
 from tokenflood.constants import (
+    DEFAULT_PERCENTILES_STR,
     ERROR_FILE,
     LLM_REQUESTS_FILE,
     NETWORK_LATENCY_FILE,
-    OBSERVATION_SPEC_FILE,
-    RUN_SUITE_FILE,
     WARNING_LIMIT_PERCENTAGE,
 )
 from tokenflood.io import (
     is_observation_result_folder,
     is_run_result_folder,
-    read_observation_spec,
-    read_run_suite,
 )
 from tokenflood.models.divergence import TokenDivergence
 from tokenflood.models.util import numeric
@@ -81,21 +79,15 @@ def merge_stats(
     return pd.concat(dataframes, ignore_index=True)
 
 
-def get_desired_percentiles(folder: str) -> Optional[Tuple[int, ...]]:
-    if is_run_result_folder(folder):
-        return read_run_suite(os.path.join(folder, RUN_SUITE_FILE)).percentiles
-    elif is_observation_result_folder(folder):
-        return read_observation_spec(
-            os.path.join(folder, OBSERVATION_SPEC_FILE)
-        ).percentiles
-    return None
+def make_percentile_labels(percentiles: List[int]) -> List[str]:
+    return [f"p{p} request latency" for p in percentiles]
 
 
-def get_data(folder: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    percentiles = get_desired_percentiles(folder)
-    if percentiles is None:
+def get_data(
+    folder: str, percentiles: List[int]
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    if not is_run_result_folder(folder) and not is_observation_result_folder(folder):
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-
     llm_request_data = pd.read_csv(os.path.join(folder, LLM_REQUESTS_FILE))
     ping_data = pd.read_csv(os.path.join(folder, NETWORK_LATENCY_FILE))
 
@@ -109,7 +101,7 @@ def get_data(folder: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     all_stats = extend_group_stats(request_stats, network_stats)
     stat_names = (
         ["mean request latency"]
-        + [f"p{p} request latency" for p in percentiles]
+        + make_percentile_labels(percentiles)
         + ["mean network latency"]
     )
     combined = pd.DataFrame()
@@ -190,10 +182,11 @@ def get_markdown_summary(llm_request_data: pd.DataFrame) -> str:
 
 
 def update_components(
-    results_folder: str, run: str
+    results_folder: str, run: str, percentiles_text: str
 ) -> Tuple[gr.Markdown, gr.Plot, gr.DataFrame, gr.DataFrame, gr.DataFrame]:
+    percentiles = str_to_percentiles(percentiles_text)
     run_folder = os.path.join(results_folder, run)
-    combined, llm_request_data, ping_data = get_data(run_folder)
+    combined, llm_request_data, ping_data = get_data(run_folder, percentiles)
     markdown = gr.Markdown(get_markdown_summary(llm_request_data))
     error_data = pd.DataFrame()
     if is_run_result_folder(run_folder):
@@ -211,8 +204,6 @@ def update_components(
             llm_request_data,
             label="llm request data",
             buttons=["fullscreen", "copy"],
-            # show_fullscreen_button=True,
-            # show_copy_button=True,
             show_row_numbers=True,
             show_search="filter",
         ),
@@ -220,8 +211,6 @@ def update_components(
             ping_data,
             label="ping data",
             buttons=["fullscreen", "copy"],
-            # show_fullscreen_button=True,
-            # show_copy_button=True,
             show_row_numbers=True,
             show_search="filter",
         ),
@@ -229,8 +218,6 @@ def update_components(
             error_data,
             label="error data",
             buttons=["fullscreen", "copy"],
-            # show_fullscreen_button=True,
-            # show_copy_button=True,
             show_row_numbers=True,
             show_search="filter",
         ),
@@ -261,10 +248,33 @@ def id_func(x: T) -> T:
     return x
 
 
-def load_state(latest_run: str, state: str) -> str:
-    if state:
-        return state
-    return latest_run
+def load_state(run: str, stored_run: str, stored_percentiles: str) -> Tuple[str, str]:
+    percentiles = DEFAULT_PERCENTILES_STR
+    if stored_run:
+        run = stored_run
+    if stored_percentiles:
+        percentiles = stored_percentiles
+    return run, percentiles
+
+
+PERCENTILES_SEPARATOR = ","
+
+
+def percentiles_to_str(percentiles: List[int]) -> str:
+    return PERCENTILES_SEPARATOR.join([str(p) for p in percentiles])
+
+
+def str_to_percentiles(text: str) -> List[int]:
+    text = clean_percentiles_input(text)
+    splits = text.split(PERCENTILES_SEPARATOR)
+    splits = [s for s in splits if s]
+    percentiles = [int(s) for s in splits if 0 < int(s) <= 100]
+    return sorted(list(set(percentiles)))
+
+
+def clean_percentiles_input(text: str) -> str:
+    """Drop all chars except separator and digits."""
+    return re.sub(rf"[^{PERCENTILES_SEPARATOR}0-9]", "", text)
 
 
 def create_gradio_blocks(results_folder: str) -> Blocks:
@@ -278,12 +288,17 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
 
     with gr.Blocks() as data_visualization:
         timer = gr.Timer(10)
-        stored_choice = gr.BrowserState(latest_run)
+        stored_run = gr.BrowserState(latest_run)
+        stored_percentiles = gr.BrowserState(DEFAULT_PERCENTILES_STR)
         dropdown_element = gr.Dropdown(
             runs,
             value=latest_run,
             filterable=True,
             label="Run Folder",
+        )
+        percentiles_textbox = gr.Textbox(
+            DEFAULT_PERCENTILES_STR,
+            label="Percentiles (comma separated, 1-100)",
         )
         (
             markdown_element,
@@ -291,10 +306,10 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             llm_request_data_table,
             ping_data_table,
             error_data_table,
-        ) = update_components(results_folder, latest_run)
+        ) = update_components(results_folder, latest_run, percentiles_textbox.value)
         dropdown_element.change(
             reload_on_folder_change,
-            inputs=[dropdown_element],
+            inputs=[dropdown_element, percentiles_textbox],
             outputs=[
                 markdown_element,
                 line_plot_element,
@@ -304,7 +319,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             ],
         )
         dropdown_element.change(
-            id_func, inputs=[dropdown_element], outputs=[stored_choice]
+            id_func, inputs=[dropdown_element], outputs=[stored_run]
         )
         dropdown_element.focus(lambda: gr.Timer(active=False), outputs=[timer])
         dropdown_element.blur(lambda: gr.Timer(active=True), outputs=[timer])
@@ -312,8 +327,38 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             reload_dropdown_values_from_disc,
             outputs=[dropdown_element],
         )
+        percentiles_textbox.blur(
+            reload_on_folder_change,
+            inputs=[dropdown_element, percentiles_textbox],
+            outputs=[
+                markdown_element,
+                line_plot_element,
+                llm_request_data_table,
+                ping_data_table,
+                error_data_table,
+            ],
+        )
+        percentiles_textbox.submit(
+            reload_on_folder_change,
+            inputs=[dropdown_element, percentiles_textbox],
+            outputs=[
+                markdown_element,
+                line_plot_element,
+                llm_request_data_table,
+                ping_data_table,
+                error_data_table,
+            ],
+        )
+        percentiles_textbox.blur(
+            id_func, inputs=[percentiles_textbox], outputs=[stored_percentiles]
+        )
+        percentiles_textbox.submit(
+            id_func, inputs=[percentiles_textbox], outputs=[stored_percentiles]
+        )
         data_visualization.load(
-            initial_load, inputs=[stored_choice], outputs=[dropdown_element]
+            initial_load,
+            inputs=[stored_run, stored_percentiles],
+            outputs=[dropdown_element, percentiles_textbox],
         )
     return data_visualization
 

@@ -209,10 +209,6 @@ load_types:                 # This run suite has two load types with equal weigh
   prefix_length: 568
   output_length: 12
   weight: 1
-percentiles:                # the latency percentiles to report
-- 50
-- 90
-- 99
 budget:
   input_tokens: 100000      # the maximum number of input tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
   output_tokens: 10000      # the maximum number of output tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
@@ -269,10 +265,6 @@ load_type:                      # observation runs just have one load type
   output_length: 32             # output length in tokens
 num_requests: 5                 # how many requests to send at the start of an interval
 within_seconds: 2.0             # within how many seconds to send the requests at the start of an interval (useful to manage rate limits)
-percentiles:                    # the latency percentiles to report
-- 50
-- 90
-- 99
 budget:
   input_tokens: 1000000         # the maximum number of input tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
   output_tokens: 10000          # the maximum number of output tokens this test is allowed to use - prevents any load configuration that would use more than this from starting

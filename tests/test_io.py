@@ -37,7 +37,6 @@ def test_read_base_run_suite(base_run_suite):
     assert base_run_suite.name == "ABC"
     assert base_run_suite.requests_per_second_rates == tuple(range(1, 5))
     assert base_run_suite.test_length_in_seconds == 30
-    assert base_run_suite.percentiles == (50, 90, 98)
 
 
 def test_read_write_pydantic_model(base_run_suite, unique_temporary_file):
