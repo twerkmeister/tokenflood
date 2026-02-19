@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 import functools
 import logging
 import os
@@ -46,7 +47,12 @@ def get_group_labels(
 
 
 def get_observation_group_labels(llm_request_data: pd.DataFrame) -> Dict[str, str]:
-    return get_group_labels(llm_request_data, lambda df: df["datetime"][0][:-9])
+    return get_group_labels(
+        llm_request_data,
+        lambda df: datetime.strptime(
+            df["datetime"][0][:-9], "%Y-%m-%d_%H-%M-%S"
+        ).replace(tzinfo=timezone.utc),
+    )
 
 
 def get_run_group_labels(llm_request_data: pd.DataFrame) -> Dict[str, str]:
@@ -293,9 +299,20 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                 os.path.join(results_folder, runs[0])
             )
             plot_data_sets = []
-            with gr.Tabs(selected=0, render=False) as tab_group:
+            with gr.Tabs(
+                selected=0 if len(runs) > 0 else None, render=False
+            ) as tab_group:
                 for i, run in enumerate(runs):
                     run_folder = os.path.join(results_folder, run)
+
+                    if (
+                        is_run_results
+                        and not is_run_result_folder(run_folder)
+                        or is_observation_results
+                        and not is_observation_result_folder(run_folder)
+                    ):
+                        continue
+
                     plot_data, llm_request_data, ping_data = get_data(
                         run_folder, percentiles
                     )
@@ -324,13 +341,14 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                             show_row_numbers=True,
                             show_search="filter",
                         )
-            combined_plot_data = pd.concat(plot_data_sets, ignore_index=True)
-            if is_run_results:
-                make_run_latency_plot(combined_plot_data)
-            elif is_observation_results:
-                make_observation_latency_plot(combined_plot_data)
-            # render tab group after the plot
-            tab_group.render()
+            if len(plot_data_sets) > 0:
+                combined_plot_data = pd.concat(plot_data_sets, ignore_index=True)
+                if is_run_results:
+                    make_run_latency_plot(combined_plot_data)
+                elif is_observation_results:
+                    make_observation_latency_plot(combined_plot_data)
+                # render tab group after the plot
+                tab_group.render()
 
         percentiles_textbox.blur(
             id_func, inputs=[percentiles_textbox], outputs=[stored_percentiles]
