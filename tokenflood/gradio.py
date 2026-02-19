@@ -61,6 +61,7 @@ def merge_stats(
     stat_names: List[str],
     group_label_func: Callable[[pd.DataFrame], Dict[str, str]],
     x_label: str,
+    run_name: str,
 ) -> pd.DataFrame:
     group_labels = group_label_func(llm_request_data)
     group_ids = sorted(group_labels.keys())
@@ -71,7 +72,7 @@ def merge_stats(
                 {
                     x_label: [group_labels[g] for g in group_ids],
                     "latency": [all_stats[g][i] for g in group_ids],
-                    "metric": name,
+                    "metric": f"{run_name}__{name}",
                 }
             )
         )
@@ -104,21 +105,29 @@ def get_data(
         + make_percentile_labels(percentiles)
         + ["mean network latency"]
     )
-    combined = pd.DataFrame()
     if is_run_result_folder(folder):
-        combined = merge_stats(
-            llm_request_data, all_stats, stat_names, get_run_group_labels, "rps"
-        )
+        group_label_func = get_run_group_labels
+        x_label = "rps"
     elif is_observation_result_folder(folder):
-        combined = merge_stats(
+        group_label_func = get_observation_group_labels
+        x_label = "datetime"
+    else:
+        group_label_func = None
+        x_label = None
+
+    if group_label_func is not None and x_label is not None:
+        plot_data = merge_stats(
             llm_request_data,
             all_stats,
             stat_names,
-            get_observation_group_labels,
-            "datetime",
+            group_label_func,
+            x_label,
+            os.path.basename(folder),
         )
+    else:
+        plot_data = pd.DataFrame()
 
-    return combined, llm_request_data, ping_data
+    return plot_data, llm_request_data, ping_data
 
 
 def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
@@ -181,49 +190,6 @@ def get_markdown_summary(llm_request_data: pd.DataFrame) -> str:
     """
 
 
-def update_components(
-    results_folder: str, run: str, percentiles_text: str
-) -> Tuple[gr.Markdown, gr.Plot, gr.DataFrame, gr.DataFrame, gr.DataFrame]:
-    percentiles = str_to_percentiles(percentiles_text)
-    run_folder = os.path.join(results_folder, run)
-    combined, llm_request_data, ping_data = get_data(run_folder, percentiles)
-    markdown = gr.Markdown(get_markdown_summary(llm_request_data))
-    error_data = pd.DataFrame()
-    if is_run_result_folder(run_folder):
-        plot = make_run_latency_plot(combined)
-        error_data = pd.read_csv(os.path.join(run_folder, ERROR_FILE))
-    elif is_observation_result_folder(run_folder):
-        plot = make_observation_latency_plot(combined)
-        error_data = pd.read_csv(os.path.join(run_folder, ERROR_FILE))
-    else:
-        plot = gr.Plot()
-    return (
-        markdown,
-        plot,
-        gr.DataFrame(
-            llm_request_data,
-            label="llm request data",
-            buttons=["fullscreen", "copy"],
-            show_row_numbers=True,
-            show_search="filter",
-        ),
-        gr.DataFrame(
-            ping_data,
-            label="ping data",
-            buttons=["fullscreen", "copy"],
-            show_row_numbers=True,
-            show_search="filter",
-        ),
-        gr.DataFrame(
-            error_data,
-            label="error data",
-            buttons=["fullscreen", "copy"],
-            show_row_numbers=True,
-            show_search="filter",
-        ),
-    )
-
-
 def load_runs_from_disc(folder: str) -> List[str]:
     runs = sorted(os.listdir(folder), reverse=True)
     runs = [os.path.join(folder, run) for run in runs]
@@ -280,43 +246,25 @@ def clean_percentiles_input(text: str) -> str:
 def create_gradio_blocks(results_folder: str) -> Blocks:
     runs = load_runs_from_disc(results_folder)
     latest_run = runs[0]
-    reload_on_folder_change = functools.partial(update_components, results_folder)
     reload_dropdown_values_from_disc = functools.partial(
         update_dropdown, results_folder
     )
     initial_load = functools.partial(load_state, latest_run)
 
     with gr.Blocks() as data_visualization:
-        timer = gr.Timer(10)
+        timer = gr.Timer(2)
         stored_run = gr.BrowserState(latest_run)
         stored_percentiles = gr.BrowserState(DEFAULT_PERCENTILES_STR)
         dropdown_element = gr.Dropdown(
             runs,
             value=latest_run,
+            multiselect=True,
             filterable=True,
             label="Run Folder",
         )
         percentiles_textbox = gr.Textbox(
             DEFAULT_PERCENTILES_STR,
             label="Percentiles (comma separated, 1-100)",
-        )
-        (
-            markdown_element,
-            line_plot_element,
-            llm_request_data_table,
-            ping_data_table,
-            error_data_table,
-        ) = update_components(results_folder, latest_run, percentiles_textbox.value)
-        dropdown_element.change(
-            reload_on_folder_change,
-            inputs=[dropdown_element, percentiles_textbox],
-            outputs=[
-                markdown_element,
-                line_plot_element,
-                llm_request_data_table,
-                ping_data_table,
-                error_data_table,
-            ],
         )
         dropdown_element.change(
             id_func, inputs=[dropdown_element], outputs=[stored_run]
@@ -327,28 +275,63 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             reload_dropdown_values_from_disc,
             outputs=[dropdown_element],
         )
-        percentiles_textbox.blur(
-            reload_on_folder_change,
+
+        @gr.render(
             inputs=[dropdown_element, percentiles_textbox],
-            outputs=[
-                markdown_element,
-                line_plot_element,
-                llm_request_data_table,
-                ping_data_table,
-                error_data_table,
+            triggers=[
+                dropdown_element.change,
+                percentiles_textbox.blur,
+                percentiles_textbox.submit,
             ],
         )
-        percentiles_textbox.submit(
-            reload_on_folder_change,
-            inputs=[dropdown_element, percentiles_textbox],
-            outputs=[
-                markdown_element,
-                line_plot_element,
-                llm_request_data_table,
-                ping_data_table,
-                error_data_table,
-            ],
-        )
+        def display_selected_runs(runs: list[str], percentiles_text: str):
+            percentiles = str_to_percentiles(percentiles_text)
+            is_run_results = len(runs) > 0 and is_run_result_folder(
+                os.path.join(results_folder, runs[0])
+            )
+            is_observation_results = len(runs) > 0 and is_observation_result_folder(
+                os.path.join(results_folder, runs[0])
+            )
+            plot_data_sets = []
+            with gr.Tabs(selected=0, render=False) as tab_group:
+                for i, run in enumerate(runs):
+                    run_folder = os.path.join(results_folder, run)
+                    plot_data, llm_request_data, ping_data = get_data(
+                        run_folder, percentiles
+                    )
+                    plot_data_sets.append(plot_data)
+                    error_data = pd.read_csv(os.path.join(run_folder, ERROR_FILE))
+                    with gr.Tab(run, id=i):
+                        gr.Markdown(get_markdown_summary(llm_request_data))
+                        gr.DataFrame(
+                            llm_request_data,
+                            label="llm request data",
+                            buttons=["fullscreen", "copy"],
+                            show_row_numbers=True,
+                            show_search="filter",
+                        )
+                        gr.DataFrame(
+                            ping_data,
+                            label="ping data",
+                            buttons=["fullscreen", "copy"],
+                            show_row_numbers=True,
+                            show_search="filter",
+                        )
+                        gr.DataFrame(
+                            error_data,
+                            label="error data",
+                            buttons=["fullscreen", "copy"],
+                            show_row_numbers=True,
+                            show_search="filter",
+                        )
+            combined_plot_data = pd.concat(plot_data_sets, ignore_index=True)
+            if is_run_results:
+                make_run_latency_plot(combined_plot_data)
+            elif is_observation_results:
+                make_observation_latency_plot(combined_plot_data)
+            # render tab group after the plot
+            tab_group.render()
+
         percentiles_textbox.blur(
             id_func, inputs=[percentiles_textbox], outputs=[stored_percentiles]
         )
