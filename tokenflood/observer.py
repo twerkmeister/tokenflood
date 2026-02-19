@@ -12,7 +12,11 @@ from tokenflood.models.error_data import ErrorContext
 from tokenflood.models.llm_request_data import LLMRequestContext
 from tokenflood.models.observation_spec import ObservationSpec
 from tokenflood.models.ping_request_data import PingRequestContext
-from tokenflood.networking import option_request_endpoint, time_async_func
+from tokenflood.networking import (
+    ObserveURLMiddleware,
+    option_request_endpoint,
+    time_async_func,
+)
 from tokenflood.runner import (
     get_warm_session,
     handle_llm_result,
@@ -49,14 +53,14 @@ async def run_observation(
     io_context.activate()
     await io_context.wait_for_pending_writes()
     log.info("Warming up.")
-    client_session, url_observer, error = await get_warm_session(
-        endpoint_spec, io_context
-    )
+    error = await get_warm_session(endpoint_spec, io_context)
 
     if error:
         log.error(f"Not starting observation due to error: {error}")
-        await client_session.close()
+        await io_context.wait_for_pending_writes()
         return
+
+    url_observer = ObserveURLMiddleware()
 
     llm_request_tasks = set()
     ping_tasks = set()
@@ -109,7 +113,6 @@ async def run_observation(
                     endpoint_spec,
                     message_lists[i],
                     output_lengths[i],
-                    client_session,
                 )
             )
             t.add_done_callback(
@@ -129,7 +132,7 @@ async def run_observation(
                 pt = asyncio.create_task(
                     time_async_func(
                         option_request_endpoint(
-                            client_session,
+                            url_observer.session,
                             str(url_observer.url),
                             url_observer.headers,
                         )

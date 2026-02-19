@@ -157,7 +157,7 @@ class FileSink:
 
     async def wait_for_pending_writes(self):
         while not self.queue.empty():
-            await asyncio.sleep(0.001)
+            await asyncio.sleep(0.01)
 
 
 class CSVFileSink(FileSink):

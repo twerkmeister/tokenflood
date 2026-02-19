@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from unittest import mock
@@ -47,11 +48,18 @@ def test_create_schedule(spec_updates, expected_result, default_observation_spec
 
 @pytest.mark.asyncio
 async def test_run_observation(
-    superfast_observation_spec, base_endpoint_spec, file_io_context
+    superfast_observation_spec,
+    base_endpoint_spec,
+    file_io_context,
+    with_patched_aiohttp_session,
+    url_observer,
 ):
     await run_observation(
         base_endpoint_spec, superfast_observation_spec, file_io_context
     )
+
+    error_df = pd.read_csv(file_io_context.error_sink.destination)
+    assert len(error_df) == 0
 
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     assert len(df) == superfast_observation_spec.total_num_requests()
@@ -59,20 +67,24 @@ async def test_run_observation(
     ping_df = pd.read_csv(file_io_context.network_latency_sink.destination)
     assert len(ping_df) == superfast_observation_spec.num_polls()
 
-    error_df = pd.read_csv(file_io_context.error_sink.destination)
-    assert len(error_df) == 0
-
 
 @pytest.mark.asyncio
 @mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_run_observation_openai_missing_api_key(
-    superfast_observation_spec, openai_endpoint_spec, file_io_context, caplog
+    superfast_observation_spec,
+    openai_endpoint_spec,
+    file_io_context,
+    caplog,
+    with_patched_aiohttp_session,
+    url_observer,
 ):
     with caplog.at_level(logging.ERROR):
         await run_observation(
             openai_endpoint_spec, superfast_observation_spec, file_io_context
         )
     assert "API key" in caplog.text
+
+    await asyncio.sleep(0.1)
 
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     assert len(df) == 0

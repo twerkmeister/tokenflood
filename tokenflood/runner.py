@@ -1,10 +1,9 @@
 import asyncio
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional
 import logging
 
 import litellm
 import numpy as np
-from aiohttp import ClientSession, TCPConnector
 from litellm import acompletion
 from litellm.types.utils import ModelResponse, Usage
 from tqdm import tqdm
@@ -117,8 +116,6 @@ async def run_heuristic_test(
     run_suite: HeuristicRunSuite,
     run_spec: HeuristicRunSpec,
     endpoint_spec: EndpointSpec,
-    client_session: ClientSession,
-    url_observer: ObserveURLMiddleware,
     io_context: IOContext,
 ) -> bool:
     schedule = create_bursty_schedule(run_spec)
@@ -135,6 +132,7 @@ async def run_heuristic_test(
     num_pings = 0
     llm_request_tasks = set()
     ping_tasks = set()
+    url_observer = ObserveURLMiddleware()
 
     pbar = tqdm(range(len(schedule)), desc=test_description)
     for i in pbar:
@@ -159,7 +157,6 @@ async def run_heuristic_test(
                 endpoint_spec,
                 message_lists[i],
                 output_lengths[i],
-                client_session,
             )
         )
         t.add_done_callback(
@@ -180,7 +177,7 @@ async def run_heuristic_test(
             pt = asyncio.create_task(
                 time_async_func(
                     option_request_endpoint(
-                        client_session,
+                        url_observer.session,
                         str(url_observer.url),
                         url_observer.headers,
                     )
@@ -207,16 +204,15 @@ async def run_heuristic_test(
     return error_threshold_tripped
 
 
-async def warm_up_session(endpoint_spec: EndpointSpec, client_session: ClientSession):
+async def warm_up_session(endpoint_spec: EndpointSpec):
     message_list = create_message_list_from_prompt("ping")
-    return await send_llm_request(endpoint_spec, message_list, 10, client_session)
+    return await send_llm_request(endpoint_spec, message_list, 10)
 
 
 async def send_llm_request(
     endpoint_spec: EndpointSpec,
     messages: MessageList,
     num_generation_tokens: int,
-    client_session: ClientSession,
 ) -> ModelResponse:
     return await acompletion(
         model=endpoint_spec.provider_model_str,
@@ -227,7 +223,6 @@ async def send_llm_request(
         deployment_id=endpoint_spec.deployment,
         extra_headers=endpoint_spec.extra_headers,
         max_retries=0,
-        shared_session=client_session,
         reasoning_effort=endpoint_spec.reasoning_effort,
     )
 
@@ -240,18 +235,15 @@ def make_test_description(
 
 async def get_warm_session(
     endpoint_spec: EndpointSpec, io_context: IOContext
-) -> Tuple[ClientSession, ObserveURLMiddleware, Optional[str]]:
+) -> Optional[str]:
     error = None
-    url_observer = ObserveURLMiddleware()
-    connector = TCPConnector(limit=1000, loop=asyncio.get_running_loop())
-    client_session = ClientSession(middlewares=[url_observer], connector=connector)
     error_context = ErrorContext(requests_per_second_phase=-1.0, group_id="warmup")
-    t = asyncio.create_task(warm_up_session(endpoint_spec, client_session))
+    t = asyncio.create_task(warm_up_session(endpoint_spec))
     t.add_done_callback(handle_error(io_context, error_context))
     result = (await asyncio.gather(t, return_exceptions=True))[0]
     if isinstance(result, Exception):
         error = str(result)
-    return client_session, url_observer, error
+    return error
 
 
 async def run_suite(
@@ -261,12 +253,9 @@ async def run_suite(
     await io_context.wait_for_pending_writes()
     run_specs = suite.create_run_specs()
     log.info("Warming up.")
-    client_session, url_observer, error = await get_warm_session(
-        endpoint_spec, io_context
-    )
+    error = await get_warm_session(endpoint_spec, io_context)
     if error:
         log.error(f"Not starting run due to error: {error}")
-        await client_session.close()
         return
     for phase, run_spec in enumerate(run_specs):
         test_description = make_test_description(suite, phase + 1, run_spec)
@@ -276,8 +265,6 @@ async def run_suite(
             suite,
             run_spec,
             endpoint_spec,
-            client_session,
-            url_observer,
             io_context,
         )
 
@@ -285,4 +272,3 @@ async def run_suite(
             log.error("Ending the run because the error threshold was tripped.")
             break
         global_warn_once_filter.clear()
-    await client_session.close()

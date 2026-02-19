@@ -34,6 +34,10 @@ from tokenflood.io import (
     write_pydantic_yaml,
 )
 from tokenflood.logging import global_warn_once_filter
+from tokenflood.networking import (
+    patch_aiohttp_client_session,
+    unpatch_aiohttp_client_session,
+)
 from tokenflood.observer import run_observation
 from tokenflood.runner import run_suite
 from tokenflood.cost import check_token_usage_upfront
@@ -270,6 +274,7 @@ def observe_endpoint(args: argparse.Namespace):
 def main():
     load_dotenv(".env")
     configure_logging()
+    patch_aiohttp_client_session()
     args = parse_args(sys.argv[1:])
     log.info(
         the_wave,
@@ -278,3 +283,4 @@ def main():
         args.func(args)
     except KeyboardInterrupt:
         log.info("Stopping...")
+    unpatch_aiohttp_client_session()

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os.path
 import time
@@ -6,7 +7,7 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
-from aiohttp import ClientSession
+
 
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_spec import RunSpec
@@ -35,21 +36,22 @@ def test_create_schedule(requests_per_second: float, test_length_in_seconds: int
 
 @pytest.mark.asyncio
 async def test_send_llm_request(base_endpoint_spec: EndpointSpec):
-    client_session = ClientSession()
     prompt = "ping"
     messages = [{"content": prompt, "role": "user"}]
-    response = await send_llm_request(base_endpoint_spec, messages, 1, client_session)
+    response = await send_llm_request(base_endpoint_spec, messages, 1)
     assert response
 
 
 @pytest.mark.asyncio
 async def test_run_heuristic_test(
-    base_run_suite, run_spec, base_endpoint_spec, file_io_context
+    base_run_suite,
+    run_spec,
+    base_endpoint_spec,
+    file_io_context,
+    with_patched_aiohttp_session,
 ):
     file_io_context.activate()
-    client_session, url_observer, error = await get_warm_session(
-        base_endpoint_spec, file_io_context
-    )
+    error = await get_warm_session(base_endpoint_spec, file_io_context)
     assert error is None
     start = time.time()
     error_threshold_tripped = await run_heuristic_test(
@@ -58,17 +60,13 @@ async def test_run_heuristic_test(
         base_run_suite,
         run_spec,
         base_endpoint_spec,
-        client_session,
-        url_observer,
         file_io_context,
     )
     end = time.time()
     assert end - start < run_spec.test_length_in_seconds + 5
     assert not error_threshold_tripped
-
+    await asyncio.sleep(0.1)
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
-    # TODO: FLAKY
-    # FAILED tests/test_runner.py::test_run_heuristic_test - assert 1 == 2
     assert len(df) == run_spec.total_num_requests
 
 
@@ -77,6 +75,7 @@ async def test_run_entire_tiny_suite(
     tiny_run_suite,
     base_endpoint_spec,
     file_io_context,
+    with_patched_aiohttp_session,
 ):
     await run_suite(base_endpoint_spec, tiny_run_suite, file_io_context)
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
@@ -89,10 +88,15 @@ async def test_run_entire_tiny_suite(
 @pytest.mark.asyncio
 @mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_run_tiny_suite_openai_missing_api_key(
-    tiny_run_suite, openai_endpoint_spec, file_io_context, caplog
+    tiny_run_suite,
+    openai_endpoint_spec,
+    file_io_context,
+    caplog,
+    with_patched_aiohttp_session,
 ):
     with caplog.at_level(logging.ERROR):
         await run_suite(openai_endpoint_spec, tiny_run_suite, file_io_context)
+    await asyncio.sleep(0.1)
     run_specs = tiny_run_suite.create_run_specs()
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     assert len(df) == 0
@@ -102,7 +106,11 @@ async def test_run_tiny_suite_openai_missing_api_key(
 
 @pytest.mark.asyncio
 async def test_run_tiny_suite_bad_endpoint(
-    tiny_run_suite, base_endpoint_spec, file_io_context, caplog
+    tiny_run_suite,
+    base_endpoint_spec,
+    file_io_context,
+    caplog,
+    with_patched_aiohttp_session,
 ):
     # creating endpoint spec with bad port number
     bad_endpoint_spec = base_endpoint_spec.model_copy(
@@ -110,10 +118,11 @@ async def test_run_tiny_suite_bad_endpoint(
     )
     with caplog.at_level(logging.ERROR):
         await run_suite(bad_endpoint_spec, tiny_run_suite, file_io_context)
+    await asyncio.sleep(0.1)
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     assert len(df) == 0
     assert len(tiny_run_suite.create_run_specs()) > 1
-    assert "Connection error" in caplog.text
+    assert "Cannot connect" in caplog.text
 
 
 @mock.patch("tokenflood.runner.warm_up_session")

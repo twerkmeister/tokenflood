@@ -27,6 +27,11 @@ from tokenflood.models.observation_spec import ObservationSpec
 from tokenflood.models.run_spec import HeuristicRunSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.models.token_set import TokenSet
+from tokenflood.networking import (
+    ObserveURLMiddleware,
+    patch_aiohttp_client_session,
+    unpatch_aiohttp_client_session,
+)
 
 
 def join_folder_checked(path: str, folder: str) -> str:
@@ -201,3 +206,16 @@ def unique_temporary_folder() -> Generator[str, None, None]:
     yield name
     shutil.rmtree(name)
     assert not os.path.isdir(name)
+
+
+@pytest.fixture()
+def with_patched_aiohttp_session() -> Generator[None, None, None]:
+    patch_aiohttp_client_session()
+    yield
+    unpatch_aiohttp_client_session()
+
+
+@pytest.fixture()
+def url_observer() -> ObserveURLMiddleware:
+    ObserveURLMiddleware.reset()
+    return ObserveURLMiddleware()

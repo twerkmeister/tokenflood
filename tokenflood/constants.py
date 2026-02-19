@@ -7,6 +7,8 @@ OBSERVATION_SPEC_FILE = "observation_spec.yml"
 ERROR_FILE = "errors.csv"
 REQUESTS_PER_SECOND_COLUMN_NAME = "requests_per_second_at_the_time"
 
+CLIENT_SESSION_INIT_BACKUP_ATTR = "_tokenflood_init_backup"
+
 COMMON_RESULT_FILES = {
     LLM_REQUESTS_FILE,
     NETWORK_LATENCY_FILE,
