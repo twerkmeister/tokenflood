@@ -34,7 +34,6 @@ class ObserveURLMiddleware:
 
     def __new__(cls):
         if cls._instance is None:
-            print("Creating the object")
             cls._instance = super(ObserveURLMiddleware, cls).__new__(cls)
             cls._instance.url = None
             cls._instance.host = None
