@@ -20,7 +20,10 @@ starter_run_suite = HeuristicRunSuite(
 
 starter_model_id = "HuggingFaceTB/SmolLM-135M-Instruct"
 starter_endpoint_spec_vllm = EndpointSpec(
-    provider="hosted_vllm", model=starter_model_id, base_url="http://127.0.0.1:8000/v1"
+    provider="hosted_vllm",
+    name="local_vllm",
+    model=starter_model_id,
+    base_url="http://127.0.0.1:8000/v1",
 )
 
 starter_observation_spec = ObservationSpec(

@@ -55,7 +55,7 @@ def test_get_run_name(base_endpoint_spec):
     name = "base-case"
     run_name = get_run_name(date_str, task_type, name, base_endpoint_spec)
     assert run_name.startswith(f"{date_str}_{task_type}_{name}_")
-    assert run_name.endswith(base_endpoint_spec.provider_model_str_as_folder_name)
+    assert run_name.endswith(base_endpoint_spec.folder_name)
 
 
 @pytest.mark.parametrize(

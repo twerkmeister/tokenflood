@@ -117,6 +117,8 @@ async def test_file_sink(unique_temporary_file):
         await asyncio.sleep(0.001)
     sink.close()
 
+    await asyncio.sleep(0.1)
+
     with open(unique_temporary_file) as f:
         assert f.read() == "".join(items)
 
@@ -131,6 +133,8 @@ async def test_csv_file_sink(unique_temporary_file):
         sink.write_dict(item)
         await asyncio.sleep(0.001)
     sink.close()
+
+    await asyncio.sleep(0.1)
 
     with open(unique_temporary_file) as f:
         assert f.read() == "a,b\n1,2\n3,4\n"

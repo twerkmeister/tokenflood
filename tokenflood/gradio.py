@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import asyncio
 from datetime import datetime, timezone
 import functools
 import logging
 import os
 import re
-from typing import Callable, Dict, List, Tuple, TypeVar
+from typing import Callable, Dict, List, Optional, Tuple, TypeVar, Union
 
 import gradio.routes
 import plotly.express as px  # type:ignore[import-untyped]
@@ -36,17 +38,25 @@ from tokenflood.models.util import numeric
 
 log = logging.getLogger(__name__)
 
+X = TypeVar("X")
+
+GroupLabelFunc = Union[
+    Callable[[pd.DataFrame], Dict[str, str]],
+    Callable[[pd.DataFrame], Dict[str, datetime]],
+]
+
 
 def get_group_labels(
-    llm_request_data: pd.DataFrame, label_func: Callable[[pd.DataFrame], str]
-) -> Dict[str, str]:
+    llm_request_data: pd.DataFrame,
+    label_func: Callable[[pd.DataFrame], X],
+) -> dict[str, X]:
     return {
         g: label_func(get_group_data(llm_request_data, g).reset_index())
         for g in get_groups(llm_request_data)
     }
 
 
-def get_observation_group_labels(llm_request_data: pd.DataFrame) -> Dict[str, str]:
+def get_observation_group_labels(llm_request_data: pd.DataFrame) -> Dict[str, datetime]:
     return get_group_labels(
         llm_request_data,
         lambda df: datetime.strptime(
@@ -65,7 +75,7 @@ def merge_stats(
     llm_request_data: pd.DataFrame,
     all_stats: Dict[str, List[numeric]],
     stat_names: List[str],
-    group_label_func: Callable[[pd.DataFrame], Dict[str, str]],
+    group_label_func: GroupLabelFunc,
     x_label: str,
     run_name: str,
 ) -> pd.DataFrame:
@@ -111,15 +121,14 @@ def get_data(
         + make_percentile_labels(percentiles)
         + ["mean network latency"]
     )
+    group_label_func: Optional[GroupLabelFunc] = None
+    x_label = None
     if is_run_result_folder(folder):
         group_label_func = get_run_group_labels
         x_label = "rps"
     elif is_observation_result_folder(folder):
         group_label_func = get_observation_group_labels
         x_label = "datetime"
-    else:
-        group_label_func = None
-        x_label = None
 
     if group_label_func is not None and x_label is not None:
         plot_data = merge_stats(
