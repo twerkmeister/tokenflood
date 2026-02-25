@@ -6,13 +6,15 @@ import functools
 import logging
 import os
 import re
+import colorsys
 from typing import Callable, Dict, List, Optional, Tuple, TypeVar, Union
-
 import gradio.routes
 import plotly.express as px  # type:ignore[import-untyped]
 import pandas as pd
 import gradio as gr
 from gradio import Blocks
+
+from tokenflood import __version__
 
 from tokenflood.analysis import (
     calculate_percentile,
@@ -37,6 +39,99 @@ from tokenflood.models.divergence import TokenDivergence
 from tokenflood.models.util import numeric
 
 log = logging.getLogger(__name__)
+
+
+# 1. The original brightening function
+def brighten_color(hex_color, step, total_steps=50):
+    hex_color = hex_color.lstrip("#")
+    r, g, b = tuple(int(hex_color[i : i + 2], 16) / 255.0 for i in (0, 2, 4))
+    h, lightness, s = colorsys.rgb_to_hls(r, g, b)
+
+    max_lightness = 0.80
+    lightness_range = max_lightness - lightness
+    new_l = lightness + (lightness_range * (step / total_steps))
+
+    new_r, new_g, new_b = colorsys.hls_to_rgb(h, new_l, s)
+    return "#{:02x}{:02x}{:02x}".format(
+        int(new_r * 255), int(new_g * 255), int(new_b * 255)
+    )
+
+
+# 2. Base color definitions
+BASE_COLORS = [
+    "#2e4c8f",
+    "#4d7358",
+    "#9e2638",
+    "#616161",
+    "#75279c",
+    "#8b4937",
+    "#1a919c",
+    "#5b6170",
+    "#bb370f",
+    "#748e2f",
+]
+
+
+# 3. Logic to assign colors based on metric names
+def assign_metric_colors(metric_names: list[str]) -> dict[str, str]:
+    def map_metric_to_step(metric_name: str) -> int:
+        if metric_name == "mean":
+            return 0
+        if metric_name.startswith("p") and len(metric_name) <= 3:
+            try:
+                percentile = int(metric_name[1:])
+            except ValueError:
+                return 0
+            step = abs(50 - percentile)
+            return step
+        return 0
+
+    color_assignments = {}
+    unique_prefixes = []
+
+    # First pass: Identify unique prefixes to assign base colors
+    for name in metric_names:
+        prefix = name.split("__")[0]
+        if prefix not in unique_prefixes:
+            unique_prefixes.append(prefix)
+
+    prefix_to_base = {
+        prefix: BASE_COLORS[i % len(BASE_COLORS)]
+        for i, prefix in enumerate(unique_prefixes)
+    }
+
+    # Second pass: Determine the specific color per metric
+    for name in metric_names:
+        prefix, suffix = name.split("__")
+
+        # Extract identifier (e.g., 'p25' from 'p25_response_time')
+        # This assumes identifier is at the start of the suffix
+        metric_name = suffix.split(" ")[0]
+
+        base_hex = prefix_to_base[prefix]
+        step = map_metric_to_step(metric_name)  # Default to step 10 if unknown
+
+        color_assignments[name] = brighten_color(base_hex, step)
+
+    return color_assignments
+
+
+def assign_metric_line_style(metric_names):
+    def map_metric_to_line_style(plot_suffix: str) -> str:
+        if plot_suffix.startswith("mean network"):
+            return "dot"
+        elif plot_suffix.startswith("mean"):
+            return "dash"
+        return "solid"
+
+    style_assignments = {}
+
+    for name in metric_names:
+        _, suffix = name.split("__")
+        style_assignments[name] = map_metric_to_line_style(suffix)
+
+    return style_assignments
+
 
 X = TypeVar("X")
 
@@ -146,14 +241,18 @@ def get_data(
 
 
 def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
+    metrics = data["metric"].unique()
     fig = px.line(
         data,
         x="datetime",
         y="latency",
         color="metric",
+        line_dash="metric",
+        color_discrete_map=assign_metric_colors(metrics),
+        line_dash_map=assign_metric_line_style(metrics),
         markers=True,
         title="Latency over time.",
-        height=500,
+        height=900,
     )
     fig.update_layout(
         xaxis_title="UTC datetime",
@@ -165,14 +264,18 @@ def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
 
 
 def make_run_latency_plot(data: pd.DataFrame) -> gr.Plot:
+    metrics = data["metric"].unique()
     fig = px.line(
         data,
         x="rps",
         y="latency",
         color="metric",
+        line_dash="metric",
+        color_discrete_map=assign_metric_colors(metrics),
+        line_dash_map=assign_metric_line_style(metrics),
         markers=True,
         title="Latency across request rates.",
-        height=500,
+        height=900,
     )
     fig.update_layout(
         xaxis_title="requests per second",
@@ -267,6 +370,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
     initial_load = functools.partial(load_state, latest_run)
 
     with gr.Blocks() as data_visualization:
+        title = gr.HTML(f"<h1>Tokenflood v{__version__}</h1>")
         timer = gr.Timer(2)
         stored_run = gr.BrowserState(latest_run)
         stored_percentiles = gr.BrowserState(DEFAULT_PERCENTILES_STR)
