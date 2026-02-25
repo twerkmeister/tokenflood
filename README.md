@@ -29,13 +29,14 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
     * [Endpoint Examples](#endpoint-examples)
   * [Run Suites](#run-suites)
   * [Observation Specs](#observation-specs)
+* [Visualizing Results](#visualizing-results)
 * [Heuristic Load Testing Explained](#heuristic-load-testing)
 * [Safety](#-safety-)
 
 ## Common Usage Scenarios
 
 1. Load testing self-hosted LLMs.
-2. Assessing the effects of hardware, quantization, and prompt optimizations on latency, throughput, and costs.
+2. Assessing the effects of model, hardware, quantization, and prompt optimizations on latency, throughput, and costs.
 3. Assessing the intraday latency variations of hosted LLM providers for your load types.
 4. Assessing and choosing a hosted LLM provider before going into production with them. 
 
@@ -54,7 +55,7 @@ Tokenflood allows you to find worthwhile goals for prompt parameter improvements
 ### Example 2: Find out when people start stealing your latency
 
 Load testing large providers does not really make sense if you value your money as their datacenters are huge, shared resources. While a single company or user usually does not have much effect on them,
-these shared resources are subject to intra-day latency variations, oftentimes coinciding with daily business hours.
+these shared resources are subject to intraday latency variations, oftentimes coinciding with daily business hours.
 
 ![observing-intraday-latency-variation](./images/observe.png)
 
@@ -299,6 +300,14 @@ token_set:                      # The 1-token strings tokenflood uses to fill up
   - ' Y'
   - ' Z'
 ```
+
+## Visualizing Results
+
+Tokenflood comes with a builtin gradio frontend to visualize the results in a convenient 
+manner and compare multiple runs against one another. Simply run `tokenflood viz` in the
+same working directory in which you started your load tests.
+
+You can check out [this public huggingface space](https://huggingface.co/spaces/twerkmeister/tokenflood-viz) to have a look at the gradio frontend.
 
 
 ## Heuristic Load Testing
