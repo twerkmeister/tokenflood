@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import colorsys
+from functools import partial
 from typing import Callable, Dict, List, Optional, Tuple, TypeVar, Union
 import gradio.routes
 import plotly.express as px  # type:ignore[import-untyped]
@@ -278,6 +279,15 @@ def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
     fig.layout.template = "plotly_dark"
     return gr.Plot(fig)
 
+def create_debounce_js_code(timer_name: str, delay_ms: int = 500):
+    return f"""
+    function(text) {{
+        if (window.{timer_name}) clearTimeout(window.{timer_name});
+        return new Promise(resolve => {{
+            window.{timer_name} = setTimeout(() => resolve(text), {delay_ms});
+        }});
+    }}"""
+
 
 def make_run_latency_plot(data: pd.DataFrame) -> gr.Plot:
     metrics = data[METRIC_FIELD].unique()
@@ -397,10 +407,6 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             filterable=True,
             label="Run Folder",
         )
-        percentiles_textbox = gr.Textbox(
-            DEFAULT_PERCENTILES_STR,
-            label="Percentiles (comma separated, 1-100)",
-        )
         dropdown_element.change(
             id_func, inputs=[dropdown_element], outputs=[stored_run]
         )
@@ -411,27 +417,29 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             outputs=[dropdown_element],
         )
 
-        @gr.render(
-            inputs=[dropdown_element, percentiles_textbox],
-            triggers=[
-                dropdown_element.change,
-                percentiles_textbox.blur,
-                percentiles_textbox.submit,
-            ],
+        percentiles_textbox = gr.Textbox(
+            DEFAULT_PERCENTILES_STR,
+            label="Percentiles (comma separated, 1-100)",
         )
-        def display_selected_runs(runs: list[str], percentiles_text: str):
+        percentiles_textbox.change(id_func, inputs=percentiles_textbox, outputs=stored_percentiles, js=create_debounce_js_code("percentiles_textbox_timer", 500))
+
+
+        @gr.render(
+            inputs=[dropdown_element, stored_percentiles],
+        )
+        def display_selected_runs(selected_runs: list[str], percentiles_text: str):
             percentiles = str_to_percentiles(percentiles_text)
-            is_run_results = len(runs) > 0 and is_run_result_folder(
-                os.path.join(results_folder, runs[0])
+            is_run_results = len(selected_runs) > 0 and is_run_result_folder(
+                os.path.join(results_folder, selected_runs[0])
             )
-            is_observation_results = len(runs) > 0 and is_observation_result_folder(
-                os.path.join(results_folder, runs[0])
+            is_observation_results = len(selected_runs) > 0 and is_observation_result_folder(
+                os.path.join(results_folder, selected_runs[0])
             )
             plot_data_sets = []
             with gr.Tabs(
-                selected=0 if len(runs) > 0 else None, render=False
+                selected=0 if len(selected_runs) > 0 else None, render=False
             ) as tab_group:
-                for i, run in enumerate(runs):
+                for i, run in enumerate(selected_runs):
                     run_folder = os.path.join(results_folder, run)
 
                     if (
