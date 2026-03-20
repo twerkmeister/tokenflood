@@ -416,21 +416,21 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
         timer = gr.Timer(2)
         stored_run = gr.BrowserState(latest_run)
         stored_percentiles = gr.BrowserState(DEFAULT_PERCENTILES_STR)
-        dropdown_element = gr.Dropdown(
+        run_select_dropdown = gr.Dropdown(
             runs,
             value=latest_run,
             multiselect=True,
             filterable=True,
-            label="Run Folder",
+            label="Runs",
         )
-        dropdown_element.change(
-            id_func, inputs=[dropdown_element], outputs=[stored_run]
+        run_select_dropdown.change(
+            id_func, inputs=[run_select_dropdown], outputs=[stored_run]
         )
-        dropdown_element.focus(lambda: gr.Timer(active=False), outputs=[timer])
-        dropdown_element.blur(lambda: gr.Timer(active=True), outputs=[timer])
+        run_select_dropdown.focus(lambda: gr.Timer(active=False), outputs=[timer])
+        run_select_dropdown.blur(lambda: gr.Timer(active=True), outputs=[timer])
         timer.tick(
             reload_dropdown_values_from_disc,
-            outputs=[dropdown_element],
+            outputs=[run_select_dropdown],
         )
 
         percentiles_textbox = gr.Textbox(
@@ -445,7 +445,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
         )
 
         @gr.render(
-            inputs=[dropdown_element, stored_percentiles],
+            inputs=[run_select_dropdown, stored_percentiles],
         )
         def display_selected_runs(selected_runs: list[str], percentiles_text: str):
             percentiles = str_to_percentiles(percentiles_text)
@@ -518,7 +518,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
         data_visualization.load(
             initial_load,
             inputs=[stored_run, stored_percentiles],
-            outputs=[dropdown_element, percentiles_textbox],
+            outputs=[run_select_dropdown, percentiles_textbox],
         )
     return data_visualization
 
