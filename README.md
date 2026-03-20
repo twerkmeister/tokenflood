@@ -14,7 +14,7 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
 > [!CAUTION]
 > Tokenflood can generate high costs if configured poorly and used with pay-per- 
 > token services. Make sure you only test workloads that are within a reasonable budget.
-> See the safety section for more information.
+> See the [safety section](#-safety-) for more information.
 
 ### Table of Contents
 
