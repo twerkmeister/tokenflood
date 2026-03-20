@@ -76,6 +76,11 @@ METRIC_PARTS_SEPERATOR = " "
 MEAN_METRIC_PREFIX = "mean"
 PERCENTILE_METRIC_PREFIX = "p"
 
+DATETIME_FIELD = "datetime"
+REQUESTS_PER_SECOND_FIELD = "rps"
+LATENCY_FIELD = "latency"
+METRIC_FIELD = "metric"
+
 def split_measurement_name(name: str) -> Tuple[str, str]:
     split_name = name.split(METRIC_SEPERATOR)
     metric = split_name[-1]
@@ -165,7 +170,7 @@ def get_observation_group_labels(llm_request_data: pd.DataFrame) -> Dict[str, da
     return get_group_labels(
         llm_request_data,
         lambda df: datetime.strptime(
-            df["datetime"][0][:-9], "%Y-%m-%d_%H-%M-%S"
+            df[DATETIME_FIELD][0][:-9], "%Y-%m-%d_%H-%M-%S"
         ).replace(tzinfo=timezone.utc),
     )
 
@@ -192,8 +197,8 @@ def merge_stats(
             pd.DataFrame(
                 {
                     x_label: [group_labels[g] for g in group_ids],
-                    "latency": [all_stats[g][i] for g in group_ids],
-                    "metric": f"{run_name}{METRIC_SEPERATOR}{name}",
+                    LATENCY_FIELD: [all_stats[g][i] for g in group_ids],
+                    METRIC_FIELD: f"{run_name}{METRIC_SEPERATOR}{name}",
                 }
             )
         )
@@ -217,9 +222,9 @@ def get_data(
         calculate_percentile(p) for p in percentiles
     ]
     request_stats = get_group_stats(
-        llm_request_data, "latency", llm_request_data_aggregations
+        llm_request_data, LATENCY_FIELD, llm_request_data_aggregations
     )
-    network_stats = get_group_stats(ping_data, "latency", [mean_int])
+    network_stats = get_group_stats(ping_data, LATENCY_FIELD, [mean_int])
     all_stats = extend_group_stats(request_stats, network_stats)
     stat_names = (
         [f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}request{METRIC_PARTS_SEPERATOR}latency"]
@@ -230,10 +235,10 @@ def get_data(
     x_label = None
     if is_run_result_folder(folder):
         group_label_func = get_run_group_labels
-        x_label = "rps"
+        x_label = REQUESTS_PER_SECOND_FIELD
     elif is_observation_result_folder(folder):
         group_label_func = get_observation_group_labels
-        x_label = "datetime"
+        x_label = DATETIME_FIELD
 
     if group_label_func is not None and x_label is not None:
         plot_data = merge_stats(
@@ -251,13 +256,14 @@ def get_data(
 
 
 def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
-    metrics = data["metric"].unique()
+    data = data.sort_values(DATETIME_FIELD)
+    metrics = data[METRIC_FIELD].unique()
     fig = px.line(
         data,
-        x="datetime",
-        y="latency",
-        color="metric",
-        line_dash="metric",
+        x=DATETIME_FIELD,
+        y=LATENCY_FIELD,
+        color=METRIC_FIELD,
+        line_dash=METRIC_FIELD,
         color_discrete_map=assign_metric_colors(metrics),
         line_dash_map=assign_metric_line_style(metrics),
         markers=True,
@@ -274,13 +280,13 @@ def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
 
 
 def make_run_latency_plot(data: pd.DataFrame) -> gr.Plot:
-    metrics = data["metric"].unique()
+    metrics = data[METRIC_FIELD].unique()
     fig = px.line(
         data,
-        x="rps",
-        y="latency",
-        color="metric",
-        line_dash="metric",
+        x=REQUESTS_PER_SECOND_FIELD,
+        y=LATENCY_FIELD,
+        color=METRIC_FIELD,
+        line_dash=METRIC_FIELD,
         color_discrete_map=assign_metric_colors(metrics),
         line_dash_map=assign_metric_line_style(metrics),
         markers=True,
@@ -440,7 +446,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                         run_folder, percentiles
                     )
                     plot_data_sets.append(plot_data)
-                    error_data = pd.read_csv(os.path.join(run_folder, ERROR_FILE))
+                    error_data = pd.read_csv(str(os.path.join(run_folder, ERROR_FILE)))
                     with gr.Tab(run, id=i):
                         gr.Markdown(get_markdown_summary(llm_request_data))
                         gr.DataFrame(
