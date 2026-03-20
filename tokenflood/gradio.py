@@ -71,13 +71,23 @@ BASE_COLORS = [
     "#748e2f",
 ]
 
+METRIC_SEPERATOR = "__"
+METRIC_PARTS_SEPERATOR = " "
+MEAN_METRIC_PREFIX = "mean"
+PERCENTILE_METRIC_PREFIX = "p"
+
+def split_measurement_name(name: str) -> Tuple[str, str]:
+    split_name = name.split(METRIC_SEPERATOR)
+    metric = split_name[-1]
+    name_part = METRIC_SEPERATOR.join(split_name[:-1])
+    return name_part, metric
 
 # 3. Logic to assign colors based on metric names
 def assign_metric_colors(metric_names: list[str]) -> dict[str, str]:
     def map_metric_to_step(metric_name: str) -> int:
-        if metric_name == "mean":
+        if metric_name == MEAN_METRIC_PREFIX:
             return 0
-        if metric_name.startswith("p") and len(metric_name) <= 3:
+        if metric_name.startswith(PERCENTILE_METRIC_PREFIX) and len(metric_name) <= 3:
             try:
                 percentile = int(metric_name[1:])
             except ValueError:
@@ -87,28 +97,28 @@ def assign_metric_colors(metric_names: list[str]) -> dict[str, str]:
         return 0
 
     color_assignments = {}
-    unique_prefixes = []
+    unique_experiment_names = []
 
     # First pass: Identify unique prefixes to assign base colors
     for name in metric_names:
-        prefix = name.split("__")[0]
-        if prefix not in unique_prefixes:
-            unique_prefixes.append(prefix)
+        experiment_name, _ = split_measurement_name(name)
+        if experiment_name not in unique_experiment_names:
+            unique_experiment_names.append(experiment_name)
 
-    prefix_to_base = {
-        prefix: BASE_COLORS[i % len(BASE_COLORS)]
-        for i, prefix in enumerate(unique_prefixes)
+    experiment_name_to_color = {
+        experiment_name: BASE_COLORS[i % len(BASE_COLORS)]
+        for i, experiment_name in enumerate(unique_experiment_names)
     }
 
     # Second pass: Determine the specific color per metric
     for name in metric_names:
-        prefix, suffix = name.split("__")
+        experiment_name, metric = split_measurement_name(name)
 
-        # Extract identifier (e.g., 'p25' from 'p25_response_time')
+        # Extract identifier (e.g., 'p25' from 'p25 response time')
         # This assumes identifier is at the start of the suffix
-        metric_name = suffix.split(" ")[0]
+        metric_name = metric.split(METRIC_PARTS_SEPERATOR)[0]
 
-        base_hex = prefix_to_base[prefix]
+        base_hex = experiment_name_to_color[experiment_name]
         step = map_metric_to_step(metric_name)  # Default to step 10 if unknown
 
         color_assignments[name] = brighten_color(base_hex, step)
@@ -118,16 +128,16 @@ def assign_metric_colors(metric_names: list[str]) -> dict[str, str]:
 
 def assign_metric_line_style(metric_names):
     def map_metric_to_line_style(plot_suffix: str) -> str:
-        if plot_suffix.startswith("mean network"):
+        if plot_suffix.startswith(f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}network"):
             return "dot"
-        elif plot_suffix.startswith("mean"):
+        elif plot_suffix.startswith(MEAN_METRIC_PREFIX):
             return "dash"
         return "solid"
 
     style_assignments = {}
 
     for name in metric_names:
-        _, suffix = name.split("__")
+        _, suffix = split_measurement_name(name)
         style_assignments[name] = map_metric_to_line_style(suffix)
 
     return style_assignments
@@ -183,7 +193,7 @@ def merge_stats(
                 {
                     x_label: [group_labels[g] for g in group_ids],
                     "latency": [all_stats[g][i] for g in group_ids],
-                    "metric": f"{run_name}__{name}",
+                    "metric": f"{run_name}{METRIC_SEPERATOR}{name}",
                 }
             )
         )
@@ -192,7 +202,7 @@ def merge_stats(
 
 
 def make_percentile_labels(percentiles: List[int]) -> List[str]:
-    return [f"p{p} request latency" for p in percentiles]
+    return [f"{PERCENTILE_METRIC_PREFIX}{p}{METRIC_PARTS_SEPERATOR}request{METRIC_PARTS_SEPERATOR}latency" for p in percentiles]
 
 
 def get_data(
@@ -212,9 +222,9 @@ def get_data(
     network_stats = get_group_stats(ping_data, "latency", [mean_int])
     all_stats = extend_group_stats(request_stats, network_stats)
     stat_names = (
-        ["mean request latency"]
+        [f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}request{METRIC_PARTS_SEPERATOR}latency"]
         + make_percentile_labels(percentiles)
-        + ["mean network latency"]
+        + [f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}network{METRIC_PARTS_SEPERATOR}latency"]
     )
     group_label_func: Optional[GroupLabelFunc] = None
     x_label = None
