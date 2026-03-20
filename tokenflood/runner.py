@@ -211,6 +211,7 @@ async def send_llm_request(
         api_key=endpoint_spec.api_key_env_var,
         deployment_id=endpoint_spec.deployment,
         extra_headers=endpoint_spec.extra_headers,
+        extra_body=endpoint_spec.extra_body,
         max_retries=0,
         reasoning_effort=endpoint_spec.reasoning_effort,
     )

@@ -12,6 +12,7 @@ class EndpointSpec(BaseModel):
     api_key_env_var: Optional[str] = None
     deployment: Optional[str] = None
     extra_headers: Dict = {}
+    extra_body: Dict = {}
     reasoning_effort: Optional[str] = None
 
     @property
