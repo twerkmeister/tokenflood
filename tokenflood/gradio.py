@@ -7,7 +7,6 @@ import logging
 import os
 import re
 import colorsys
-from functools import partial
 from typing import Callable, Dict, List, Optional, Tuple, TypeVar, Union
 import gradio.routes
 import plotly.express as px  # type:ignore[import-untyped]
@@ -43,7 +42,7 @@ log = logging.getLogger(__name__)
 
 
 # 1. The original brightening function
-def brighten_color(hex_color, step, total_steps=50):
+def brighten_color(hex_color: str, step: int, total_steps=50):
     hex_color = hex_color.lstrip("#")
     r, g, b = tuple(int(hex_color[i : i + 2], 16) / 255.0 for i in (0, 2, 4))
     h, lightness, s = colorsys.rgb_to_hls(r, g, b)
@@ -132,7 +131,7 @@ def assign_metric_colors(metric_names: list[str]) -> dict[str, str]:
     return color_assignments
 
 
-def assign_metric_line_style(metric_names):
+def assign_metric_line_style(metric_names: list[str]):
     def map_metric_to_line_style(plot_suffix: str) -> str:
         if plot_suffix.startswith(f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}network"):
             return "dot"
@@ -171,7 +170,7 @@ def get_observation_group_labels(llm_request_data: pd.DataFrame) -> Dict[str, da
     return get_group_labels(
         llm_request_data,
         lambda df: datetime.strptime(
-            df[DATETIME_FIELD][0][:-9], "%Y-%m-%d_%H-%M-%S"
+            str(df[DATETIME_FIELD][0][:-9]), "%Y-%m-%d_%H-%M-%S"
         ).replace(tzinfo=timezone.utc),
     )
 
@@ -255,10 +254,15 @@ def get_data(
 
     return plot_data, llm_request_data, ping_data
 
+def get_unique_metrics(data: pd.DataFrame) -> list[str]:
+    metrics = data[METRIC_FIELD].unique()
+    return [str(m) for m in metrics]
+
+
 
 def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
     data = data.sort_values(DATETIME_FIELD)
-    metrics = data[METRIC_FIELD].unique()
+    metrics = get_unique_metrics(data)
     fig = px.line(
         data,
         x=DATETIME_FIELD,
@@ -290,7 +294,7 @@ def create_debounce_js_code(timer_name: str, delay_ms: int = 500):
 
 
 def make_run_latency_plot(data: pd.DataFrame) -> gr.Plot:
-    metrics = data[METRIC_FIELD].unique()
+    metrics = get_unique_metrics(data)
     fig = px.line(
         data,
         x=REQUESTS_PER_SECOND_FIELD,
