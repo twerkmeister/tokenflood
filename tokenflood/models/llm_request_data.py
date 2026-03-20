@@ -29,7 +29,7 @@ class LLMRequestResult(BaseModel, frozen=True):
             if usage.prompt_tokens_details
             else 0,
             measured_output_tokens=usage.completion_tokens,
-            generated_text=model_response.choices[0]["message"]["content"],
+            generated_text=model_response.choices[0]["message"]["content"] or "",
         )
 
 
