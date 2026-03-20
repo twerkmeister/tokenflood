@@ -40,26 +40,27 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
 3. Assessing the intraday latency variations of hosted LLM providers for your load types.
 4. Assessing and choosing a hosted LLM provider before going into production with them. 
 
-### Example 1: Assessing the effects of potential prompt optimizations
+### Example 1: Assessing the effects of potential prompt and model optimizations
 
 ![latency-comparison](./images/run_comparison.png)
 
-The left graph represents the base case, our current prompt parameters: ~3000 input tokens, of which ~1000 are a common prefix that can be cached, and ~60 output tokens.
+We see three experiments in comparison coded by color in this graph. 
+The blue lines represent the base model Qwen3.5-A35B-A3B with around 5000 input tokens, 1000 prefix tokens, and 200 output tokens.
+The green lines represent the same model but with the output tokens slashed by half (i.e. 100), e.g. by prompting the model to be concise and not to overthink.
+The red lines represent the FP8 version of the model with the same token parameters as the green lines.
 
-The right graph represents a hypothetical improvement to prompt parameters: the same 3000 input tokens, but now 2000 common prefix tokens achieved by rearranging or standardizing parts, and a reduction to 45 output tokens.
- 
-The result is a more than 50% reduction in latency while at the same time meaningfully increasing amount of prompts that can be served on the same hardware without latency going through the roof.
+While the output tokens change might make it feasible to run the task with 50% more throughput (3 instead of 2 rps), the switch to FP8 on top gives us 100% more throughput at an acceptable latency compared to the base case.
 
-Tokenflood allows you to find worthwhile goals for prompt parameter improvements before going there.
+Tokenflood allows you to find worthwhile goals for prompt parameter or model improvements before implementing the changes in your codebase or infrastructure.
 
 ### Example 2: Find out when people start stealing your latency
 
-Load testing large providers does not really make sense if you value your money as their datacenters are huge, shared resources. While a single company or user usually does not have much effect on them,
-these shared resources are subject to intraday latency variations, oftentimes coinciding with daily business hours.
+Load testing large providers does not really make sense if you value your money as their datacenters are huge, shared resources. 
+While a single company or user usually does not have much effect on them, these shared resources are subject to intraday latency variations, often coinciding with daily business hours.
 
 ![observing-intraday-latency-variation](./images/observe.png)
 
-Here we see that once business starts in the US latency of this openai-hosted model drops by 500-1000ms for our chosen prompt parameters. 
+Here we see that once business starts in the US, latency of this openai-hosted model increases by 500-1000ms for our chosen prompt parameters. 
 
 Tokenflood allows you to assess these patterns before going into production with a vendor. 
 
@@ -115,6 +116,7 @@ base_url: http://127.0.0.1:8000/v1
 api_key_env_var: null
 deployment: null
 extra_headers: {}
+extra_body: {}
 ```
 Explanation of the parameters:
 * `provider`: is the provider parameter used by litellm and is used to determine how to exactly interact with the endpoint as different providers have different APIs.
@@ -122,7 +124,8 @@ Explanation of the parameters:
 * `base_url`: important if you are self-hosting or using an endpoint in a specific region of a provider.
 * `api_key_env_var`: The name of the environment variable to use as the API key. If you specify it, it allows you to manage multiple API keys for the same provider for different regions without changing env files: such as `AZURE_KEY_FRANKFURT` and `AZURE_KEY_LONDON`.
 * `deployment`: Required for some providers such as azure.
-* `extra_headers`: Can be useful for certain providers to select models.
+* `extra_headers`: Can be useful for certain providers to select models (e.g. sagemaker inference components).
+* `extra_body`: Can be useful to add chat template kwargs (e.g. to disable reasoning)
 
 Tokenflood passes all these parameters right through to litellm's completion call. 
 To get a better understanding, it's best to have a look at [the official documentation of the litellm completion call](https://docs.litellm.ai/docs/completion/input). 
@@ -201,6 +204,7 @@ requests_per_second_rates:  # Defines the phases with the different request rate
 - 1.0
 - 2.0
 test_length_in_seconds: 10  # each phase is 10 seconds long
+burstiness: 1               # burstiness of the requests (0 being no burstiness, 10 being max burstiness resulting in ~-50%/+100% rps swings at times) 
 load_types:                 # This run suite has two load types with equal weight
 - prompt_length: 512        # prompt length in tokens
   prefix_length: 128        # prompt prefix length in tokens
