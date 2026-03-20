@@ -284,3 +284,7 @@ def main():
     except KeyboardInterrupt:
         log.info("Stopping...")
     unpatch_aiohttp_client_session()
+
+
+if __name__ == "__main__":
+    main()

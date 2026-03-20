@@ -5,6 +5,7 @@ from pydantic import (
     PositiveFloat,
     PositiveInt,
     model_validator,
+    Field,
 )
 
 from tokenflood.models.load_type import LoadType, NonEmptyLoadTypes
@@ -13,6 +14,7 @@ from tokenflood.models.load_type import LoadType, NonEmptyLoadTypes
 class RunSpec(BaseModel, frozen=True):
     requests_per_second: PositiveFloat
     test_length_in_seconds: PositiveInt
+    burstiness: int = Field(ge=0, le=10, default=1)
 
     @property
     def total_num_requests(self) -> int:
@@ -20,11 +22,11 @@ class RunSpec(BaseModel, frozen=True):
 
     @model_validator(mode="after")
     def check_test_has_at_least_one_request(self) -> Self:
-        if self.total_num_requests == 0:
+        if self.total_num_requests < 1:
             raise ValueError(
                 "Total number of requests "
                 "(=int(requests_per_second * test_length_in_seconds)) for "
-                "this test would be 0."
+                f"this test would be {self.total_num_requests}. It needs to have at least one request"
             )
         return self
 

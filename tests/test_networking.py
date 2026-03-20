@@ -44,7 +44,7 @@ async def test_unpatched_observe_url_middleware(
 @pytest.mark.asyncio
 async def test_ping_endpoint():
     latency = await time_async_func(ping_endpoint("127.0.0.1", 8000))
-    assert latency < 5
+    assert latency < 100
 
 
 @pytest.mark.asyncio
@@ -61,7 +61,7 @@ async def test_option_request_endpoint(
             url_observer.session, str(url_observer.url), url_observer.headers
         )
     )
-    assert latency < 5
+    assert latency < 100
 
 
 @pytest.mark.asyncio

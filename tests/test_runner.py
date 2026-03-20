@@ -12,13 +12,13 @@ import pytest
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_spec import RunSpec
 from tokenflood.runner import (
-    create_bursty_schedule,
     get_warm_session,
     make_empty_response,
     run_heuristic_test,
     run_suite,
     send_llm_request,
 )
+from tokenflood.schedule import create_load_test_phase_schedule
 
 
 @pytest.mark.parametrize(
@@ -29,7 +29,7 @@ def test_create_schedule(requests_per_second: float, test_length_in_seconds: int
         requests_per_second=requests_per_second,
         test_length_in_seconds=test_length_in_seconds,
     )
-    schedule = create_bursty_schedule(run_spec)
+    schedule = create_load_test_phase_schedule(run_spec)
     assert np.allclose(sum(schedule), test_length_in_seconds)
     assert len(schedule) == int(requests_per_second * test_length_in_seconds)
 

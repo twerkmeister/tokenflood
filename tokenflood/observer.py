@@ -1,8 +1,5 @@
 import asyncio
 import logging
-from typing import List
-
-import numpy as np
 
 from tokenflood.heuristic import create_heuristic_messages
 from tokenflood.io import IOContext
@@ -23,26 +20,10 @@ from tokenflood.runner import (
     handle_ping_result,
     send_llm_request,
 )
+from tokenflood.schedule import create_even_schedule
 from tokenflood.util import get_exact_date_str
 
 log = logging.getLogger(__name__)
-
-
-def create_even_schedule(num_requests: int, within_seconds: float) -> List[float]:
-    if num_requests <= 1:
-        return []
-    return list(np.diff(np.linspace(0, within_seconds, num_requests)))
-
-
-def create_schedule(observation_spec: ObservationSpec) -> List[float]:
-    burst_pauses = create_even_schedule(
-        observation_spec.num_requests, observation_spec.within_seconds
-    )
-    inter_polling_pause = observation_spec.polling_interval_minutes * 60 - sum(
-        burst_pauses
-    )
-    section = [round(pause, 2) for pause in burst_pauses + [inter_polling_pause]]
-    return section * observation_spec.num_polls()
 
 
 async def run_observation(
@@ -80,18 +61,15 @@ async def run_observation(
         observation_spec.token_set,
         observation_spec.task,
     )
-    request_per_second_phase = (
-        observation_spec.num_requests / observation_spec.within_seconds
-    )
+    request_per_second_phase = observation_spec.requests_per_second_during_polling()
     i = 0
     burst_pauses = create_even_schedule(
         observation_spec.num_requests, observation_spec.within_seconds
     )
-    inter_polling_pause = (
-        observation_spec.polling_interval_minutes * 60 - observation_spec.within_seconds
-    )
+    inter_polling_pause = observation_spec.get_inter_polling_pause()
     log.info(f"Doing {observation_spec.num_polls()} polls in total.")
     for poll_idx in range(observation_spec.num_polls()):
+        log.info(f"Starting poll {poll_idx + 1}.")
         error_context = ErrorContext(
             requests_per_second_phase=request_per_second_phase, group_id=str(poll_idx)
         )
@@ -107,7 +85,9 @@ async def run_observation(
                 prompt=message_lists[i][0]["content"],
                 group_id=str(poll_idx),
             )
-            log.info(f"starting request {i}")
+            log.info(
+                f"starting request number {i + 1} (number {burst_idx + 1} within current poll)"
+            )
             t = asyncio.create_task(
                 send_llm_request(
                     endpoint_spec,
@@ -144,8 +124,7 @@ async def run_observation(
                 )
                 pt.add_done_callback(ping_tasks.discard)
                 num_pings += 1
-            if len(burst_pauses) > 0:
-                await asyncio.sleep(burst_pauses[0])
+                await asyncio.sleep(burst_pauses[burst_idx])
             i += 1
         if poll_idx < observation_spec.num_polls() - 1:
             log.info(f"Sleeping {inter_polling_pause}s until next polling phase")

@@ -1,9 +1,8 @@
 import asyncio
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 import logging
 
 import litellm
-import numpy as np
 from litellm import acompletion
 from litellm.types.utils import ModelResponse, Usage
 from tqdm import tqdm
@@ -19,13 +18,14 @@ from tokenflood.models.error_data import ErrorContext, ErrorData
 from tokenflood.models.llm_request_data import LLMRequestContext, LLMRequestData
 from tokenflood.models.messages import MessageList, create_message_list_from_prompt
 from tokenflood.models.ping_request_data import PingData, PingRequestContext
-from tokenflood.models.run_spec import HeuristicRunSpec, RunSpec
+from tokenflood.models.run_spec import HeuristicRunSpec
 from tokenflood.models.run_suite import HeuristicRunSuite
 from tokenflood.networking import (
     ObserveURLMiddleware,
     option_request_endpoint,
     time_async_func,
 )
+from tokenflood.schedule import create_load_test_phase_schedule
 from tokenflood.util import get_exact_date_str
 
 log = logging.getLogger(__name__)
@@ -100,16 +100,6 @@ def make_empty_response() -> ModelResponse:
     )
 
 
-def create_bursty_schedule(run_spec: RunSpec) -> List[float]:
-    """Create a bursty randomized schedule with a guaranteed total length."""
-    pauses = np.random.exponential(
-        1 / run_spec.requests_per_second, size=run_spec.total_num_requests
-    )
-    total_length = pauses.sum()
-    pauses = pauses / (total_length / run_spec.test_length_in_seconds)
-    return list(pauses)
-
-
 async def run_heuristic_test(
     test_description: str,
     phase: int,
@@ -118,7 +108,7 @@ async def run_heuristic_test(
     endpoint_spec: EndpointSpec,
     io_context: IOContext,
 ) -> bool:
-    schedule = create_bursty_schedule(run_spec)
+    schedule = create_load_test_phase_schedule(run_spec)
 
     prompt_lengths, prefix_lengths, output_lengths = run_spec.sample()
     message_lists = create_heuristic_messages(
@@ -164,7 +154,6 @@ async def run_heuristic_test(
         )
         llm_request_tasks.add(t)
         t.add_done_callback(llm_request_tasks.discard)
-
         await asyncio.sleep(schedule[i])
         # ping at most every second
         if sum(schedule[: i + 1]) > num_pings:

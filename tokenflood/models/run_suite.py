@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from pydantic import BaseModel, NonNegativeFloat
+from pydantic import BaseModel, NonNegativeFloat, Field
 
 from tokenflood.constants import DEFAULT_ERROR_RATE_LIMIT
 from tokenflood.models.budget import Budget
@@ -20,6 +20,7 @@ class HeuristicRunSuite(BaseModel, TokenCostAware, frozen=True):
     name: NonEmptyString
     requests_per_second_rates: PositiveUniqueFloats
     test_length_in_seconds: PositiveInteger
+    burstiness: int = Field(ge=0, le=10, default=1)
     load_types: NonEmptyLoadTypes
     task: HeuristicTask
     token_set: TokenSet
@@ -31,6 +32,7 @@ class HeuristicRunSuite(BaseModel, TokenCostAware, frozen=True):
             HeuristicRunSpec(
                 requests_per_second=rate,
                 test_length_in_seconds=self.test_length_in_seconds,
+                burstiness=self.burstiness,
                 load_types=self.load_types,
             )
             for rate in self.requests_per_second_rates

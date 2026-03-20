@@ -156,7 +156,7 @@ def test_load_state(stored_run, stored_percentiles, latest_run, expected_result)
 
 def test_create_gradio_blocks(results_folder):
     data_visualization = create_gradio_blocks(results_folder)
-    assert len(data_visualization.blocks) == 7
+    assert len(data_visualization.blocks) == 8
 
 
 @pytest.mark.asyncio

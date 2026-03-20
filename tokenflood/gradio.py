@@ -81,11 +81,13 @@ REQUESTS_PER_SECOND_FIELD = "rps"
 LATENCY_FIELD = "latency"
 METRIC_FIELD = "metric"
 
+
 def split_measurement_name(name: str) -> Tuple[str, str]:
     split_name = name.split(METRIC_SEPERATOR)
     metric = split_name[-1]
     name_part = METRIC_SEPERATOR.join(split_name[:-1])
     return name_part, metric
+
 
 # 3. Logic to assign colors based on metric names
 def assign_metric_colors(metric_names: list[str]) -> dict[str, str]:
@@ -133,7 +135,9 @@ def assign_metric_colors(metric_names: list[str]) -> dict[str, str]:
 
 def assign_metric_line_style(metric_names: list[str]):
     def map_metric_to_line_style(plot_suffix: str) -> str:
-        if plot_suffix.startswith(f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}network"):
+        if plot_suffix.startswith(
+            f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}network"
+        ):
             return "dot"
         elif plot_suffix.startswith(MEAN_METRIC_PREFIX):
             return "dash"
@@ -207,7 +211,10 @@ def merge_stats(
 
 
 def make_percentile_labels(percentiles: List[int]) -> List[str]:
-    return [f"{PERCENTILE_METRIC_PREFIX}{p}{METRIC_PARTS_SEPERATOR}request{METRIC_PARTS_SEPERATOR}latency" for p in percentiles]
+    return [
+        f"{PERCENTILE_METRIC_PREFIX}{p}{METRIC_PARTS_SEPERATOR}request{METRIC_PARTS_SEPERATOR}latency"
+        for p in percentiles
+    ]
 
 
 def get_data(
@@ -227,9 +234,13 @@ def get_data(
     network_stats = get_group_stats(ping_data, LATENCY_FIELD, [mean_int])
     all_stats = extend_group_stats(request_stats, network_stats)
     stat_names = (
-        [f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}request{METRIC_PARTS_SEPERATOR}latency"]
+        [
+            f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}request{METRIC_PARTS_SEPERATOR}latency"
+        ]
         + make_percentile_labels(percentiles)
-        + [f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}network{METRIC_PARTS_SEPERATOR}latency"]
+        + [
+            f"{MEAN_METRIC_PREFIX}{METRIC_PARTS_SEPERATOR}network{METRIC_PARTS_SEPERATOR}latency"
+        ]
     )
     group_label_func: Optional[GroupLabelFunc] = None
     x_label = None
@@ -254,10 +265,10 @@ def get_data(
 
     return plot_data, llm_request_data, ping_data
 
+
 def get_unique_metrics(data: pd.DataFrame) -> list[str]:
     metrics = data[METRIC_FIELD].unique()
     return [str(m) for m in metrics]
-
 
 
 def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
@@ -282,6 +293,7 @@ def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
     fig.update_xaxes(tickangle=45)
     fig.layout.template = "plotly_dark"
     return gr.Plot(fig)
+
 
 def create_debounce_js_code(timer_name: str, delay_ms: int = 500):
     return f"""
@@ -400,7 +412,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
     initial_load = functools.partial(load_state, latest_run)
 
     with gr.Blocks() as data_visualization:
-        title = gr.HTML(f"<h1>Tokenflood v{__version__}</h1>")
+        gr.HTML(f"<h1>Tokenflood v{__version__}</h1>")
         timer = gr.Timer(2)
         stored_run = gr.BrowserState(latest_run)
         stored_percentiles = gr.BrowserState(DEFAULT_PERCENTILES_STR)
@@ -425,8 +437,12 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             DEFAULT_PERCENTILES_STR,
             label="Percentiles (comma separated, 1-100)",
         )
-        percentiles_textbox.change(id_func, inputs=percentiles_textbox, outputs=stored_percentiles, js=create_debounce_js_code("percentiles_textbox_timer", 500))
-
+        percentiles_textbox.change(
+            id_func,
+            inputs=percentiles_textbox,
+            outputs=stored_percentiles,
+            js=create_debounce_js_code("percentiles_textbox_timer", 500),
+        )
 
         @gr.render(
             inputs=[dropdown_element, stored_percentiles],
@@ -436,7 +452,9 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             is_run_results = len(selected_runs) > 0 and is_run_result_folder(
                 os.path.join(results_folder, selected_runs[0])
             )
-            is_observation_results = len(selected_runs) > 0 and is_observation_result_folder(
+            is_observation_results = len(
+                selected_runs
+            ) > 0 and is_observation_result_folder(
                 os.path.join(results_folder, selected_runs[0])
             )
             plot_data_sets = []
