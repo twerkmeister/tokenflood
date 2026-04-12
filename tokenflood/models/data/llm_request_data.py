@@ -14,6 +14,9 @@ log = logging.getLogger(__name__)
 
 class LLMRequestResult(BaseModel, frozen=True):
     latency: NonNegativeInt
+    time_to_first_token: NonNegativeInt
+    decoding_latency: NonNegativeInt
+    average_time_per_output_token: NonNegativeFloat
     measured_input_tokens: NonNegativeInt
     measured_prefix_tokens: NonNegativeInt
     measured_output_tokens: NonNegativeInt
@@ -23,7 +26,10 @@ class LLMRequestResult(BaseModel, frozen=True):
     def from_model_response(cls, model_response: ModelResponse) -> Self:
         usage = model_response.usage  # type:ignore[attr-defined]
         return cls(
-            latency=int(model_response._response_ms),  # type:ignore[attr-defined]
+            latency=int(model_response._hidden_params[LLMRequestData.F.latency]),
+            time_to_first_token=int(model_response._hidden_params[LLMRequestData.F.time_to_first_token]),
+            decoding_latency=int(model_response._hidden_params[LLMRequestData.F.decoding_latency]),
+            average_time_per_output_token=model_response._hidden_params[LLMRequestData.F.average_time_per_output_token],
             measured_input_tokens=usage.prompt_tokens,
             measured_prefix_tokens=usage.prompt_tokens_details.cached_tokens or 0
             if usage.prompt_tokens_details
@@ -51,6 +57,9 @@ class LLMRequestData(BaseModel, frozen=True):
     request_number: NonNegativeInt
     model: NonEmptyString
     latency: NonNegativeInt
+    time_to_first_token: NonNegativeInt
+    decoding_latency: NonNegativeInt
+    average_time_per_output_token: NonNegativeFloat
     expected_input_tokens: NonNegativeInt
     measured_input_tokens: NonNegativeInt
     expected_prefix_tokens: NonNegativeInt
@@ -103,3 +112,6 @@ class LLMRequestData(BaseModel, frozen=True):
     # field names for access in analytics code
     class F:
         latency = "latency"
+        time_to_first_token = "time_to_first_token"
+        decoding_latency = "decoding_latency"
+        average_time_per_output_token = "average_time_per_output_token"

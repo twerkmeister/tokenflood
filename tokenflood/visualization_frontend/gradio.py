@@ -44,7 +44,7 @@ from tokenflood.visualization_frontend.metrics import (
     RequestLatency,
     NetworkLatency,
     metric_mapping,
-    Metric,
+    Metric, TimeToFirstToken, AverageTimePerOutputToken, DecodingLatency,
 )
 from tokenflood.visualization_frontend.percentiles import (
     percentiles_to_aggregation_funcs,
@@ -304,7 +304,8 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
         with gr.Row():
             with gr.Column(scale=1):
                 metric_dropdown = gr.Dropdown(
-                    [RequestLatency.name, NetworkLatency.name],
+                    [RequestLatency.name, TimeToFirstToken.name, AverageTimePerOutputToken.name,
+                     DecodingLatency.name, NetworkLatency.name],
                     value=RequestLatency.name,
                     label="Metric",
                 )
