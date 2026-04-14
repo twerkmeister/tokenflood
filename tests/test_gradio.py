@@ -5,29 +5,24 @@ import pandas as pd
 import pytest
 import requests
 
-from tokenflood.analysis import get_groups
+from tokenflood.analysis import get_group_ids
 from tokenflood.constants import (
     DEFAULT_PERCENTILES_STR,
     LLM_REQUESTS_FILE,
     NETWORK_LATENCY_FILE,
 )
-from tokenflood.gradio import (
+from tokenflood.visualization_frontend.gradio import (
     create_gradio_blocks,
     get_data,
-    get_group_labels,
-    get_observation_group_labels,
-    get_run_group_labels,
     id_func,
     load_runs_from_disc,
     load_state,
-    make_observation_latency_plot,
     make_percentile_labels,
-    make_run_latency_plot,
-    percentiles_to_str,
-    str_to_percentiles,
     update_dropdown,
-    visualize_results,
-)
+    visualize_results, )
+from tokenflood.visualization_frontend.percentiles import percentiles_to_str, str_to_percentiles
+from tokenflood.visualization_frontend.plots import make_observation_latency_plot, make_run_latency_plot
+from tokenflood.visualization_frontend.data import get_group_labels, get_observation_group_label, get_load_group_label
 
 
 def test_get_group_labels(observation_results_folder):
@@ -43,7 +38,7 @@ def test_get_observation_group_labels(observation_results_folder):
     llm_requests_df = pd.read_csv(
         os.path.join(observation_results_folder, LLM_REQUESTS_FILE)
     )
-    group_labels = get_observation_group_labels(llm_requests_df)
+    group_labels = get_group_labels(llm_requests_df, get_observation_group_label)
     assert len(group_labels) == 20
     assert group_labels["0"] == datetime.datetime(
         2025, 11, 18, 10, 11, 57, tzinfo=datetime.timezone.utc
@@ -54,7 +49,7 @@ def test_get_run_group_labels(run_suite_results_folder):
     llm_requests_df = pd.read_csv(
         os.path.join(run_suite_results_folder, LLM_REQUESTS_FILE)
     )
-    group_labels = get_run_group_labels(llm_requests_df)
+    group_labels = get_group_labels(llm_requests_df, get_load_group_label)
     assert len(group_labels) == 2
     assert group_labels == {"0": 1.0, "1": 2.0}
 
@@ -96,7 +91,7 @@ def test_get_data(folder_fixture, x_label, percentiles_str, empty_result, reques
         metrics = [f"{os.path.basename(folder)}__{m}" for m in metrics]
         assert all(combined.columns == [x_label, "latency", "metric"])
         assert set(combined["metric"].unique()) == set(metrics)
-        assert len(combined) == len(get_groups(llm_requests_df)) * len(metrics)
+        assert len(combined) == len(get_group_ids(llm_requests_df)) * len(metrics)
 
 
 def test_make_observation_latency_plot(observation_results_folder):

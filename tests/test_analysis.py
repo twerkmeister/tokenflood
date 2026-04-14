@@ -7,7 +7,7 @@ from tokenflood.analysis import (
     extend_group_stats,
     get_group_data,
     get_group_stats,
-    get_groups,
+    get_group_ids,
     get_percentile_float,
     mean_float,
     mean_int,
@@ -15,7 +15,7 @@ from tokenflood.analysis import (
 
 
 def test_get_groups(llm_requests_df):
-    assert get_groups(llm_requests_df) == ["0", "1"]
+    assert get_group_ids(llm_requests_df) == ["0", "1"]
 
 
 def test_get_group_data(llm_requests_df):
