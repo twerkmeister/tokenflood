@@ -1,60 +1,70 @@
 from __future__ import annotations
 
+from typing import Type
+
 import gradio as gr
-import pandas as pd
-from plotly import express as px
+from plotly import graph_objects as go  # type:ignore[import-untyped]
 
-from tokenflood.visualization_frontend.data import DATETIME_FIELD, REQUESTS_PER_SECOND_FIELD, LATENCY_FIELD, \
-    METRIC_FIELD
-from tokenflood.visualization_frontend.graph_style import assign_metric_colors, assign_metric_line_style
+from tokenflood.visualization_frontend.data import AggregationTrace
+from tokenflood.visualization_frontend.graph_style import (
+    BASE_COLORS,
+    brighten_color,
+    aggregation_name_to_color_step,
+    aggregation_name_to_line_style,
+)
+from tokenflood.visualization_frontend.metrics import Metric
 
 
-def make_observation_latency_plot(data: pd.DataFrame) -> gr.Plot:
-    data = data.sort_values(DATETIME_FIELD)
-    metrics = get_unique_metrics(data)
-    fig = px.line(
-        data,
-        x=DATETIME_FIELD,
-        y=LATENCY_FIELD,
-        color=METRIC_FIELD,
-        line_dash=METRIC_FIELD,
-        color_discrete_map=assign_metric_colors(metrics),
-        line_dash_map=assign_metric_line_style(metrics),
-        markers=True,
-        title="Latency over time.",
-        height=900,
-    )
+def plot_base(trace_groups: list[list[AggregationTrace]]) -> go.Figure:
+    fig = go.Figure()
+    for i, trace_group in enumerate(trace_groups):
+        base_color = BASE_COLORS[i % len(BASE_COLORS)]
+        for trace in trace_group:
+            color = brighten_color(
+                base_color, aggregation_name_to_color_step(trace.aggregation_name)
+            )
+            style = aggregation_name_to_line_style(trace.aggregation_name)
+            fig.add_trace(
+                go.Scatter(
+                    x=trace.x,
+                    y=trace.y,
+                    name=trace.aggregation_name,
+                    legendgroup=trace.run,
+                    legendgrouptitle_text=trace.run,
+                    line=dict(color=color, dash=style),
+                    hovertemplate="<b>%{fullData.name}</b>: %{y:.2f} ms<extra></extra>",
+                )
+            )
+    fig.update_traces(mode="markers+lines")
     fig.update_layout(
-        xaxis_title="UTC datetime",
         yaxis_title="latency in ms",
+        hovermode="x unified",
+        height=900,
+        yaxis=dict(rangemode="tozero", ticksuffix=" ms"),
+    )
+    fig.layout.template = "plotly_dark"
+    return fig
+
+
+def make_observation_latency_plot(
+    trace_groups: list[list[AggregationTrace]], metric: Type[Metric]
+) -> gr.Plot:
+    fig = plot_base(trace_groups)
+    fig.update_layout(
+        xaxis_title="datetime",
+        title=f"{metric.name} over time",
     )
     fig.update_xaxes(tickangle=45)
-    fig.layout.template = "plotly_dark"
     return gr.Plot(fig)
 
 
-def make_run_latency_plot(data: pd.DataFrame) -> gr.Plot:
-    metrics = get_unique_metrics(data)
-    fig = px.line(
-        data,
-        x=REQUESTS_PER_SECOND_FIELD,
-        y=LATENCY_FIELD,
-        color=METRIC_FIELD,
-        line_dash=METRIC_FIELD,
-        color_discrete_map=assign_metric_colors(metrics),
-        line_dash_map=assign_metric_line_style(metrics),
-        markers=True,
-        title="Latency across request rates.",
-        height=900,
-    )
+def make_run_latency_plot(
+    trace_groups: list[list[AggregationTrace]], metric: Type[Metric]
+) -> gr.Plot:
+    fig = plot_base(trace_groups)
     fig.update_layout(
         xaxis_title="requests per second",
-        yaxis_title="latency in ms",
+        title=f"{metric.name} across request rates",
+        xaxis=dict(ticksuffix=" rps"),
     )
-    fig.layout.template = "plotly_dark"
     return gr.Plot(fig)
-
-
-def get_unique_metrics(data: pd.DataFrame) -> list[str]:
-    metrics = data[METRIC_FIELD].unique()
-    return [str(m) for m in metrics]

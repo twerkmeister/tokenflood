@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import os
-from typing import Callable
+from typing import Callable, Optional
 
 import pandas as pd
 import logging
@@ -24,7 +24,9 @@ def read_dataframe(path: str, csv_file: str = "") -> pd.DataFrame:
     return df
 
 
-def get_runs(folder: str, predicate: Callable[[str], bool] = None) -> list[str]:
+def get_runs(
+    folder: str, predicate: Optional[Callable[[str], bool]] = None
+) -> list[str]:
     runs = sorted(os.listdir(folder), reverse=True)
     runs = [os.path.join(folder, run) for run in runs]
     if predicate:
@@ -43,8 +45,10 @@ def get_observation_runs(folder: str) -> list[str]:
 def get_error_dataframe(folder: str) -> pd.DataFrame:
     return read_dataframe(folder, ERROR_FILE)
 
+
 def get_llm_request_dataframe(folder: str) -> pd.DataFrame:
     return read_dataframe(folder, LLM_REQUESTS_FILE)
+
 
 def get_network_dataframe(folder: str) -> pd.DataFrame:
     return read_dataframe(folder, NETWORK_LATENCY_FILE)

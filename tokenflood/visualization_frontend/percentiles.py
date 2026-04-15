@@ -24,6 +24,7 @@ def clean_percentiles_input(text: str) -> str:
     """Drop all chars except separator and digits."""
     return re.sub(rf"[^{PERCENTILES_SEPARATOR}0-9]", "", text)
 
+
 def percentiles_to_aggregation_funcs(percentiles_text: str) -> list[AggregationFunc]:
     percentiles = str_to_percentiles(percentiles_text)
     return [calculate_percentile(p) for p in percentiles]

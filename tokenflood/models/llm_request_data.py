@@ -100,6 +100,6 @@ class LLMRequestData(BaseModel, frozen=True):
                 extra={WARN_ONCE_KEY: "output_tokens_off"},
             )
 
-    #field names for access in analytics code
+    # field names for access in analytics code
     class F:
         latency = "latency"

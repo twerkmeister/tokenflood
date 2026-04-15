@@ -94,6 +94,7 @@ def list_dir_relative(folder_name: str) -> List[str]:
     """List dir while preserving the relative path name."""
     return [os.path.join(folder_name, f) for f in os.listdir(folder_name)]
 
+
 def get_relative_file_path(reference_file: str, target_file_name: str):
     """Return the path to another file from a python file's __file__ path."""
     file_path = os.path.abspath(reference_file)
