@@ -7,8 +7,15 @@ from typing import Callable, Optional
 import pandas as pd
 import logging
 
-from tokenflood.constants import ERROR_FILE, LLM_REQUESTS_FILE, NETWORK_LATENCY_FILE
-from tokenflood.io import is_run_result_folder, is_observation_result_folder
+from tokenflood.constants import (
+    ERROR_FILE,
+    LLM_REQUESTS_FILE,
+    NETWORK_LATENCY_FILE,
+    ENDPOINT_SPEC_FILE,
+    RUN_SUITE_FILE,
+    OBSERVATION_SPEC_FILE,
+)
+from tokenflood.io import is_run_result_folder, is_observation_result_folder, read_file
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +51,18 @@ def get_observation_runs(folder: str) -> list[str]:
 
 def get_error_dataframe(folder: str) -> pd.DataFrame:
     return read_dataframe(folder, ERROR_FILE)
+
+
+def get_endpoint_spec_file(run_folder: str) -> str:
+    return read_file(os.path.join(run_folder, ENDPOINT_SPEC_FILE))
+
+
+def get_run_spec_file(run_folder: str) -> str:
+    return read_file(os.path.join(run_folder, RUN_SUITE_FILE))
+
+
+def get_observation_spec_file(run_folder: str) -> str:
+    return read_file(os.path.join(run_folder, OBSERVATION_SPEC_FILE))
 
 
 def get_llm_request_dataframe(folder: str) -> pd.DataFrame:

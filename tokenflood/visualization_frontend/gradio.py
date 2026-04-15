@@ -15,6 +15,9 @@ from tokenflood.analysis import Mean
 from tokenflood.constants import (
     DEFAULT_PERCENTILES_STR,
     WARNING_LIMIT_PERCENTAGE,
+    RUN_SUITE_FILE,
+    OBSERVATION_SPEC_FILE,
+    ENDPOINT_SPEC_FILE,
 )
 from tokenflood.io import get_relative_file_path
 from tokenflood.models.divergence import TokenDivergence
@@ -31,6 +34,9 @@ from tokenflood.visualization_frontend.io import (
     get_error_dataframe,
     get_llm_request_dataframe,
     get_network_dataframe,
+    get_run_spec_file,
+    get_observation_spec_file,
+    get_endpoint_spec_file,
 )
 from tokenflood.visualization_frontend.metrics import (
     RequestLatency,
@@ -73,7 +79,6 @@ def get_markdown_summary(llm_request_data: pd.DataFrame) -> str:
         return "Empty data."
     td = TokenDivergence(llm_request_data=llm_request_data)
     return f"""
-    ## Token Heuristic Accuracy Stats
     #### Input Tokens {get_warning_emoji(td.relative_input_token_error)}
     On average **{td.mean_expected_input_tokens}** (expected) vs **{td.mean_measured_input_tokens}** (measured) ({td.relative_input_token_error}% error) 
     
@@ -143,6 +148,10 @@ def make_plot(
     return plot_func(trace_groups, metric)
 
 
+def make_yaml_code_element(text: str, label: str) -> gr.Code:
+    return gr.Code(text, language="yaml", label=label, max_lines=20)
+
+
 def create_gradio_blocks(results_folder: str) -> Blocks:
     runs = get_load_test_runs(results_folder)
     latest_run = runs[:1]
@@ -202,6 +211,12 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
         # dynamic for the selected runs
         @gr.render(
             inputs=[stored_runs, stored_run_type, stored_percentiles, stored_metric],
+            triggers=[
+                stored_runs.change,
+                stored_percentiles.change,
+                stored_metric.change,
+            ],
+            trigger_mode="always_last",
         )
         def display_selected_runs(
             selected_runs: list[str],
@@ -219,7 +234,28 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                     run_folder = os.path.join(results_folder, run)
                     with gr.Tab(run, id=i):
                         llm_request_data = get_llm_request_dataframe(run_folder)
+                        gr.HTML("<h2>Token Heuristic Accuracy Stats</h2>")
                         gr.Markdown(get_markdown_summary(llm_request_data))
+
+                        gr.HTML("<h2>Run Files</h2>")
+                        with gr.Row():
+                            with gr.Column():
+                                if run_type == LOAD_TEST:
+                                    make_yaml_code_element(
+                                        get_run_spec_file(run_folder), RUN_SUITE_FILE
+                                    )
+                                else:
+                                    make_yaml_code_element(
+                                        get_observation_spec_file(run_folder),
+                                        OBSERVATION_SPEC_FILE,
+                                    )
+                            with gr.Column():
+                                make_yaml_code_element(
+                                    get_endpoint_spec_file(run_folder),
+                                    ENDPOINT_SPEC_FILE,
+                                )
+
+                        gr.HTML("<h2>Raw Data</h2>")
                         gr.DataFrame(
                             llm_request_data,
                             label="llm request data",
