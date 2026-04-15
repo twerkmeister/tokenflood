@@ -17,6 +17,7 @@ from tokenflood.constants import (
     DEFAULT_PERCENTILES_STR,
     WARNING_LIMIT_PERCENTAGE,
 )
+from tokenflood.io import get_relative_file_path
 from tokenflood.models.divergence import TokenDivergence
 from tokenflood.visualization_frontend.data import aggregate_data, LabelFunc, get_load_group_label, \
     get_observation_group_label, DATETIME_FIELD, REQUESTS_PER_SECOND_FIELD
@@ -109,8 +110,17 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
     runs = get_load_test_runs(results_folder)
     latest_run = None if len(runs) == 0 else runs[:1]
     title = f"Tokenflood v{__version__}"
-    with gr.Blocks() as blocks:
-        gr.HTML(f"<h1>{title}</h1>")
+    with gr.Blocks(title=title) as blocks:
+        with gr.Row():
+            with gr.Column(scale=0, min_width=64):
+                gr.Image(get_relative_file_path(__file__, "assets/wave_logo_small.png"),
+                         show_label=False,
+                         interactive=False,
+                         container=False,
+                         buttons=[],
+                         height=48)
+            with gr.Column(scale=1):
+                gr.HTML(f"<h1>{title}</h1>")
         timer = gr.Timer(2)
         stored_runs = gr.BrowserState(latest_run)
         stored_percentiles = gr.BrowserState(DEFAULT_PERCENTILES_STR)
@@ -215,8 +225,9 @@ def visualize_results(
     results_folder: str, keep_running: bool = True, go_to_browser: bool = True
 ) -> Tuple[gradio.routes.App, str]:
     data_visualization = create_gradio_blocks(results_folder)
+    favicon_path = get_relative_file_path(__file__, "assets/wave_logo_small.png")
     app, url, _ = data_visualization.launch(
-        prevent_thread_lock=True, quiet=True, inbrowser=go_to_browser
+        prevent_thread_lock=True, quiet=True, inbrowser=go_to_browser, favicon_path=favicon_path
     )
     log.info(f"Gradio server running at [blue]{url}[/]")
     if keep_running:
