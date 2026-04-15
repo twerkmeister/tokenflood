@@ -46,13 +46,16 @@ def plot_base(trace_groups: list[list[AggregationTrace]]) -> go.Figure:
     return fig
 
 
+def make_title(text: str) -> dict:
+    return {"text": text, "y": 0.95, "x": 0.5, "xanchor": "center", "yanchor": "top"}
+
+
 def make_observation_latency_plot(
     trace_groups: list[list[AggregationTrace]], metric: Type[Metric]
 ) -> gr.Plot:
     fig = plot_base(trace_groups)
     fig.update_layout(
-        xaxis_title="datetime",
-        title=f"{metric.name} over time",
+        xaxis_title="datetime", title=make_title(f"{metric.name} over time")
     )
     fig.update_xaxes(tickangle=45)
     return gr.Plot(fig)
@@ -64,7 +67,7 @@ def make_run_latency_plot(
     fig = plot_base(trace_groups)
     fig.update_layout(
         xaxis_title="requests per second",
-        title=f"{metric.name} across request rates",
+        title=make_title(f"{metric.name} across request rates"),
         xaxis=dict(ticksuffix=" rps"),
     )
     return gr.Plot(fig)
