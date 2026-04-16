@@ -21,6 +21,7 @@ from tokenflood.constants import (
 )
 from tokenflood.io import get_relative_file_path
 from tokenflood.models.divergence import TokenDivergence
+from tokenflood.models.util import numeric
 from tokenflood.visualization_frontend.data import (
     aggregate_data,
     LabelFunc,
@@ -118,24 +119,26 @@ def update_runs_for_type(results_folder: str, run_type: str) -> gr.Dropdown:
     return gr.Dropdown(runs, value=value)
 
 
-def get_plot_variables(
+def get_plot_func(
     run_type: str,
-) -> tuple[LabelFunc, Callable[[list[list[AggregationTrace]], Type[Metric]], gr.Plot]]:
+) -> Callable[[list[list[AggregationTrace]], Type[Metric]], gr.Plot]:
     if run_type == LOAD_TEST:
-        return get_load_group_label, make_run_latency_plot
+        return make_run_latency_plot
     else:
-        return get_observation_group_label, make_observation_latency_plot
+        return make_observation_latency_plot
 
+def get_label_func(run_type: str) -> LabelFunc:
+    if run_type == LOAD_TEST:
+        return get_load_group_label
+    else:
+        return get_observation_group_label
 
-def make_plot(
-    results_folder: str,
+def collect_trace_groups(results_folder: str,
     runs: list[str],
     run_type: str,
-    metric_name: str,
-    percentiles: str,
-) -> gr.Plot:
-    metric = metric_mapping[metric_name]
-    label_func, plot_func = get_plot_variables(run_type)
+    metric: Type[Metric],
+    percentiles: str) -> list[list[AggregationTrace]]:
+    label_func = get_label_func(run_type)
     aggregation_funcs = sorted(
         [Mean] + percentiles_to_aggregation_funcs(percentiles), key=lambda x: -x.order
     )
@@ -145,7 +148,41 @@ def make_plot(
         trace_groups.append([])
         for f in aggregation_funcs:
             trace_groups[-1].append(aggregate_data(run_folder, metric, f, label_func))
+    return trace_groups
+
+def make_plot(
+    results_folder: str,
+    runs: list[str],
+    run_type: str,
+    metric_name: str,
+    percentiles: str,
+) -> gr.Plot:
+    metric = metric_mapping[metric_name]
+    trace_groups = collect_trace_groups(results_folder, runs, run_type, metric, percentiles)
+    plot_func = get_plot_func(run_type)
     return plot_func(trace_groups, metric)
+
+def make_table(
+    results_folder: str,
+    runs: list[str],
+    run_type: str,
+    metric_name: str,
+    percentiles: str,
+) -> pd.DataFrame:
+    metric = metric_mapping[metric_name]
+    trace_groups = collect_trace_groups(results_folder, runs, run_type, metric, percentiles)
+    rows = []
+    for trace_group in trace_groups:
+        for trace in trace_group:
+            data: dict[str, str | numeric] = {
+                "run": trace.run,
+                "aggregation": trace.aggregation_name
+            }
+            for i, x in enumerate(trace.x):
+                data[x] = round(trace.y[i], 2)
+            rows.append(data)
+    return pd.DataFrame(rows)
+
 
 
 def make_yaml_code_element(text: str, label: str) -> gr.Code:
@@ -158,10 +195,10 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
     title = f"Tokenflood v{__version__}"
     with gr.Blocks(title=title) as blocks:
         timer = gr.Timer(2)
-        stored_runs = gr.BrowserState(latest_run)
-        stored_percentiles = gr.BrowserState(DEFAULT_PERCENTILES_STR)
-        stored_run_type = gr.BrowserState(LOAD_TEST)
-        stored_metric = gr.BrowserState(RequestLatency.__name__)
+        stored_runs = gr.BrowserState(latest_run, storage_key="runs")
+        stored_percentiles = gr.BrowserState(DEFAULT_PERCENTILES_STR, storage_key="percentiles")
+        stored_run_type = gr.BrowserState(LOAD_TEST, storage_key="run_type")
+        stored_metric = gr.BrowserState(RequestLatency.name, storage_key="metric")
         stored_results_folder = gr.State(results_folder)
 
         # header - logo and title
@@ -198,7 +235,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
         with gr.Row():
             with gr.Column(scale=1):
                 metric_dropdown = gr.Dropdown(
-                    [RequestLatency.__name__, NetworkLatency.__name__],
+                    [RequestLatency.name, NetworkLatency.name],
                     value=stored_metric.value,
                     label="Metric",
                 )
@@ -217,8 +254,9 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                 stored_metric.change,
             ],
             trigger_mode="always_last",
+            concurrency_limit=1,
         )
-        def display_selected_runs(
+        def display_plot(
             selected_runs: list[str],
             run_type: str,
             percentiles_text: str,
@@ -229,7 +267,15 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             make_plot(
                 results_folder, selected_runs, run_type, metric_name, percentiles_text
             )
-            with gr.Tabs(selected=0 if len(selected_runs) > 0 else None):
+
+
+        # dynamic for the selected runs
+        @gr.render(inputs=[stored_runs, stored_run_type],
+                   concurrency_limit=1, trigger_mode="always_last")
+        def display_run_data(selected_runs: list[str], run_type: str):
+            if not selected_runs:
+                return
+            with gr.Tabs(selected=0):
                 for i, run in enumerate(selected_runs):
                     run_folder = os.path.join(results_folder, run)
                     with gr.Tab(run, id=i):
@@ -277,6 +323,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                             show_row_numbers=True,
                             show_search="filter",
                         )
+
 
         blocks.load(
             args_to_tuple,

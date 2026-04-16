@@ -4,7 +4,7 @@ import functools
 import os.path
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable, TypeVar, Union, Generic
+from typing import Callable, TypeVar, Union, Generic, Type
 
 import pandas as pd
 
@@ -32,7 +32,7 @@ class AggregationTrace(Generic[T]):
 @functools.cache
 def aggregate_data(
     run_folder: str,
-    metric: Metric,
+    metric: Type[Metric],
     aggregation_func: AggregationFunc,
     label_func: LabelFunc,
 ) -> AggregationTrace:

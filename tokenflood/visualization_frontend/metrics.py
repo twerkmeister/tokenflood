@@ -25,6 +25,6 @@ class NetworkLatency(Metric):
 
 
 metric_mapping = {
-    RequestLatency.__name__: RequestLatency,
-    NetworkLatency.__name__: NetworkLatency,
+    RequestLatency.name: RequestLatency,
+    NetworkLatency.name: NetworkLatency,
 }
