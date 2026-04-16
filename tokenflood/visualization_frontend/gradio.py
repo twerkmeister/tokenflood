@@ -245,10 +245,10 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
         # dynamic for the selected runs
         @gr.render(
             inputs=[runs_dropdown, run_type_dropdown, stored_percentiles, metric_dropdown],
-            trigger_mode="always_last",
-            concurrency_limit=1,
+            triggers=[runs_dropdown.change, stored_percentiles.change, metric_dropdown.change],
+            concurrency_limit=1, trigger_mode="always_last"
         )
-        def display_plot(
+        def display_data_dynamically(
             selected_runs: list[str],
             run_type: str,
             percentiles_text: str,
@@ -257,64 +257,55 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             if not selected_runs or not run_type or not percentiles_text or not metric_name:
                 return
             make_plot(
-                results_folder, selected_runs, run_type, metric_name, percentiles_text
-            )
-
-
-        # dynamic for the selected runs
-        @gr.render(inputs=[runs_dropdown, run_type_dropdown],
-                   concurrency_limit=1, trigger_mode="always_last")
-        def display_run_data(selected_runs: list[str], run_type: str):
-            if not selected_runs or not run_type:
-                return
+                results_folder, selected_runs, run_type, metric_name, percentiles_text)
             with gr.Tabs(selected=0):
                 for i, run in enumerate(selected_runs):
                     run_folder = os.path.join(results_folder, run)
                     with gr.Tab(run, id=i):
                         llm_request_data = get_llm_request_dataframe(run_folder)
-                        gr.HTML("<h2>Token Heuristic Accuracy Stats</h2>")
-                        gr.Markdown(get_markdown_summary(llm_request_data))
-
-                        gr.HTML("<h2>Run Files</h2>")
-                        with gr.Row():
-                            with gr.Column():
-                                if run_type == LOAD_TEST:
+                        with gr.Accordion("Token Heuristic Accuracy Stats"):
+                                gr.Markdown(get_markdown_summary(llm_request_data))
+                        with gr.Accordion("Run Files", open=False):
+                            with gr.Row():
+                                with gr.Column():
+                                    if run_type == LOAD_TEST:
+                                        make_yaml_code_element(
+                                            get_run_spec_file(run_folder), RUN_SUITE_FILE
+                                        )
+                                    else:
+                                        make_yaml_code_element(
+                                            get_observation_spec_file(run_folder),
+                                            OBSERVATION_SPEC_FILE,
+                                        )
+                                with gr.Column():
                                     make_yaml_code_element(
-                                        get_run_spec_file(run_folder), RUN_SUITE_FILE
+                                        get_endpoint_spec_file(run_folder),
+                                        ENDPOINT_SPEC_FILE,
                                     )
-                                else:
-                                    make_yaml_code_element(
-                                        get_observation_spec_file(run_folder),
-                                        OBSERVATION_SPEC_FILE,
-                                    )
-                            with gr.Column():
-                                make_yaml_code_element(
-                                    get_endpoint_spec_file(run_folder),
-                                    ENDPOINT_SPEC_FILE,
-                                )
-
-                        gr.HTML("<h2>Raw Data</h2>")
-                        gr.DataFrame(
-                            llm_request_data,
-                            label="llm request data",
-                            buttons=["fullscreen", "copy"],
-                            show_row_numbers=True,
-                            show_search="filter",
-                        )
-                        gr.DataFrame(
-                            get_network_dataframe(run_folder),
-                            label="ping data",
-                            buttons=["fullscreen", "copy"],
-                            show_row_numbers=True,
-                            show_search="filter",
-                        )
-                        gr.DataFrame(
-                            get_error_dataframe(run_folder),
-                            label="error data",
-                            buttons=["fullscreen", "copy"],
-                            show_row_numbers=True,
-                            show_search="filter",
-                        )
+                        with gr.Accordion("Raw Request Data", open=False):
+                            gr.DataFrame(
+                                llm_request_data,
+                                label="llm request data",
+                                buttons=["fullscreen", "copy"],
+                                show_row_numbers=True,
+                                show_search="filter",
+                            )
+                        with gr.Accordion("Raw ping Data", open=False):
+                            gr.DataFrame(
+                                get_network_dataframe(run_folder),
+                                label="Ping data",
+                                buttons=["fullscreen", "copy"],
+                                show_row_numbers=True,
+                                show_search="filter",
+                            )
+                        with gr.Accordion("Error data", open=False):
+                            gr.DataFrame(
+                                get_error_dataframe(run_folder),
+                                label="error data",
+                                buttons=["fullscreen", "copy"],
+                                show_row_numbers=True,
+                                show_search="filter",
+                            )
 
 
         # interactions
@@ -346,8 +337,7 @@ def visualize_results(
     favicon_path = get_relative_file_path(__file__, "assets/wave_logo_small.png")
     app, url, _ = data_visualization.launch(
         prevent_thread_lock=True,
-        # quiet=True,
-        debug=True,
+        quiet=True,
         inbrowser=go_to_browser,
         favicon_path=favicon_path,
     )
