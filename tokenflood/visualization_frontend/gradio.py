@@ -115,7 +115,7 @@ def poll_latest_runs(results_folder: str, run_type: str) -> gr.Dropdown:
 
 def update_runs_for_type(results_folder: str, run_type: str) -> gr.Dropdown:
     runs = load_runs_for_type(results_folder, run_type)
-    value = None if len(runs) == 0 else runs[0]
+    value = runs[:1]
     return gr.Dropdown(runs, value=value)
 
 
@@ -195,10 +195,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
     title = f"Tokenflood v{__version__}"
     with gr.Blocks(title=title) as blocks:
         timer = gr.Timer(2)
-        stored_runs = gr.BrowserState(latest_run, storage_key="runs")
-        stored_percentiles = gr.BrowserState(DEFAULT_PERCENTILES_STR, storage_key="percentiles")
-        stored_run_type = gr.BrowserState(LOAD_TEST, storage_key="run_type")
-        stored_metric = gr.BrowserState(RequestLatency.name, storage_key="metric")
+        stored_percentiles = gr.State(DEFAULT_PERCENTILES_STR)
         stored_results_folder = gr.State(results_folder)
 
         # header - logo and title
@@ -236,7 +233,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             with gr.Column(scale=1):
                 metric_dropdown = gr.Dropdown(
                     [RequestLatency.name, NetworkLatency.name],
-                    value=stored_metric.value,
+                    value=RequestLatency.name,
                     label="Metric",
                 )
             with gr.Column(scale=2):
@@ -247,12 +244,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
 
         # dynamic for the selected runs
         @gr.render(
-            inputs=[stored_runs, stored_run_type, stored_percentiles, stored_metric],
-            triggers=[
-                stored_runs.change,
-                stored_percentiles.change,
-                stored_metric.change,
-            ],
+            inputs=[runs_dropdown, run_type_dropdown, stored_percentiles, metric_dropdown],
             trigger_mode="always_last",
             concurrency_limit=1,
         )
@@ -262,7 +254,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             percentiles_text: str,
             metric_name: str,
         ):
-            if not selected_runs:
+            if not selected_runs or not run_type or not percentiles_text or not metric_name:
                 return
             make_plot(
                 results_folder, selected_runs, run_type, metric_name, percentiles_text
@@ -270,10 +262,10 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
 
 
         # dynamic for the selected runs
-        @gr.render(inputs=[stored_runs, stored_run_type],
+        @gr.render(inputs=[runs_dropdown, run_type_dropdown],
                    concurrency_limit=1, trigger_mode="always_last")
         def display_run_data(selected_runs: list[str], run_type: str):
-            if not selected_runs:
+            if not selected_runs or not run_type:
                 return
             with gr.Tabs(selected=0):
                 for i, run in enumerate(selected_runs):
@@ -325,38 +317,18 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                         )
 
 
-        blocks.load(
-            args_to_tuple,
-            inputs=[stored_runs, stored_run_type, stored_percentiles, stored_metric],
-            outputs=[
-                runs_dropdown,
-                run_type_dropdown,
-                percentiles_textbox,
-                metric_dropdown,
-            ],
-        )
-
         # interactions
-        runs_dropdown.change(id_func, inputs=[runs_dropdown], outputs=[stored_runs])
         runs_dropdown.focus(lambda: gr.Timer(active=False), outputs=[timer])
         runs_dropdown.blur(lambda: gr.Timer(active=True), outputs=[timer])
         timer.tick(
             poll_latest_runs,
-            inputs=[stored_results_folder, stored_run_type],
+            inputs=[stored_results_folder, run_type_dropdown],
             outputs=[runs_dropdown],
         )
         run_type_dropdown.input(
-            id_func,
-            inputs=[run_type_dropdown],
-            outputs=[stored_run_type],
-        )
-        stored_run_type.change(
             update_runs_for_type,
-            inputs=[stored_results_folder, stored_run_type],
+            inputs=[stored_results_folder, run_type_dropdown],
             outputs=[runs_dropdown],
-        )
-        metric_dropdown.change(
-            id_func, inputs=[metric_dropdown], outputs=[stored_metric]
         )
         percentiles_textbox.change(
             id_func,
@@ -374,7 +346,8 @@ def visualize_results(
     favicon_path = get_relative_file_path(__file__, "assets/wave_logo_small.png")
     app, url, _ = data_visualization.launch(
         prevent_thread_lock=True,
-        quiet=True,
+        # quiet=True,
+        debug=True,
         inbrowser=go_to_browser,
         favicon_path=favicon_path,
     )
