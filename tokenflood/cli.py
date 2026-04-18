@@ -23,7 +23,7 @@ from tokenflood.constants import (
     OBSERVATION_SPEC_FILE,
     RUN_SUITE_FILE,
 )
-from tokenflood.gradio import visualize_results
+from tokenflood.visualization_frontend.gradio import visualize_results
 from tokenflood.io import (
     FileIOContext,
     get_first_available_filename_like,

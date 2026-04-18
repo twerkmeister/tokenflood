@@ -99,3 +99,7 @@ class LLMRequestData(BaseModel, frozen=True):
                 f"Observed output tokens that are {abs(relative_output_token_error * 100):.2f}% {longer_or_shorter} than what was expected. The measured latencies might not be representative. This warning type will only appear once per phase.",
                 extra={WARN_ONCE_KEY: "output_tokens_off"},
             )
+
+    # field names for access in analytics code
+    class F:
+        latency = "latency"

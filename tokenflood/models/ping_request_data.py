@@ -22,3 +22,6 @@ class PingData(BaseModel, frozen=True):
     @classmethod
     def from_context(cls, context_data: PingRequestContext, latency: int) -> Self:
         return cls(latency=latency, **context_data.model_dump())
+
+    class F:
+        latency = "latency"

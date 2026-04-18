@@ -1,4 +1,5 @@
 import asyncio
+import os
 from typing import Callable, Optional
 import logging
 
@@ -208,7 +209,9 @@ async def send_llm_request(
         messages=messages,
         max_tokens=num_generation_tokens,
         base_url=endpoint_spec.base_url,
-        api_key=endpoint_spec.api_key_env_var,
+        api_key=os.getenv(endpoint_spec.api_key_env_var)
+        if endpoint_spec.api_key_env_var is not None
+        else None,
         deployment_id=endpoint_spec.deployment,
         extra_headers=endpoint_spec.extra_headers,
         extra_body=endpoint_spec.extra_body,

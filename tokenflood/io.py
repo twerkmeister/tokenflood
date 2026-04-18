@@ -95,6 +95,13 @@ def list_dir_relative(folder_name: str) -> List[str]:
     return [os.path.join(folder_name, f) for f in os.listdir(folder_name)]
 
 
+def get_relative_file_path(reference_file: str, target_file_name: str):
+    """Return the path to another file from a python file's __file__ path."""
+    file_path = os.path.abspath(reference_file)
+    module_dir = os.path.dirname(file_path)
+    return os.path.join(module_dir, target_file_name)
+
+
 def write_file(filename: str, s: str):
     with open(filename, "w") as f:
         f.write(s)

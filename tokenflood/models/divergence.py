@@ -4,7 +4,7 @@ from typing import Callable
 import pandas as pd
 from pydantic import BaseModel
 
-from tokenflood.analysis import mean_float
+from tokenflood.analysis import mean
 from tokenflood.models.llm_request_data import LLMRequestData
 from tokenflood.models.util import numeric
 from tokenflood.util import calculate_relative_error
@@ -22,27 +22,27 @@ class TokenDivergence(BaseModel, arbitrary_types_allowed=True, frozen=True):
 
     @cached_property
     def mean_expected_input_tokens(self) -> float:
-        return self.safe_stat("expected_input_tokens", mean_float)
+        return self.safe_stat("expected_input_tokens", mean)
 
     @cached_property
     def mean_measured_input_tokens(self) -> float:
-        return self.safe_stat("measured_input_tokens", mean_float)
+        return self.safe_stat("measured_input_tokens", mean)
 
     @cached_property
     def mean_expected_output_tokens(self) -> float:
-        return self.safe_stat("expected_output_tokens", mean_float)
+        return self.safe_stat("expected_output_tokens", mean)
 
     @cached_property
     def mean_measured_output_tokens(self) -> float:
-        return self.safe_stat("measured_output_tokens", mean_float)
+        return self.safe_stat("measured_output_tokens", mean)
 
     @cached_property
     def mean_expected_prefix_tokens(self) -> float:
-        return self.safe_stat("expected_prefix_tokens", mean_float)
+        return self.safe_stat("expected_prefix_tokens", mean)
 
     @cached_property
     def mean_measured_prefix_tokens(self) -> float:
-        return self.safe_stat("measured_prefix_tokens", mean_float)
+        return self.safe_stat("measured_prefix_tokens", mean)
 
     @staticmethod
     def nice_relative_error(observation: float, target: float) -> float:
