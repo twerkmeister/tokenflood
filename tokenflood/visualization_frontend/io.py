@@ -34,6 +34,8 @@ def read_dataframe(path: str, csv_file: str = "") -> pd.DataFrame:
 def get_runs(
     folder: str, predicate: Optional[Callable[[str], bool]] = None
 ) -> list[str]:
+    if not os.path.isdir(folder):
+        return []
     runs = sorted(os.listdir(folder), reverse=True)
     runs = [os.path.join(folder, run) for run in runs]
     if predicate:

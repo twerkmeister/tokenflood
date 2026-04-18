@@ -36,7 +36,7 @@ BASE_COLORS = [
 def aggregation_name_to_color_step(aggregation_name: str) -> int:
     if aggregation_name == Mean.name:
         return 0
-    if aggregation_name.startswith(PERCENTILE_PREFIX) and len(aggregation_name) <= 3:
+    if aggregation_name.startswith(PERCENTILE_PREFIX) and len(aggregation_name) <= 4:
         try:
             percentile = int(aggregation_name[1:])
         except ValueError:
