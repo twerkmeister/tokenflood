@@ -222,7 +222,7 @@ def make_table(
                 if run_type == LOAD_TEST:
                     data[str(x) + " rps"] = str(round(trace.y[i], 2)) + " ms"
                 elif run_type == OBSERVATION_TEST:
-                    data[x] = str(round(trace.y[i], 2)) + " ms"
+                    data[str(x)] = str(round(trace.y[i], 2)) + " ms"
                 else:
                     data[x] = round(trace.y[i])
             rows.append(data)
