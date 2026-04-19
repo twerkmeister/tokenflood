@@ -194,9 +194,9 @@ async def run_heuristic_test(
     return error_threshold_tripped
 
 
-async def warm_up_session(endpoint_spec: EndpointSpec):
-    message_list = create_message_list_from_prompt("ping")
-    return await send_llm_request(endpoint_spec, message_list, 10)
+async def warm_up_session(endpoint_spec: EndpointSpec, idx: int = 0):
+    message_list = create_message_list_from_prompt(f"warmup ping{idx}")
+    return await send_llm_request(endpoint_spec, message_list, 20)
 
 
 async def send_llm_request(
@@ -236,11 +236,13 @@ async def get_warm_session(
 ) -> Optional[str]:
     error = None
     error_context = ErrorContext(requests_per_second_phase=-1.0, group_id="warmup")
-    t = asyncio.create_task(warm_up_session(endpoint_spec))
-    t.add_done_callback(handle_error(io_context, error_context))
-    result = (await asyncio.gather(t, return_exceptions=True))[0]
-    if isinstance(result, Exception):
-        error = str(result)
+    for i in range(20):
+        t = asyncio.create_task(warm_up_session(endpoint_spec, i))
+        t.add_done_callback(handle_error(io_context, error_context))
+        result = (await asyncio.gather(t, return_exceptions=True))[0]
+        if isinstance(result, Exception):
+            error = str(result)
+            break
     return error
 
 
