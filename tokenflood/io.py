@@ -49,6 +49,8 @@ class CustomDumper(yaml.SafeDumper):
     def represent_sequence(
         self, tag: str, sequence: Iterable[Any], flow_style: bool | None = None
     ):
+        # making sure an iterator argument is not exhausted
+        sequence = list(sequence)
         is_simple = all(isinstance(item, (int, float, str, bool)) for item in sequence)
         return super().represent_sequence(tag, sequence, flow_style=is_simple)
 
