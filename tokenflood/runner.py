@@ -221,7 +221,7 @@ async def send_llm_request(
         )
     except Exception as e:
         log.error(e)
-        raise e
+        raise
     return response
 
 
