@@ -32,7 +32,7 @@ from tokenflood.util import get_exact_date_str
 log = logging.getLogger(__name__)
 
 litellm.disable_cache()
-
+litellm.suppress_debug_info = True
 
 def handle_error(
     io_context: IOContext, error_context: ErrorContext
@@ -204,20 +204,25 @@ async def send_llm_request(
     messages: MessageList,
     num_generation_tokens: int,
 ) -> ModelResponse:
-    return await acompletion(
-        model=endpoint_spec.provider_model_str,
-        messages=messages,
-        max_tokens=num_generation_tokens,
-        base_url=endpoint_spec.base_url,
-        api_key=os.getenv(endpoint_spec.api_key_env_var)
-        if endpoint_spec.api_key_env_var is not None
-        else None,
-        deployment_id=endpoint_spec.deployment,
-        extra_headers=endpoint_spec.extra_headers,
-        extra_body=endpoint_spec.extra_body,
-        max_retries=0,
-        reasoning_effort=endpoint_spec.reasoning_effort,
-    )
+    try:
+        response = await acompletion(
+            model=endpoint_spec.provider_model_str,
+            messages=messages,
+            max_tokens=num_generation_tokens,
+            base_url=endpoint_spec.base_url,
+            api_key=os.getenv(endpoint_spec.api_key_env_var)
+            if endpoint_spec.api_key_env_var is not None
+            else None,
+            deployment_id=endpoint_spec.deployment,
+            extra_headers=endpoint_spec.extra_headers,
+            extra_body=endpoint_spec.extra_body,
+            max_retries=0,
+            reasoning_effort=endpoint_spec.reasoning_effort,
+        )
+    except Exception as e:
+        log.error(e)
+        raise e
+    return response
 
 
 def make_test_description(
@@ -248,7 +253,9 @@ async def run_suite(
     log.info("Warming up.")
     error = await get_warm_session(endpoint_spec, io_context)
     if error:
-        log.error(f"Not starting run due to error: {error}")
+        log.error(f"Not starting run due to error during warmup: {error}")
+        # letting any writes finish
+        await asyncio.sleep(0.1)
         return
     for phase, run_spec in enumerate(run_specs):
         test_description = make_test_description(suite, phase + 1, run_spec)
