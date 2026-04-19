@@ -8,6 +8,7 @@ import gradio.routes
 import pandas as pd
 import gradio as gr
 from gradio import Blocks
+from gradio.analytics import analytics_enabled
 
 from tokenflood import __version__
 from tokenflood.analysis import Mean
@@ -64,9 +65,30 @@ def create_debounce_js_code(timer_name: str, delay_ms: int = 500):
     function(text) {{
         if (window.{timer_name}) clearTimeout(window.{timer_name});
         return new Promise(resolve => {{
-            window.{timer_name} = setTimeout(() => resolve(text), {delay_ms});
+            window.{timer_name} = setTimeout(() => {{
+                resolve(text);
+            }}, {delay_ms});
         }});
     }}"""
+
+def create_debounce_array_js_code(timer_name: str, delay_ms: int = 500):
+    return f"""
+    function(selection) {{
+        if (window.{timer_name}) clearTimeout(window.{timer_name});
+        return new Promise(resolve => {{
+            window.{timer_name} = setTimeout(() => {{
+                resolve([selection]);
+            }}, {delay_ms});
+        }});
+    }}"""
+
+custom_css = """
+.tabs {
+    border-width: 1px; /* Light grey border */
+    border-color: var(--border-color-primary);
+    border-radius: 4px;
+}
+"""
 
 
 def get_warning_emoji(relative_error: float) -> str:
@@ -96,6 +118,9 @@ T = TypeVar("T")
 
 def id_func(x: T) -> T:
     return x
+
+def id_func_list(x: list[str]) -> tuple[list[str], None]:
+    return x, None
 
 
 def args_to_tuple(*args):
@@ -171,32 +196,73 @@ def make_table(
 ) -> pd.DataFrame:
     metric = metric_mapping[metric_name]
     trace_groups = collect_trace_groups(results_folder, runs, run_type, metric, percentiles)
+    results = []
+    for trace_group in trace_groups:
+        for trace in trace_group:
+            data = {
+                "run": trace.run,
+                "aggregation": trace.aggregation_name
+            }
+            for i, x in enumerate(trace.x):
+                data[x] = round(y, 2)
+            results.append(data)
+    return pd.DataFrame(results)
+
+
+def make_table(
+    results_folder: str,
+    runs: list[str],
+    run_type: str,
+    metric_name: str,
+    percentiles: str,
+) -> pd.DataFrame:
+    metric = metric_mapping[metric_name]
+    trace_groups = collect_trace_groups(results_folder, runs, run_type, metric, percentiles)
     rows = []
     for trace_group in trace_groups:
         for trace in trace_group:
             data: dict[str, str | numeric] = {
                 "run": trace.run,
-                "aggregation": trace.aggregation_name
+                "aggregation": trace.aggregation_name,
+                "metric": metric_name
             }
             for i, x in enumerate(trace.x):
-                data[x] = round(trace.y[i], 2)
+                if run_type == LOAD_TEST:
+                    data[str(x) + " rps"] = str(round(trace.y[i], 2)) + " ms"
+                elif run_type == OBSERVATION_TEST:
+                    data[x] = str(round(trace.y[i], 2)) + " ms"
+                else:
+                    data[x] = round(trace.y[i])
             rows.append(data)
     return pd.DataFrame(rows)
 
+def update_data(results_folder: str,
+    runs: list[str],
+    run_type: str,
+    metric_name: str,
+    percentiles: str) -> tuple[gr.Plot, pd.DataFrame]:
+    return (make_plot(results_folder, runs, run_type, metric_name, percentiles),
+            make_table(results_folder, runs,run_type, metric_name, percentiles))
 
 
 def make_yaml_code_element(text: str, label: str) -> gr.Code:
     return gr.Code(text, language="yaml", label=label, max_lines=20)
+
+def on_select(evt: gr.SelectData):
+    return evt.index
 
 
 def create_gradio_blocks(results_folder: str) -> Blocks:
     runs = get_load_test_runs(results_folder)
     latest_run = runs[:1]
     title = f"Tokenflood v{__version__}"
-    with gr.Blocks(title=title) as blocks:
+    with gr.Blocks(title=title,
+        analytics_enabled=False) as blocks:
         timer = gr.Timer(2)
         stored_percentiles = gr.State(DEFAULT_PERCENTILES_STR)
         stored_results_folder = gr.State(results_folder)
+        stored_runs = gr.State(latest_run)
+        dummy_state = gr.State(None) # needed for debounce js of runs dropdown to make array return possible
 
         # header - logo and title
         with gr.Row():
@@ -226,6 +292,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                     value=latest_run,
                     multiselect=True,
                     filterable=True,
+                    interactive=True,
                     label="Runs",
                 )
         # metric and percentile
@@ -240,28 +307,34 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                 percentiles_textbox = gr.Textbox(
                     stored_percentiles.value,
                     label="Percentiles (comma separated, 1-100)",
+                    interactive=True
                 )
 
-        # dynamic for the selected runs
+        data_plot = make_plot(results_folder, latest_run, LOAD_TEST, RequestLatency.name, DEFAULT_PERCENTILES_STR)
+        data_table = gr.DataFrame(
+            make_table(results_folder, latest_run, LOAD_TEST, RequestLatency.name, DEFAULT_PERCENTILES_STR),
+            label="tabulated data"
+        )
+
+        gr.on([stored_runs.change, stored_percentiles.change, metric_dropdown.change],
+               update_data,
+               inputs=[stored_results_folder, stored_runs, run_type_dropdown, metric_dropdown, stored_percentiles],
+               outputs=[data_plot, data_table],
+               trigger_mode="always_last", concurrency_limit=1)
+
         @gr.render(
-            inputs=[runs_dropdown, run_type_dropdown, stored_percentiles, metric_dropdown],
-            triggers=[runs_dropdown.change, stored_percentiles.change, metric_dropdown.change],
+            inputs=[stored_runs, run_type_dropdown],
+            triggers=[stored_runs.change],
             concurrency_limit=1, trigger_mode="always_last"
         )
-        def display_data_dynamically(
-            selected_runs: list[str],
-            run_type: str,
-            percentiles_text: str,
-            metric_name: str,
+        def render_tabs(
+                selected_runs: list[str],
+                run_type: str,
         ):
-            if not selected_runs or not run_type or not percentiles_text or not metric_name:
-                return
-            make_plot(
-                results_folder, selected_runs, run_type, metric_name, percentiles_text)
-            with gr.Tabs(selected=0):
+            with gr.Tabs() as tabs:
                 for i, run in enumerate(selected_runs):
                     run_folder = os.path.join(results_folder, run)
-                    with gr.Tab(run, id=i):
+                    with gr.Tab(run, id=i) as tab:
                         llm_request_data = get_llm_request_dataframe(run_folder)
                         with gr.Accordion("Token Heuristic Accuracy Stats"):
                                 gr.Markdown(get_markdown_summary(llm_request_data))
@@ -308,6 +381,8 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                             )
 
 
+
+
         # interactions
         runs_dropdown.focus(lambda: gr.Timer(active=False), outputs=[timer])
         runs_dropdown.blur(lambda: gr.Timer(active=True), outputs=[timer])
@@ -320,6 +395,12 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             update_runs_for_type,
             inputs=[stored_results_folder, run_type_dropdown],
             outputs=[runs_dropdown],
+        )
+        runs_dropdown.change(
+            id_func_list,
+            inputs=[runs_dropdown],
+            outputs=[stored_runs, dummy_state],
+            js=create_debounce_array_js_code("runs_dropdown_debounce", 500)
         )
         percentiles_textbox.change(
             id_func,
@@ -340,6 +421,7 @@ def visualize_results(
         quiet=True,
         inbrowser=go_to_browser,
         favicon_path=favicon_path,
+        css=custom_css
     )
     log.info(f"Gradio server running at [blue]{url}[/]")
     if keep_running:
