@@ -44,19 +44,37 @@ def read_pydantic_yaml_list(class_type: Type[T]) -> Callable[[str], List[T]]:
 
     return read_class_type_list
 
+
 class CustomDumper(yaml.SafeDumper):
-    def represent_sequence(self, tag: str, sequence: Iterable[Any], flow_style: bool | None = None):
+    def represent_sequence(
+        self, tag: str, sequence: Iterable[Any], flow_style: bool | None = None
+    ):
         is_simple = all(isinstance(item, (int, float, str, bool)) for item in sequence)
         return super().represent_sequence(tag, sequence, flow_style=is_simple)
 
+
 def write_pydantic_yaml(filename: str, o: T) -> None:
     with open(filename, "w") as f:
-        yaml.dump(o.model_dump(), f, sort_keys=False, indent=2, Dumper=CustomDumper, default_flow_style=False)
+        yaml.dump(
+            o.model_dump(),
+            f,
+            sort_keys=False,
+            indent=2,
+            Dumper=CustomDumper,
+            default_flow_style=False,
+        )
 
 
 def write_pydantic_yaml_list(filename: str, objects: List[T]) -> None:
     with open(filename, "w") as f:
-        yaml.safe_dump([o.model_dump() for o in objects], f, sort_keys=False, Dumper=CustomDumper, indent=2, default_flow_style=False)
+        yaml.dump(
+            [o.model_dump() for o in objects],
+            f,
+            sort_keys=False,
+            Dumper=CustomDumper,
+            indent=2,
+            default_flow_style=False,
+        )
 
 
 def read_endpoint_spec(filename: str) -> EndpointSpec:
