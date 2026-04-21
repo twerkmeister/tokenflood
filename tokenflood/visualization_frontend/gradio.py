@@ -45,7 +45,10 @@ from tokenflood.visualization_frontend.metrics import (
     RequestLatency,
     NetworkLatency,
     metric_mapping,
-    Metric, TimeToFirstToken, AverageTimePerOutputToken, DecodingLatency,
+    Metric,
+    TimeToFirstToken,
+    AverageTimePerOutputToken,
+    DecodingLatency,
 )
 from tokenflood.visualization_frontend.percentiles import (
     percentiles_to_aggregation_funcs,
@@ -198,8 +201,8 @@ def make_plot(
     plot_func = get_plot_func(run_type)
     return plot_func(trace_groups, metric)
 
-def make_sort_columns(run_type: str) -> Callable[[str], float]:
 
+def make_sort_columns(run_type: str) -> Callable[[str], float]:
     def sort_columns_load_test(title: str) -> float:
         if title.endswith(" rps"):
             rps = float(title.split(" ")[0])
@@ -247,7 +250,9 @@ def make_table(
                 else:
                     data[x] = round(trace.y[i])
             rows.append(data)
-    return pd.DataFrame(rows).sort_index(axis=1, key=lambda x: x.map(make_sort_columns(run_type)))
+    return pd.DataFrame(rows).sort_index(
+        axis=1, key=lambda x: x.map(make_sort_columns(run_type))
+    )
 
 
 def update_data(
@@ -306,7 +311,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                 gr.HTML(f"<h1>{title}</h1>")
 
         # run type and run dropdowns
-        with gr.Row():
+        with gr.Row(equal_height=True):
             with gr.Column(scale=1):
                 run_type_dropdown = gr.Dropdown(
                     [LOAD_TEST, OBSERVATION_TEST],
@@ -323,13 +328,19 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                     label="Runs",
                 )
         # metric and percentile
-        with gr.Row():
+        with gr.Row(equal_height=True):
             with gr.Column(scale=1):
                 metric_dropdown = gr.Dropdown(
-                    [RequestLatency.name, TimeToFirstToken.name, AverageTimePerOutputToken.name,
-                     DecodingLatency.name, NetworkLatency.name],
+                    [
+                        RequestLatency.name,
+                        TimeToFirstToken.name,
+                        DecodingLatency.name,
+                        AverageTimePerOutputToken.name,
+                        NetworkLatency.name,
+                    ],
                     value=RequestLatency.name,
                     label="Metric",
+                    info=RequestLatency.explanation,
                 )
             with gr.Column(scale=2):
                 percentiles_textbox = gr.Textbox(
@@ -456,6 +467,11 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             inputs=percentiles_textbox,
             outputs=stored_percentiles,
             js=create_debounce_js_code("percentiles_textbox_timer", 400),
+        )
+        metric_dropdown.change(
+            lambda m: gr.Dropdown(info=metric_mapping[m].explanation),
+            inputs=metric_dropdown,
+            outputs=metric_dropdown,
         )
     return blocks
 

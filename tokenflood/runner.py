@@ -32,6 +32,7 @@ log = logging.getLogger(__name__)
 litellm.disable_cache()
 litellm.suppress_debug_info = True
 
+
 def handle_error(
     io_context: IOContext, error_context: ErrorContext
 ) -> Callable[[asyncio.Task], None]:
@@ -217,12 +218,14 @@ async def send_llm_request(
             max_retries=0,
             reasoning_effort=endpoint_spec.reasoning_effort,
             stream=True,
-            stream_options={"include_usage": True}
+            stream_options={"include_usage": True},
         )
         chunks = []
         async for chunk in response:
             if first_token_time is None and (
-                    chunk.choices[0].delta.content or chunk.choices[0].delta.reasoning_content):
+                chunk.choices[0].delta.content
+                or chunk.choices[0].delta.reasoning_content
+            ):
                 first_token_time = time.time()
             chunks.append(chunk)
     except Exception as e:
@@ -231,26 +234,40 @@ async def send_llm_request(
     end_time = time.time()
     end = datetime.datetime.now()
     total_duration = end_time - start_time
-    time_to_first_token = first_token_time - start_time
-    decoding_latency = end_time - first_token_time
+    if first_token_time is not None:
+        time_to_first_token = first_token_time - start_time
+        decoding_latency = end_time - first_token_time
+    else:
+        time_to_first_token = 0
+        decoding_latency = 0
 
-    model_response = litellm.stream_chunk_builder(chunks, messages, start_time=start, end_time=end)
+    model_response = litellm.stream_chunk_builder(
+        chunks, messages, start_time=start, end_time=end
+    )
     completion_tokens = model_response.usage.completion_tokens
 
     if completion_tokens > 1:
-        avg_tpot = (total_duration - time_to_first_token) / (completion_tokens - 1)
+        avg_tpot = decoding_latency / (completion_tokens - 1)
     else:
         avg_tpot = 0
 
-    model_response._hidden_params[LLMRequestData.F.time_to_first_token] = time_to_first_token * 1000
-    model_response._hidden_params[LLMRequestData.F.decoding_latency] = decoding_latency * 1000
-    model_response._hidden_params[LLMRequestData.F.average_time_per_output_token] = avg_tpot * 1000
+    model_response._hidden_params[LLMRequestData.F.time_to_first_token] = (
+        time_to_first_token * 1000
+    )
+    model_response._hidden_params[LLMRequestData.F.decoding_latency] = (
+        decoding_latency * 1000
+    )
+    model_response._hidden_params[LLMRequestData.F.average_time_per_output_token] = (
+        avg_tpot * 1000
+    )
     model_response._hidden_params[LLMRequestData.F.latency] = total_duration * 1000
 
     return model_response
 
+
 def make_test_description(suite: LoadSpec, phase: int, run_spec: LoadPhase) -> str:
     return f"Load test {suite.name} phase {phase}: {run_spec.requests_per_second:.2f} requests/s"
+
 
 async def get_warm_session(
     endpoint_spec: EndpointSpec, io_context: IOContext

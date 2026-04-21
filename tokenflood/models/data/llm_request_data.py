@@ -27,9 +27,15 @@ class LLMRequestResult(BaseModel, frozen=True):
         usage = model_response.usage  # type:ignore[attr-defined]
         return cls(
             latency=int(model_response._hidden_params[LLMRequestData.F.latency]),
-            time_to_first_token=int(model_response._hidden_params[LLMRequestData.F.time_to_first_token]),
-            decoding_latency=int(model_response._hidden_params[LLMRequestData.F.decoding_latency]),
-            average_time_per_output_token=model_response._hidden_params[LLMRequestData.F.average_time_per_output_token],
+            time_to_first_token=int(
+                model_response._hidden_params[LLMRequestData.F.time_to_first_token]
+            ),
+            decoding_latency=int(
+                model_response._hidden_params[LLMRequestData.F.decoding_latency]
+            ),
+            average_time_per_output_token=model_response._hidden_params[
+                LLMRequestData.F.average_time_per_output_token
+            ],
             measured_input_tokens=usage.prompt_tokens,
             measured_prefix_tokens=usage.prompt_tokens_details.cached_tokens or 0
             if usage.prompt_tokens_details
