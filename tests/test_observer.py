@@ -6,9 +6,8 @@ from unittest import mock
 import pandas as pd
 import pytest
 
-from tokenflood.heuristic import builtin_heuristic_tasks, builtin_heuristic_token_sets
-from tokenflood.models.load_type import LoadType
-from tokenflood.models.observation_spec import ObservationSpec
+from tokenflood.models.load_types.load_type import HeuristicLoad
+from tokenflood.models.run_specs.observation_spec import ObservationSpec
 from tokenflood.observer import run_observation
 from tokenflood.schedule import create_even_schedule
 
@@ -19,11 +18,9 @@ def default_observation_spec():
         name="test",
         duration_hours=24,
         polling_interval_minutes=20,
-        load_type=LoadType(prompt_length=1024, prefix_length=512, output_length=20),
+        load_type=HeuristicLoad(prompt_length=1024, prefix_length=512, output_length=20),
         num_requests=4,
         within_seconds=1.0,
-        task=builtin_heuristic_tasks[0],
-        token_set=builtin_heuristic_token_sets[0],
     )
 
 

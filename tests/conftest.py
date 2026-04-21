@@ -12,21 +12,19 @@ from tokenflood.constants import (
     ERROR_FILE,
     LLM_REQUESTS_FILE,
     NETWORK_LATENCY_FILE,
-    RUN_SUITE_FILE,
+    LOAD_SPEC_FILE,
 )
 from tokenflood.io import (
     FileIOContext,
     read_endpoint_spec,
     read_observation_spec,
-    read_run_suite,
+    read_load_spec,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
-from tokenflood.models.heuristic_task import HeuristicTask
-from tokenflood.models.load_type import LoadType
-from tokenflood.models.observation_spec import ObservationSpec
-from tokenflood.models.run_spec import HeuristicRunSpec
-from tokenflood.models.run_suite import HeuristicRunSuite
-from tokenflood.models.token_set import TokenSet
+from tokenflood.models.load_types.heuristic_task import HeuristicTask
+from tokenflood.models.run_specs.observation_spec import ObservationSpec
+from tokenflood.models.run_specs.load_spec import LoadSpec
+from tokenflood.models.load_types.token_set import TokenSet, DEFAULT_TOKEN_SET
 from tokenflood.networking import (
     ObserveURLMiddleware,
     patch_aiohttp_client_session,
@@ -55,7 +53,7 @@ def data_folder(test_folder: str) -> str:
 
 @pytest.fixture(scope="session")
 def run_suites_folder(data_folder: str) -> str:
-    return join_folder_checked(data_folder, "run_suites")
+    return join_folder_checked(data_folder, "load_specs")
 
 
 @pytest.fixture(scope="session")
@@ -75,7 +73,7 @@ def results_folder(data_folder: str) -> str:
 
 @pytest.fixture(scope="session")
 def run_suite_results_folder(results_folder: str) -> str:
-    return join_folder_checked(results_folder, "run_results")
+    return join_folder_checked(results_folder, "load_results")
 
 
 @pytest.fixture(scope="session")
@@ -96,15 +94,15 @@ def superfast_observation_spec(observation_specs_folder) -> ObservationSpec:
 
 
 @pytest.fixture
-def base_run_suite(run_suites_folder) -> HeuristicRunSuite:
+def base_load_spec(run_suites_folder) -> LoadSpec:
     filename = os.path.join(run_suites_folder, "base.yml")
-    return read_run_suite(filename)
+    return read_load_spec(filename)
 
 
 @pytest.fixture
-def tiny_run_suite(run_suites_folder) -> HeuristicRunSuite:
+def tiny_load_spec(run_suites_folder) -> LoadSpec:
     filename = os.path.join(run_suites_folder, "tiny.yml")
-    return read_run_suite(filename)
+    return read_load_spec(filename)
 
 
 @pytest.fixture
@@ -144,9 +142,9 @@ def results_endpoint_spec(run_suite_results_folder) -> EndpointSpec:
 
 
 @pytest.fixture
-def results_run_suite(run_suite_results_folder) -> HeuristicRunSuite:
-    filename = os.path.join(run_suite_results_folder, RUN_SUITE_FILE)
-    return read_run_suite(filename)
+def results_run_suite(run_suite_results_folder) -> LoadSpec:
+    filename = os.path.join(run_suite_results_folder, LOAD_SPEC_FILE)
+    return read_load_spec(filename)
 
 
 @pytest.fixture
@@ -157,15 +155,6 @@ def openai_endpoint_spec() -> EndpointSpec:
 @pytest.fixture
 def tokenizer(base_endpoint_spec) -> Tokenizer:
     return Tokenizer.from_pretrained(base_endpoint_spec.model)
-
-
-@pytest.fixture(scope="session")
-def run_spec() -> HeuristicRunSpec:
-    return HeuristicRunSpec(
-        requests_per_second=2,
-        test_length_in_seconds=1,
-        load_types=(LoadType(prompt_length=128, prefix_length=32, output_length=1),),
-    )
 
 
 @pytest.fixture
@@ -182,7 +171,7 @@ def file_io_context(unique_temporary_folder) -> FileIOContext:
 
 @pytest.fixture(scope="session")
 def token_set() -> TokenSet:
-    return TokenSet(tokens=(" A", " B", " C", " D", " E"))
+    return DEFAULT_TOKEN_SET
 
 
 @pytest.fixture(scope="session")

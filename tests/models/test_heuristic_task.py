@@ -3,7 +3,7 @@ import pytest
 from tokenizers import Tokenizer
 
 from tests.utils import does_not_raise
-from tokenflood.models.heuristic_task import HeuristicTask
+from tokenflood.models.load_types.heuristic_task import HeuristicTask
 
 
 @pytest.mark.parametrize(

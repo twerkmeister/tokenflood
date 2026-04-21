@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
 from tokenflood.constants import LLM_REQUESTS_FILE, NETWORK_LATENCY_FILE
-from tokenflood.models.llm_request_data import LLMRequestData
-from tokenflood.models.ping_request_data import PingData
+from tokenflood.models.data.llm_request_data import LLMRequestData
+from tokenflood.models.data.ping_request_data import PingData
 
 
 @dataclass

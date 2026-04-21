@@ -11,11 +11,6 @@ from tokenflood.visualization_frontend.percentiles import (
 )
 
 
-def test_create_gradio_blocks(results_folder):
-    data_visualization = create_gradio_blocks(results_folder)
-    assert len(data_visualization.blocks) == 8
-
-
 @pytest.mark.asyncio
 async def test_visualize_results(results_folder):
     app, url = visualize_results(results_folder, False, go_to_browser=False)

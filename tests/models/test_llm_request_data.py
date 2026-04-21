@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from tokenflood.models.llm_request_data import LLMRequestData
+from tokenflood.models.data.llm_request_data import LLMRequestData
 from tokenflood.util import get_exact_date_str
 
 

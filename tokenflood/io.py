@@ -7,31 +7,37 @@ from typing import Any, Callable, Dict, List, Set, Type, TypeVar, Iterable
 
 import aiofiles
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 
 from tokenflood.constants import (
     COMMON_RESULT_FILES,
     ERROR_RING_BUFFER_SIZE,
     OBSERVATION_RESULT_FILES,
     RESULTS_FOLDER,
-    RUN_RESULT_FILES,
+    LOAD_RESULT_FILES,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
-from tokenflood.models.error_data import ErrorData
-from tokenflood.models.llm_request_data import LLMRequestData
-from tokenflood.models.observation_spec import ObservationSpec
-from tokenflood.models.ping_request_data import PingData
-from tokenflood.models.run_suite import HeuristicRunSuite
+from tokenflood.models.data.error_data import ErrorData
+from tokenflood.models.data.llm_request_data import LLMRequestData
+from tokenflood.models.run_specs.observation_spec import ObservationSpec
+from tokenflood.models.data.ping_request_data import PingData
+from tokenflood.models.run_specs.load_spec import LoadSpec
+from tokenflood.models.run_specs.typing import SpecificRunSpec
 from tokenflood.models.util import get_fields
 
-T = TypeVar("T", bound=BaseModel)
+T = TypeVar("T", bound=BaseModel | TypeAdapter)
 
 
 def read_pydantic_yaml(class_type: Type[T]) -> Callable[[str], T]:
     def read_class_type(filename: str) -> T:
         with open(filename) as f:
             data = yaml.safe_load(f)
-        return class_type(**data)
+        if isinstance(class_type, type) and issubclass(class_type, BaseModel):
+            return class_type(**data)
+        elif isinstance(class_type, TypeAdapter):
+            return class_type.validate_python(data)
+        else:
+            raise ValueError
 
     return read_class_type
 
@@ -83,9 +89,11 @@ def read_endpoint_spec(filename: str) -> EndpointSpec:
     return read_pydantic_yaml(EndpointSpec)(filename)
 
 
-def read_run_suite(filename: str) -> HeuristicRunSuite:
-    return read_pydantic_yaml(HeuristicRunSuite)(filename)
+def read_run_spec(filename: str) -> SpecificRunSpec:
+    return read_pydantic_yaml(TypeAdapter(SpecificRunSpec))(filename)
 
+def read_load_spec(filename: str) -> LoadSpec:
+    return read_pydantic_yaml(LoadSpec)(filename)
 
 def read_observation_spec(filename: str) -> ObservationSpec:
     return read_pydantic_yaml(ObservationSpec)(filename)
@@ -154,9 +162,9 @@ def is_observation_result_folder(folder: str) -> bool:
     )
 
 
-def is_run_result_folder(folder) -> bool:
+def is_load_result_folder(folder) -> bool:
     return folder_contains_files(folder, COMMON_RESULT_FILES) and folder_contains_files(
-        folder, RUN_RESULT_FILES
+        folder, LOAD_RESULT_FILES
     )
 
 

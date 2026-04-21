@@ -1,14 +1,13 @@
 import asyncio
 import logging
 
-from tokenflood.heuristic import create_heuristic_messages
 from tokenflood.io import IOContext
 from tokenflood.logging import global_warn_once_filter
 from tokenflood.models.endpoint_spec import EndpointSpec
-from tokenflood.models.error_data import ErrorContext
-from tokenflood.models.llm_request_data import LLMRequestContext
-from tokenflood.models.observation_spec import ObservationSpec
-from tokenflood.models.ping_request_data import PingRequestContext
+from tokenflood.models.data.error_data import ErrorContext
+from tokenflood.models.data.llm_request_data import LLMRequestContext
+from tokenflood.models.run_specs.observation_spec import ObservationSpec
+from tokenflood.models.data.ping_request_data import PingRequestContext
 from tokenflood.networking import (
     ObserveURLMiddleware,
     option_request_endpoint,
@@ -46,21 +45,8 @@ async def run_observation(
     llm_request_tasks = set()
     ping_tasks = set()
     num_pings = 0
-    prompt_lengths = [
-        observation_spec.load_type.prompt_length
-    ] * observation_spec.total_num_requests()
-    prefix_lengths = [
-        observation_spec.load_type.prefix_length
-    ] * observation_spec.total_num_requests()
-    output_lengths = [
-        observation_spec.load_type.output_length
-    ] * observation_spec.total_num_requests()
-    message_lists = create_heuristic_messages(
-        prompt_lengths,
-        prefix_lengths,
-        observation_spec.token_set,
-        observation_spec.task,
-    )
+    load_type = observation_spec.load_type
+    message_lists = load_type.create_message_lists(observation_spec.total_num_requests())
     request_per_second_phase = observation_spec.requests_per_second_during_polling()
     i = 0
     burst_pauses = create_even_schedule(
@@ -76,9 +62,9 @@ async def run_observation(
         for burst_idx in range(observation_spec.num_requests):
             request_context = LLMRequestContext(
                 datetime=get_exact_date_str(),
-                expected_input_tokens=prompt_lengths[i],
-                expected_prefix_tokens=prefix_lengths[i],
-                expected_output_tokens=output_lengths[i],
+                expected_input_tokens=load_type.get_expected_prompt_length(),
+                expected_prefix_tokens=load_type.get_expected_prefix_length(),
+                expected_output_tokens=load_type.get_expected_output_length(),
                 requests_per_second_phase=request_per_second_phase,
                 request_number=i,
                 model=endpoint_spec.provider_model_str,
@@ -92,7 +78,7 @@ async def run_observation(
                 send_llm_request(
                     endpoint_spec,
                     message_lists[i],
-                    output_lengths[i],
+                    load_type.get_expected_output_length(),
                 )
             )
             t.add_done_callback(

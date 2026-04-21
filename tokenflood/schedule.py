@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 
-from tokenflood.models.run_spec import RunSpec
+from tokenflood.models.run_specs.load_spec import LoadPhase
 
 highest_burstiness_control = 21
 
@@ -18,21 +18,21 @@ def burstiness_to_burstiness_control(burstiness: int) -> int:
     return highest_burstiness_control - burstiness * 2
 
 
-def create_load_test_phase_schedule(run_spec: RunSpec) -> List[float]:
+def create_load_test_phase_schedule(load_phase: LoadPhase, burstiness: int) -> List[float]:
     """Create a bursty randomized schedule with a guaranteed total length."""
-    burstiness_control = burstiness_to_burstiness_control(run_spec.burstiness)
+    burstiness_control = burstiness_to_burstiness_control(burstiness)
     # if burstiness control is highest, create an even schedule instead
     if burstiness_control >= highest_burstiness_control:
         return create_even_schedule(
-            run_spec.total_num_requests, run_spec.test_length_in_seconds
+            load_phase.total_num_requests, load_phase.duration_seconds
         )
-    if run_spec.total_num_requests == 1:
+    if load_phase.total_num_requests == 1:
         return [0.0]
     pauses = np.random.gamma(
         shape=burstiness_control,
-        scale=(1 / run_spec.requests_per_second) / burstiness_control,
-        size=run_spec.total_num_requests - 1,
+        scale=(1 / load_phase.requests_per_second) / burstiness_control,
+        size=load_phase.total_num_requests - 1,
     )
     total_length = pauses.sum()
-    pauses = pauses / (total_length / run_spec.test_length_in_seconds)
+    pauses = pauses / (total_length / load_phase.duration_seconds)
     return list(pauses) + [0.0]

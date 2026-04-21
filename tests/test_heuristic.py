@@ -1,60 +1,42 @@
 import pytest
 
-from tokenflood.heuristic import (
-    create_heuristic_messages,
-    create_prompt,
-    create_prompt_prefix,
-    create_prompt_random_part,
-)
-from tokenflood.models.heuristic_task import HeuristicTask
-from tokenflood.models.load_type import LoadType
-from tokenflood.models.run_spec import HeuristicRunSpec
-from tokenflood.models.token_set import TokenSet
+from tokenflood.models.load_types.heuristic_task import HeuristicTask
+from tokenflood.models.load_types.load_type import HeuristicLoad
+from tokenflood.models.load_types.token_set import TokenSet
 
+@pytest.fixture()
+def heuristic_load() -> HeuristicLoad:
+    return HeuristicLoad(prompt_length=1024, prefix_length=128, output_length=12)
 
 @pytest.mark.parametrize(
     "num_prefix_tokens, expected_result", [(4, " A" * 4), (0, ""), (-10, "")]
 )
-def test_create_prompt_prefix(num_prefix_tokens: int, expected_result: str):
-    token_set = TokenSet(tokens=(" A", " B"))
-    assert create_prompt_prefix(token_set, num_prefix_tokens) == expected_result
+def test_create_prompt_prefix(num_prefix_tokens: int, expected_result: str, heuristic_load):
+    assert heuristic_load.create_prompt_prefix(num_prefix_tokens) == expected_result
 
 
-def test_create_prompt_random_part(token_set):
-    p1 = create_prompt_random_part(token_set, 1000)
-    p2 = create_prompt_random_part(token_set, 1000)
+def test_create_prompt_random_part(heuristic_load):
+    p1 = heuristic_load.create_prompt_random_part(1000)
+    p2 = heuristic_load.create_prompt_random_part(1000)
     assert p1 != p2
     assert len(p1) == len(p2)
 
 
-def test_create_prompt(token_set):
-    task = HeuristicTask(task="--- Write a letter to Santa Claus")
-    prompt_length = 1024
-    prefix_length = 128
-    prompt = create_prompt(token_set, prompt_length, prefix_length, task)
+def test_create_prompt(heuristic_load):
+    prompt = heuristic_load.create_prompt()
 
     assert len(prompt) > 2048
-    assert prompt[: prefix_length * 2] == token_set.tokens[0] * prefix_length
+    assert prompt[: heuristic_load.prefix_length * 2] == heuristic_load.token_set.tokens[0] * heuristic_load.prefix_length
     assert (
-        prompt[prefix_length * 2 : prefix_length * 2 + 32] != token_set.tokens[0] * 16
+        prompt[heuristic_load.prefix_length * 2 : heuristic_load.prefix_length * 2 + 32] != heuristic_load.token_set.tokens[0] * 16
     )
-    assert prompt.endswith(task.task)
+    assert prompt.endswith(heuristic_load.task.task)
 
 
-def test_create_heuristic_messages(token_set, heuristic_task, tokenizer):
-    run_spec = HeuristicRunSpec(
-        name="abc",
-        requests_per_second=1,
-        test_length_in_seconds=3,
-        load_types=(LoadType(prompt_length=1000, prefix_length=100, output_length=24),),
-    )
-    prompt_lengths, prefix_lengths, _ = run_spec.sample()
-    message_lists = create_heuristic_messages(
-        prompt_lengths, prefix_lengths, token_set, heuristic_task
-    )
-    assert len(message_lists) == run_spec.total_num_requests
+def test_create_heuristic_messages(heuristic_load, tokenizer):
+    message_lists = heuristic_load.create_message_lists(10)
 
     tokenized = tokenizer.encode_batch([m[0]["content"] for m in message_lists])
 
     # lengths should be within +-10 token range of the desired length
-    assert all([990 <= len(t.tokens) <= 1010 for t in tokenized])
+    assert all([1014 <= len(t.tokens) <= 1034 for t in tokenized])

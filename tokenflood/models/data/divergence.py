@@ -5,7 +5,7 @@ import pandas as pd
 from pydantic import BaseModel
 
 from tokenflood.analysis import mean
-from tokenflood.models.llm_request_data import LLMRequestData
+from tokenflood.models.data.llm_request_data import LLMRequestData
 from tokenflood.models.util import numeric
 from tokenflood.util import calculate_relative_error
 

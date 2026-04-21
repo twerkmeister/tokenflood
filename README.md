@@ -8,14 +8,6 @@ and tokenflood simulates this workload for you.**
 Tokenflood makes it easy to explore how latency changes when using different providers, 
 hardware, quantizations, or prompt and output lengths.
 
-Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports 
-[all providers that litellm covers](https://docs.litellm.ai/docs/providers).
-
-> [!CAUTION]
-> Tokenflood can generate high costs if configured poorly and used with pay-per- 
-> token services. Make sure you only test workloads that are within a reasonable budget.
-> See the [safety section](#-safety-) for more information.
-
 ### Table of Contents
 
 * [Common Usage Scenarios](#common-usage-scenarios)
@@ -35,10 +27,9 @@ Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports
 
 ## Common Usage Scenarios
 
-1. Load testing self-hosted LLMs.
+1. Load-testing self-hosted LLMs.
 2. Assessing the effects of model, hardware, quantization, and prompt optimizations on latency, throughput, and costs.
-3. Assessing the intraday latency variations of hosted LLM providers for your load types.
-4. Assessing and choosing a hosted LLM provider before going into production with them. 
+3. Assessing the intraday latency variations of hosted LLM providers for your load types before sending your data there.
 
 ### Example 1: Assessing the effects of potential prompt and model optimizations
 
@@ -55,7 +46,7 @@ Tokenflood allows you to find worthwhile goals for prompt parameter or model imp
 
 ### Example 2: Find out when people start stealing your latency
 
-Load testing large providers does not really make sense if you value your money as their datacenters are huge, shared resources. 
+Load testing large providers does not really make sense as their datacenters are huge, shared resources. 
 While a single company or user usually does not have much effect on them, these shared resources are subject to intraday latency variations, often coinciding with daily business hours.
 
 ![observing-intraday-latency-variation](./images/observe.png)
@@ -82,7 +73,7 @@ pip install tokenflood
 
 ## Quick Start
 
-For a quick start, make sure that vllm is installed, and you serve a small model:
+For a quick start, make sure that [vllm](https://github.com/vllm-project/vllm) is installed, and you serve a small model:
 ```bash
 pip install vllm
 vllm serve HuggingFaceTB/SmolLM-135M-Instruct
@@ -90,12 +81,12 @@ vllm serve HuggingFaceTB/SmolLM-135M-Instruct
 
 Afterward, create the basic config files and do a first run:
 ```bash
-# This creates tiny starter files: run_suite.yml, observation_spec.yml and endpoint_spec.yml
+# This creates tiny starter files: load.yml, observation.yml and endpoint.yml
 tokenflood init
 # Afterwards you can inspect those files, and then do a load test
-tokenflood run run_suite.yml endpoint_spec.yml
+tokenflood run load.yml endpoint.yml
 # Or observe the endpoint
-tokenflood observe observation_spec.yml endpoint_spec.yml
+tokenflood run observation.yml endpoint.yml
 # start the data visualisation frontend
 tokenflood viz
 ``` 
@@ -104,7 +95,7 @@ tokenflood viz
 
 ### Endpoint Specs
 
-With the endpoint spec file you can determine the target of the load test. 
+With the endpoint spec file you can determine the target of your tests. 
 Tokenflood uses [litellm](https://www.litellm.ai/) under the hood and supports 
 [all providers that litellm covers](https://docs.litellm.ai/docs/providers).
 
@@ -127,8 +118,8 @@ Explanation of the parameters:
 * `extra_headers`: Can be useful for certain providers to select models (e.g. sagemaker inference components).
 * `extra_body`: Can be useful to add chat template kwargs (e.g. to disable reasoning)
 
-Tokenflood passes all these parameters right through to litellm's completion call. 
-To get a better understanding, it's best to have a look at [the official documentation of the litellm completion call](https://docs.litellm.ai/docs/completion/input). 
+Tokenflood passes all these parameters through to litellm's completion call. 
+To dive deeper, have a look at [the official documentation of the litellm completion call](https://docs.litellm.ai/docs/completion/input). 
 
 #### Endpoint Examples
 
@@ -191,64 +182,33 @@ model: claude-3-5-sonnet-20240620
 
 Env vars: `ANTHROPIC_API_KEY`
 
-### Run Suites
+### Load Specs
 
-With a run suite you define a load test that you want to run. Each test can have multiple
+With a load spec you define a load test that you want to run. Each test can have multiple
 phases with a different number of requests per second. All phases share the same length in 
-seconds and the type of loads that are being sent.
+and the type of load that is being sent.
 
 Here is the run suite that is being created for you upon calling `tokenflood init`:
 ```yaml
+type: load
 name: starter
-requests_per_second_rates:  # Defines the phases with the different request rates
+requests_per_second_phases: # Defines the phases with the different request rates
 - 1.0
 - 2.0
-test_length_in_seconds: 10  # each phase is 10 seconds long
+seconds_per_phase: 10       # each phase is 10 seconds long
 burstiness: 1               # burstiness of the requests (0 being no burstiness, 10 being max burstiness resulting in ~-50%/+100% rps swings at times) 
-load_types:                 # This run suite has two load types with equal weight
-- prompt_length: 512        # prompt length in tokens
+load_type:                  # This run suite has two load types with equal weight
+  type: heuristic   
+  prompt_length: 512        # prompt length in tokens
   prefix_length: 128        # prompt prefix length in tokens
   output_length: 32         # output length in tokens
-  weight: 1                 # sampling weight for this load type
-- prompt_length: 640
-  prefix_length: 568
-  output_length: 12
-  weight: 1
-budget:
-  input_tokens: 100000      # the maximum number of input tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
-  output_tokens: 10000      # the maximum number of output tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
+  task:                     # A "pretend" task to generate a lot of tokens which we can truncate using the max token parameters. This makes sure we do not produce too few tokens and underestimate the true load.
+    task: 'Task: Count up to 1000 naming each individual number like this: 1 2 3 4'
+  token_set:                # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length
+    tokens: [' A', ' B', ' C', ' D', ' E', ' F', ' G', ' H', ' I', ' J', ' K', ' L',
+    ' M', ' N', ' O', ' P', ' Q', ' R', ' S', ' T', ' U', ' V', ' W', ' X', ' Y',
+    ' Z']
 error_limit: 0.3            # the fraction of errors in requests that are acceptable for the last 30 requests. The test will end once this limit is breached.
-task:                       # The task tokenflood uses to generate a lot of tokens which we can truncate using the max token parameters - makes sure we do not produce too few tokens!
-  task: 'Task: Count up to 1000 naming each individual number like this: 1 2 3 4'
-token_set:                  # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length   
-  tokens:
-  - ' A'
-  - ' B'
-  - ' C'
-  - ' D'
-  - ' E'
-  - ' F'
-  - ' G'
-  - ' H'
-  - ' I'
-  - ' J'
-  - ' K'
-  - ' L'
-  - ' M'
-  - ' N'
-  - ' O'
-  - ' P'
-  - ' Q'
-  - ' R'
-  - ' S'
-  - ' T'
-  - ' U'
-  - ' V'
-  - ' W'
-  - ' X'
-  - ' Y'
-  - ' Z'
-
 ```
 
 ### Observation Specs
@@ -261,48 +221,24 @@ points in time.
 Here is the observation spec that is generated by running `tokenflood init`:
 
 ```yaml
+type: observation
 name: starter
 duration_hours: 1.0             # total test length: 1 hour
 polling_interval_minutes: 15.0  # send requests every 15 minutes
 load_type:                      # observation runs just have one load type
+  type: heuristic
   prompt_length: 512            # prompt length in tokens
   prefix_length: 128            # prompt prefix length in tokens
   output_length: 32             # output length in tokens
+  task:                         # A "pretend" task to generate a lot of tokens which we can truncate using the max token parameters. This makes sure we do not produce too few tokens and underestimate the true load.
+    task: 'Task: Count up to 1000 naming each individual number like this: 1 2 3 4'
+  token_set:                    # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length
+    tokens: [' A', ' B', ' C', ' D', ' E', ' F', ' G', ' H', ' I', ' J', ' K', ' L',
+    ' M', ' N', ' O', ' P', ' Q', ' R', ' S', ' T', ' U', ' V', ' W', ' X', ' Y',
+    ' Z']
 num_requests: 5                 # how many requests to send at the start of an interval
 within_seconds: 2.0             # within how many seconds to send the requests at the start of an interval (useful to manage rate limits)
-budget:
-  input_tokens: 1000000         # the maximum number of input tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
-  output_tokens: 10000          # the maximum number of output tokens this test is allowed to use - prevents any load configuration that would use more than this from starting
-task:                           # The task tokenflood uses to generate a lot of tokens which we can truncate using the max token parameters - makes sure we do not produce too few tokens!
-  task: 'Task: Count up to 1000 naming each individual number like this: 1 2 3 4'
-token_set:                      # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length 
-  tokens:
-  - ' A'
-  - ' B'
-  - ' C'
-  - ' D'
-  - ' E'
-  - ' F'
-  - ' G'
-  - ' H'
-  - ' I'
-  - ' J'
-  - ' K'
-  - ' L'
-  - ' M'
-  - ' N'
-  - ' O'
-  - ' P'
-  - ' Q'
-  - ' R'
-  - ' S'
-  - ' T'
-  - ' U'
-  - ' V'
-  - ' W'
-  - ' X'
-  - ' Y'
-  - ' Z'
+
 ```
 
 ## Visualizing Results
@@ -360,16 +296,12 @@ visualisation frontend also shows absolute and relative token errors.
 
 ## 🚨 Safety 🚨
 
-Using tokenflood can result in high token spending. To prevent negative surprises,
-tokenflood has additional safety measurements:
+Using tokenflood can result in high token spending if configured poorly. 
+To prevent negative surprises, tokenflood has additional safety measurements:
 
-1. Tokenflood always tries to estimate the used tokens for the test upfront and asks you to confirm the start of the tests after seeing the estimation.
-2. There are additional run suite variables that determine the maximum allowed input and output token budget for the test. A test whose token usage estimate exceeds those limits will not be started.
-3. Tokenflood won't start a run were the first warm-up request fails, e.g., due to API key misconfiguration
-4. Tokenflood will end a run once the error rate exceeds 30% for the last 30 requests.
-
-Still, these measures do not provide perfect protection against misconfiguration. 
-Always be careful when using tokenflood.
+1. Tokenflood always asks you to confirm the start of the tests.
+2. Tokenflood won't start a run were a warm-up request fails, e.g., due to API key misconfiguration.
+3. Tokenflood will end a run once the error rate exceeds 30% for the last 30 requests.
 
 ## 🤝 Contributing
 

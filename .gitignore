@@ -2,7 +2,8 @@
 scratchpad/
 endpoint*.yml
 run_suite*.yml
-observation_*.yml
+load*.yml
+observation*.yml
 results/
 .idea/
 .DS_Store
