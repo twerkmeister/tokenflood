@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import logging
 import os
 from typing import Tuple, TypeVar, Callable, Type
@@ -197,6 +198,27 @@ def make_plot(
     plot_func = get_plot_func(run_type)
     return plot_func(trace_groups, metric)
 
+def make_sort_columns(run_type: str) -> Callable[[str], float]:
+
+    def sort_columns_load_test(title: str) -> float:
+        if title.endswith(" rps"):
+            rps = float(title.split(" ")[0])
+            return rps
+        else:
+            return 0.0
+
+    def sort_columns_observation(title: str) -> float:
+        try:
+            dtime = datetime.datetime.fromisoformat(title)
+            return dtime.timestamp()
+        except ValueError:
+            return 0.0
+
+    if run_type == LOAD_TEST:
+        return sort_columns_load_test
+    else:
+        return sort_columns_observation
+
 
 def make_table(
     results_folder: str,
@@ -225,7 +247,7 @@ def make_table(
                 else:
                     data[x] = round(trace.y[i])
             rows.append(data)
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows).sort_index(axis=1, key=lambda x: x.map(make_sort_columns(run_type)))
 
 
 def update_data(
@@ -332,6 +354,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                 DEFAULT_PERCENTILES_STR,
             ),
             label="tabulated data",
+            interactive=False,
         )
         # triggering visibility of the dataframe to force rerender and make all data lines show up
         gr.on(
