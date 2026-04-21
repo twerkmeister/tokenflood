@@ -1,17 +1,19 @@
 import pytest
 
-from tokenflood.models.load_types.heuristic_task import HeuristicTask
 from tokenflood.models.load_types.load_type import HeuristicLoad
-from tokenflood.models.load_types.token_set import TokenSet
+
 
 @pytest.fixture()
 def heuristic_load() -> HeuristicLoad:
     return HeuristicLoad(prompt_length=1024, prefix_length=128, output_length=12)
 
+
 @pytest.mark.parametrize(
     "num_prefix_tokens, expected_result", [(4, " A" * 4), (0, ""), (-10, "")]
 )
-def test_create_prompt_prefix(num_prefix_tokens: int, expected_result: str, heuristic_load):
+def test_create_prompt_prefix(
+    num_prefix_tokens: int, expected_result: str, heuristic_load
+):
     assert heuristic_load.create_prompt_prefix(num_prefix_tokens) == expected_result
 
 
@@ -26,9 +28,13 @@ def test_create_prompt(heuristic_load):
     prompt = heuristic_load.create_prompt()
 
     assert len(prompt) > 2048
-    assert prompt[: heuristic_load.prefix_length * 2] == heuristic_load.token_set.tokens[0] * heuristic_load.prefix_length
     assert (
-        prompt[heuristic_load.prefix_length * 2 : heuristic_load.prefix_length * 2 + 32] != heuristic_load.token_set.tokens[0] * 16
+        prompt[: heuristic_load.prefix_length * 2]
+        == heuristic_load.token_set.tokens[0] * heuristic_load.prefix_length
+    )
+    assert (
+        prompt[heuristic_load.prefix_length * 2 : heuristic_load.prefix_length * 2 + 32]
+        != heuristic_load.token_set.tokens[0] * 16
     )
     assert prompt.endswith(heuristic_load.task.task)
 

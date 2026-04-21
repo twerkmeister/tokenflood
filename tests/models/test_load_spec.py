@@ -13,7 +13,9 @@ def default_run_suite_kwargs() -> Dict:
         name="ABC",
         requests_per_second_phases=(1, 2, 3, 4),
         seconds_per_phase=30,
-        load_type=HeuristicLoad(prompt_length=1024, prefix_length=400, output_length=12)
+        load_type=HeuristicLoad(
+            prompt_length=1024, prefix_length=400, output_length=12
+        ),
     ).model_dump()
 
 
@@ -43,9 +45,5 @@ def test_create_load_phases(default_run_suite_kwargs):
     assert len(load_phases) == len(load_spec.requests_per_second_phases)
 
     assert all(
-        [
-            rs.duration_seconds == load_spec.seconds_per_phase
-            for rs in load_phases
-        ]
+        [rs.duration_seconds == load_spec.seconds_per_phase for rs in load_phases]
     )
-

@@ -5,7 +5,7 @@ from tokenflood.models.data.llm_request_data import LLMRequestData
 from tokenflood.models.data.ping_request_data import PingData
 
 
-@dataclass
+@dataclass(frozen=True)
 class Metric:
     field_name: str
     file: str

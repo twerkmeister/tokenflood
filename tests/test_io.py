@@ -48,9 +48,7 @@ def test_read_write_pydantic_model(base_load_spec, unique_temporary_file):
 def test_read_write_pydantic_model_list(base_load_spec, unique_temporary_file):
     object_list = [base_load_spec, base_load_spec]
     write_pydantic_yaml_list(unique_temporary_file, object_list)
-    re_read_base_run_suites = read_pydantic_yaml_list(LoadSpec)(
-        unique_temporary_file
-    )
+    re_read_base_run_suites = read_pydantic_yaml_list(LoadSpec)(unique_temporary_file)
     assert len(re_read_base_run_suites) == len(object_list)
     assert re_read_base_run_suites[0] == base_load_spec
     assert re_read_base_run_suites[1] == base_load_spec

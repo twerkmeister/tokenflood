@@ -46,7 +46,9 @@ async def run_observation(
     ping_tasks = set()
     num_pings = 0
     load_type = observation_spec.load_type
-    message_lists = load_type.create_message_lists(observation_spec.total_num_requests())
+    message_lists = load_type.create_message_lists(
+        observation_spec.total_num_requests()
+    )
     request_per_second_phase = observation_spec.requests_per_second_during_polling()
     i = 0
     burst_pauses = create_even_schedule(

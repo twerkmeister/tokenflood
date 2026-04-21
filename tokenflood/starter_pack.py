@@ -10,8 +10,13 @@ starter_run_suite = LoadSpec(
     name="starter",
     requests_per_second_phases=(1, 2),
     seconds_per_phase=30,
-    load_type=HeuristicLoad(prompt_length=512, prefix_length=128, output_length=32,
-                            task=DEFAULT_HEURISTIC_TASK, token_set=DEFAULT_TOKEN_SET),
+    load_type=HeuristicLoad(
+        prompt_length=512,
+        prefix_length=128,
+        output_length=32,
+        task=DEFAULT_HEURISTIC_TASK,
+        token_set=DEFAULT_TOKEN_SET,
+    ),
     error_limit=DEFAULT_ERROR_RATE_LIMIT,
 )
 
@@ -27,8 +32,13 @@ starter_observation_spec = ObservationSpec(
     name="starter",
     duration_hours=1.0,
     polling_interval_minutes=15,
-    load_type=HeuristicLoad(prompt_length=512, prefix_length=128, output_length=32,
-                            task=DEFAULT_HEURISTIC_TASK, token_set=DEFAULT_TOKEN_SET),
+    load_type=HeuristicLoad(
+        prompt_length=512,
+        prefix_length=128,
+        output_length=32,
+        task=DEFAULT_HEURISTIC_TASK,
+        token_set=DEFAULT_TOKEN_SET,
+    ),
     num_requests=5,
     within_seconds=2.0,
 )

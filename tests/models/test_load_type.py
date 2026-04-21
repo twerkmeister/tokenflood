@@ -9,7 +9,9 @@ from tokenflood.models.load_types.load_type import HeuristicLoad
 @pytest.fixture()
 def default_heuristic_load_kwargs() -> Dict:
     return HeuristicLoad(
-        prompt_length=1000, prefix_length=100, output_length=12,
+        prompt_length=1000,
+        prefix_length=100,
+        output_length=12,
     ).model_dump()
 
 
@@ -28,6 +30,8 @@ def default_heuristic_load_kwargs() -> Dict:
         ({"output_length": 0}, pytest.raises(ValueError)),
     ],
 )
-def test_heuristic_load_validation(kwargs_override, expectation, default_heuristic_load_kwargs):
+def test_heuristic_load_validation(
+    kwargs_override, expectation, default_heuristic_load_kwargs
+):
     with expectation:
         HeuristicLoad(**{**default_heuristic_load_kwargs, **kwargs_override})

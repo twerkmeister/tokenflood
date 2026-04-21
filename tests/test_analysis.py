@@ -21,8 +21,9 @@ def test_get_group_data(llm_requests_df):
 
 def test_aggregate(llm_requests_df):
     field = "latency"
-    assert np.isclose(np.average(llm_requests_df[field]),
-                      aggregate(llm_requests_df, field, Mean))
+    assert np.isclose(
+        np.average(llm_requests_df[field]), aggregate(llm_requests_df, field, Mean)
+    )
 
 
 @pytest.mark.parametrize(

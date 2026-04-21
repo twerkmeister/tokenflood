@@ -18,7 +18,9 @@ def burstiness_to_burstiness_control(burstiness: int) -> int:
     return highest_burstiness_control - burstiness * 2
 
 
-def create_load_test_phase_schedule(load_phase: LoadPhase, burstiness: int) -> List[float]:
+def create_load_test_phase_schedule(
+    load_phase: LoadPhase, burstiness: int
+) -> List[float]:
     """Create a bursty randomized schedule with a guaranteed total length."""
     burstiness_control = burstiness_to_burstiness_control(burstiness)
     # if burstiness control is highest, create an even schedule instead

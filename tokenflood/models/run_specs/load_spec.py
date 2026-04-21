@@ -1,15 +1,23 @@
 from typing import List, Literal, Self
 
-from pydantic import BaseModel, NonNegativeFloat, Field, PositiveFloat, PositiveInt, model_validator
+from pydantic import (
+    BaseModel,
+    NonNegativeFloat,
+    Field,
+    PositiveFloat,
+    PositiveInt,
+    model_validator,
+)
 
 from tokenflood.constants import DEFAULT_ERROR_RATE_LIMIT, LOAD_SPEC_FILE
-from tokenflood.models.load_types.load_type import LoadType, SpecificLoadType
+from tokenflood.models.load_types.load_type import SpecificLoadType
 from tokenflood.models.run_specs.run_spec import RunSpec
 from tokenflood.models.validation_types import (
     NonEmptyString,
     PositiveInteger,
     PositiveUniqueFloats,
 )
+
 
 class LoadPhase(BaseModel, frozen=True):
     requests_per_second: PositiveFloat
@@ -28,7 +36,6 @@ class LoadPhase(BaseModel, frozen=True):
                 f"this test would be {self.total_num_requests}. It needs to have at least one request"
             )
         return self
-
 
 
 class LoadSpec(RunSpec, frozen=True):

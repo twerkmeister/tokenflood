@@ -3,7 +3,7 @@ import asyncio
 import os
 import sys
 from io import StringIO
-from typing import List, Tuple, Callable, Coroutine, TypeVar
+from typing import List, Tuple, Callable, Coroutine, TypeVar, Any
 
 import gradio.routes
 from rich import print
@@ -32,7 +32,9 @@ from tokenflood.io import (
     get_first_available_filename_like,
     make_run_folder,
     read_endpoint_spec,
-    write_pydantic_yaml, read_run_spec, IOContext,
+    write_pydantic_yaml,
+    read_run_spec,
+    IOContext,
 )
 from tokenflood.logging import global_warn_once_filter
 from tokenflood.networking import (
@@ -212,14 +214,20 @@ def run(args: argparse.Namespace):
     log.info("Done.")
 
 
-T = TypeVar("T", bound=LoadSpec|ObservationSpec)
-def get_test_procedure(run_spec: T) -> Callable[[EndpointSpec, T, IOContext], Coroutine]:
+T = TypeVar("T", bound=LoadSpec | ObservationSpec)
+
+
+def get_test_procedure(
+    run_spec: T,
+) -> Callable[[EndpointSpec, Any, IOContext], Coroutine]:
     if isinstance(run_spec, LoadSpec):
         return run_load_test
     elif isinstance(run_spec, ObservationSpec):
         return run_observation
-    raise ValueError(f"Invalid run spec type: {type(run_spec)}. "
-                     f"Must be {LoadSpec.__name__} or {ObservationSpec.__name__}.")
+    raise ValueError(
+        f"Invalid run spec type: {type(run_spec)}. "
+        f"Must be {LoadSpec.__name__} or {ObservationSpec.__name__}."
+    )
 
 
 def confirm_starting_run(proceed: bool = False) -> bool:
@@ -236,6 +244,7 @@ def confirm_starting_run(proceed: bool = False) -> bool:
         response = response.strip().lower()
         trials += 1
     return response in yes_answers
+
 
 def main():
     load_dotenv(".env")

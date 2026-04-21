@@ -21,4 +21,3 @@ def test_run_spec_validation(requests_per_second, test_length_in_seconds, expect
             requests_per_second=requests_per_second,
             duration_seconds=test_length_in_seconds,
         )
-

@@ -2,7 +2,6 @@ import pytest
 import requests
 
 from tokenflood.visualization_frontend.gradio import (
-    create_gradio_blocks,
     visualize_results,
 )
 from tokenflood.visualization_frontend.percentiles import (

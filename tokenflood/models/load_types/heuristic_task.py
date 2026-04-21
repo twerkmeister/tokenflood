@@ -9,7 +9,6 @@ from tokenflood.models.validation_types import NonEmptyString
 class HeuristicTask(BaseModel, frozen=True):
     task: NonEmptyString
 
-
     @property
     def roughly_estimated_token_cost(self) -> int:
         return math.ceil(len(self.task) / 3.5)
@@ -20,5 +19,5 @@ class HeuristicTask(BaseModel, frozen=True):
 
 
 DEFAULT_HEURISTIC_TASK = HeuristicTask(
-        task="Task: Count up to 1000 naming each individual number like this: 1 2 3 4"
-    )
+    task="Task: Count up to 1000 naming each individual number like this: 1 2 3 4"
+)

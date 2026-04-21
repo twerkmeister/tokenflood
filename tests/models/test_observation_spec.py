@@ -10,7 +10,9 @@ def default_observation_spec():
         name="test",
         duration_hours=24,
         polling_interval_minutes=20,
-        load_type=HeuristicLoad(prompt_length=1024, prefix_length=512, output_length=20),
+        load_type=HeuristicLoad(
+            prompt_length=1024, prefix_length=512, output_length=20
+        ),
         num_requests=4,
         within_seconds=1.0,
     )
@@ -40,5 +42,3 @@ def test_num_polls(spec_update, expected_result, default_observation_spec):
 def test_total_num_requests(spec_update, expected_result, default_observation_spec):
     observation_spec = default_observation_spec.model_copy(update=spec_update)
     assert observation_spec.total_num_requests() == expected_result
-
-

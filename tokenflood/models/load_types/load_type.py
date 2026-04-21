@@ -2,7 +2,10 @@ from typing import Literal, Annotated
 
 from pydantic import BaseModel, Field
 
-from tokenflood.models.load_types.heuristic_task import HeuristicTask, DEFAULT_HEURISTIC_TASK
+from tokenflood.models.load_types.heuristic_task import (
+    HeuristicTask,
+    DEFAULT_HEURISTIC_TASK,
+)
 from tokenflood.models.messages import MessageList
 from tokenflood.models.load_types.token_set import TokenSet, DEFAULT_TOKEN_SET
 from tokenflood.models.validation_types import NonNegativeInteger, PositiveInteger
@@ -25,6 +28,7 @@ class LoadType(BaseModel, frozen=True):
 
     def get_expected_output_length(self) -> int:
         raise NotImplementedError
+
 
 class HeuristicLoad(LoadType, frozen=True):
     type: Literal["heuristic"] = "heuristic"
@@ -67,7 +71,9 @@ class HeuristicLoad(LoadType, frozen=True):
         return "".join(self.token_set.sample(length))
 
     def create_message_lists(self, n: int) -> list[MessageList]:
-        return [[{"role": "user", "content": prompt}] for prompt in self.create_prompts(n)]
+        return [
+            [{"role": "user", "content": prompt}] for prompt in self.create_prompts(n)
+        ]
 
     def get_expected_prompt_length(self) -> int:
         return self.prompt_length

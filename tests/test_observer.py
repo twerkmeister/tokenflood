@@ -18,7 +18,9 @@ def default_observation_spec():
         name="test",
         duration_hours=24,
         polling_interval_minutes=20,
-        load_type=HeuristicLoad(prompt_length=1024, prefix_length=512, output_length=20),
+        load_type=HeuristicLoad(
+            prompt_length=1024, prefix_length=512, output_length=20
+        ),
         num_requests=4,
         within_seconds=1.0,
     )

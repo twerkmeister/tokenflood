@@ -179,7 +179,7 @@ def collect_trace_groups(
         run_folder = os.path.join(results_folder, run)
         trace_groups.append([])
         for f in aggregation_funcs:
-            trace_groups[-1].append(aggregate_data(run_folder, metric, f, label_func))
+            trace_groups[-1].append(aggregate_data(run_folder, metric, f, label_func))  # type: ignore[arg-type]
     return trace_groups
 
 

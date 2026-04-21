@@ -30,6 +30,7 @@ log = logging.getLogger(__name__)
 litellm.disable_cache()
 litellm.suppress_debug_info = True
 
+
 def handle_error(
     io_context: IOContext, error_context: ErrorContext
 ) -> Callable[[asyncio.Task], None]:
@@ -218,9 +219,7 @@ async def send_llm_request(
     return response
 
 
-def make_test_description(
-    suite: LoadSpec, phase: int, run_spec: LoadPhase
-) -> str:
+def make_test_description(suite: LoadSpec, phase: int, run_spec: LoadPhase) -> str:
     return f"Load test {suite.name} phase {phase}: {run_spec.requests_per_second:.2f} requests/s"
 
 

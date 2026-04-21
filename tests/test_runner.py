@@ -80,7 +80,10 @@ async def test_run_entire_tiny_suite(
     await run_load_test(base_endpoint_spec, tiny_load_spec, file_io_context)
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     total_num_requests = sum(
-        [load_phase.total_num_requests for load_phase in tiny_load_spec.create_load_phases()]
+        [
+            load_phase.total_num_requests
+            for load_phase in tiny_load_spec.create_load_phases()
+        ]
     )
     assert len(df) == total_num_requests
 
@@ -88,7 +91,7 @@ async def test_run_entire_tiny_suite(
 @pytest.mark.asyncio
 @mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""})
 async def test_run_tiny_suite_openai_missing_api_key(
-        tiny_load_spec,
+    tiny_load_spec,
     openai_endpoint_spec,
     file_io_context,
     caplog,
@@ -106,7 +109,7 @@ async def test_run_tiny_suite_openai_missing_api_key(
 
 @pytest.mark.asyncio
 async def test_run_tiny_suite_bad_endpoint(
-        tiny_load_spec,
+    tiny_load_spec,
     base_endpoint_spec,
     file_io_context,
     caplog,

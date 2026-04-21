@@ -25,28 +25,39 @@ from tokenflood.models.run_specs.load_spec import LoadSpec
 from tokenflood.models.run_specs.typing import SpecificRunSpec
 from tokenflood.models.util import get_fields
 
-T = TypeVar("T", bound=BaseModel | TypeAdapter)
+T = TypeVar("T", bound=BaseModel)
 
 
-def read_pydantic_yaml(class_type: Type[T]) -> Callable[[str], T]:
+def create_from_basemodel_or_type_adapter(
+    data: dict, class_type: Type[T] | TypeAdapter[T]
+) -> T:
+    if isinstance(class_type, type) and issubclass(class_type, BaseModel):
+        return class_type(**data)
+    elif isinstance(class_type, TypeAdapter):
+        return class_type.validate_python(data)
+    else:
+        raise ValueError
+
+
+def read_pydantic_yaml(class_type: Type[T] | TypeAdapter[T]) -> Callable[[str], T]:
     def read_class_type(filename: str) -> T:
         with open(filename) as f:
             data = yaml.safe_load(f)
-        if isinstance(class_type, type) and issubclass(class_type, BaseModel):
-            return class_type(**data)
-        elif isinstance(class_type, TypeAdapter):
-            return class_type.validate_python(data)
-        else:
-            raise ValueError
+        return create_from_basemodel_or_type_adapter(data, class_type)
 
     return read_class_type
 
 
-def read_pydantic_yaml_list(class_type: Type[T]) -> Callable[[str], List[T]]:
+def read_pydantic_yaml_list(
+    class_type: Type[T] | TypeAdapter[T],
+) -> Callable[[str], List[T]]:
     def read_class_type_list(filename: str) -> List[T]:
         with open(filename) as f:
             list_data = yaml.safe_load(f)
-        return [class_type(**data) for data in list_data]
+        return [
+            create_from_basemodel_or_type_adapter(data, class_type)
+            for data in list_data
+        ]
 
     return read_class_type_list
 
@@ -92,8 +103,10 @@ def read_endpoint_spec(filename: str) -> EndpointSpec:
 def read_run_spec(filename: str) -> SpecificRunSpec:
     return read_pydantic_yaml(TypeAdapter(SpecificRunSpec))(filename)
 
+
 def read_load_spec(filename: str) -> LoadSpec:
     return read_pydantic_yaml(LoadSpec)(filename)
+
 
 def read_observation_spec(filename: str) -> ObservationSpec:
     return read_pydantic_yaml(ObservationSpec)(filename)
