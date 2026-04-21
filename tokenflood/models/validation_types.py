@@ -11,6 +11,7 @@ from tokenflood.models.validators import (
 )
 
 PositiveInteger = Annotated[int, Field(gt=0)]
+PositiveFloat = Annotated[float, Field(gt=0.0)]
 NonNegativeInteger = Annotated[int, Field(ge=0)]
 NonEmptyString = Annotated[str, StringConstraints(min_length=1)]
 NonEmptyStrings = Annotated[

@@ -2,15 +2,16 @@ from typing import Literal
 from pydantic import NonNegativeFloat, Field
 from tokenflood.constants import OBSERVATION_SPEC_FILE
 
-from tokenflood.models.load_types.load_type import LoadType, SpecificLoadType
+from tokenflood.models.load_types.load_type import SpecificLoadType
 from tokenflood.models.run_specs.run_spec import RunSpec
+from tokenflood.models.validation_types import PositiveFloat
 
 
 class ObservationSpec(RunSpec, frozen=True):
     type: Literal["observation"] = "observation"
     name: str
-    duration_hours: NonNegativeFloat
-    polling_interval_minutes: NonNegativeFloat
+    duration_hours: PositiveFloat
+    polling_interval_minutes: PositiveFloat
     load_type: SpecificLoadType
     num_requests: int = Field(ge=1)
     within_seconds: NonNegativeFloat

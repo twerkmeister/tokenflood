@@ -70,7 +70,7 @@ class HeuristicLoad(LoadType, frozen=True):
         return [[{"role": "user", "content": prompt}] for prompt in self.create_prompts(n)]
 
     def get_expected_prompt_length(self) -> int:
-        return self.prefix_length
+        return self.prompt_length
 
     def get_expected_output_length(self) -> int:
         return self.output_length
