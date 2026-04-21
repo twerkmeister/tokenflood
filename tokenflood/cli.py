@@ -96,7 +96,7 @@ def create_argument_parser():
 
     # RUN
     run_cmd_parser = subparsers.add_parser(
-        "run", help="[blue]Execute a load or observation test.[/]"
+        "run", help="[blue]Execute a load- or observation test.[/]"
     )
     run_cmd_parser.add_argument("run_spec", type=str)
     run_cmd_parser.add_argument("endpoint", type=str)
@@ -120,7 +120,7 @@ def create_argument_parser():
     # Initialization
     init_cmd_parser = subparsers.add_parser(
         "init",
-        help="[blue]Create starter files for run suite and endpoint specifications.[/]",
+        help="[blue]Create starter files for load testing and observation of endpoints.[/]",
     )
     init_cmd_parser.set_defaults(func=create_starter_files)
 
@@ -154,28 +154,28 @@ def create_starter_files(args: argparse.Namespace):
     available_endpoint_spec_filename = get_first_available_filename_like(
         ENDPOINT_SPEC_FILE
     )
-    available_run_suite_filename = get_first_available_filename_like(LOAD_SPEC_FILE)
+    available_load_spec_filename = get_first_available_filename_like(LOAD_SPEC_FILE)
     available_observation_spec_file = get_first_available_filename_like(
         OBSERVATION_SPEC_FILE
     )
     log.info(
-        "Creating starter files for run suite, observation and endpoint specifications: \n"
-        f"[green]* {available_run_suite_filename} [/]\n"
+        "Creating starter files for load, observation and endpoint specifications: \n"
+        f"[green]* {available_load_spec_filename} [/]\n"
         f"[green]* {available_endpoint_spec_filename} [/]\n"
         f"[green]* {available_observation_spec_file} [/]"
     )
 
     write_pydantic_yaml(available_endpoint_spec_filename, starter_endpoint_spec_vllm)
-    write_pydantic_yaml(available_run_suite_filename, starter_run_suite)
+    write_pydantic_yaml(available_load_spec_filename, starter_run_suite)
     write_pydantic_yaml(available_observation_spec_file, starter_observation_spec)
 
     log.info(
         "Inspect those files, boot up a vllm server with a tiny model using \n"
         f"[blue]vllm serve {starter_model_id}[/]\n"
         "and run a first load test against it using\n"
-        f"[blue]tokenflood run {available_run_suite_filename} {available_endpoint_spec_filename}[/]\n"
+        f"[blue]tokenflood run {available_load_spec_filename} {available_endpoint_spec_filename}[/]\n"
         "or do a longer term observation using\n"
-        f"[blue]tokenflood observe {available_observation_spec_file} {available_endpoint_spec_filename}[/]"
+        f"[blue]tokenflood run {available_observation_spec_file} {available_endpoint_spec_filename}[/]"
     )
 
 
