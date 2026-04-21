@@ -5,7 +5,6 @@ import logging
 import os
 from typing import Tuple, TypeVar, Callable, Type
 
-import gradio
 import gradio.routes
 import pandas as pd
 import gradio as gr
@@ -17,12 +16,12 @@ from tokenflood.analysis import Mean
 from tokenflood.constants import (
     DEFAULT_PERCENTILES_STR,
     WARNING_LIMIT_PERCENTAGE,
-    RUN_SUITE_FILE,
+    LOAD_SPEC_FILE,
     OBSERVATION_SPEC_FILE,
     ENDPOINT_SPEC_FILE,
 )
 from tokenflood.io import get_relative_file_path
-from tokenflood.models.divergence import TokenDivergence
+from tokenflood.models.data.divergence import TokenDivergence
 from tokenflood.models.util import numeric
 from tokenflood.visualization_frontend.data import (
     aggregate_data,
@@ -180,7 +179,7 @@ def collect_trace_groups(
         run_folder = os.path.join(results_folder, run)
         trace_groups.append([])
         for f in aggregation_funcs:
-            trace_groups[-1].append(aggregate_data(run_folder, metric, f, label_func))
+            trace_groups[-1].append(aggregate_data(run_folder, metric, f, label_func))  # type: ignore[arg-type]
     return trace_groups
 
 
@@ -372,7 +371,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                                     if run_type == LOAD_TEST:
                                         make_yaml_code_element(
                                             get_run_spec_file(run_folder),
-                                            RUN_SUITE_FILE,
+                                            LOAD_SPEC_FILE,
                                         )
                                     else:
                                         make_yaml_code_element(

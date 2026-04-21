@@ -16,3 +16,8 @@ class HeuristicTask(BaseModel, frozen=True):
     def get_token_cost(self, tokenizer: Tokenizer) -> int:
         res = tokenizer.encode(self.task)
         return len(res.ids)
+
+
+DEFAULT_HEURISTIC_TASK = HeuristicTask(
+    task="Task: Count up to 1000 naming each individual number like this: 1 2 3 4"
+)

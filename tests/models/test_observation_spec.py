@@ -1,8 +1,7 @@
 import pytest
 
-from tokenflood.heuristic import builtin_heuristic_tasks, builtin_heuristic_token_sets
-from tokenflood.models.load_type import LoadType
-from tokenflood.models.observation_spec import ObservationSpec
+from tokenflood.models.load_types.load_type import HeuristicLoad
+from tokenflood.models.run_specs.observation_spec import ObservationSpec
 
 
 @pytest.fixture
@@ -11,11 +10,11 @@ def default_observation_spec():
         name="test",
         duration_hours=24,
         polling_interval_minutes=20,
-        load_type=LoadType(prompt_length=1024, prefix_length=512, output_length=20),
+        load_type=HeuristicLoad(
+            prompt_length=1024, prefix_length=512, output_length=20
+        ),
         num_requests=4,
         within_seconds=1.0,
-        task=builtin_heuristic_tasks[0],
-        token_set=builtin_heuristic_token_sets[0],
     )
 
 
@@ -43,9 +42,3 @@ def test_num_polls(spec_update, expected_result, default_observation_spec):
 def test_total_num_requests(spec_update, expected_result, default_observation_spec):
     observation_spec = default_observation_spec.model_copy(update=spec_update)
     assert observation_spec.total_num_requests() == expected_result
-
-
-def test_get_input_output_token_cost(default_observation_spec):
-    input_tokens, output_tokens = default_observation_spec.get_input_output_token_cost()
-    assert input_tokens == 24 * 3 * 4 * 1024
-    assert output_tokens == 24 * 3 * 4 * 20

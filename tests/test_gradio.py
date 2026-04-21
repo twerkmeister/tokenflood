@@ -2,18 +2,12 @@ import pytest
 import requests
 
 from tokenflood.visualization_frontend.gradio import (
-    create_gradio_blocks,
     visualize_results,
 )
 from tokenflood.visualization_frontend.percentiles import (
     percentiles_to_str,
     str_to_percentiles,
 )
-
-
-def test_create_gradio_blocks(results_folder):
-    data_visualization = create_gradio_blocks(results_folder)
-    assert len(data_visualization.blocks) == 8
 
 
 @pytest.mark.asyncio

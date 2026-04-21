@@ -1,20 +1,22 @@
 from tokenflood.constants import DEFAULT_ERROR_RATE_LIMIT
-from tokenflood.heuristic import builtin_heuristic_tasks, builtin_heuristic_token_sets
 from tokenflood.models.endpoint_spec import EndpointSpec
-from tokenflood.models.load_type import LoadType
-from tokenflood.models.observation_spec import ObservationSpec
-from tokenflood.models.run_suite import HeuristicRunSuite
+from tokenflood.models.load_types.heuristic_task import DEFAULT_HEURISTIC_TASK
+from tokenflood.models.load_types.load_type import HeuristicLoad
+from tokenflood.models.run_specs.observation_spec import ObservationSpec
+from tokenflood.models.run_specs.load_spec import LoadSpec
+from tokenflood.models.load_types.token_set import DEFAULT_TOKEN_SET
 
-starter_run_suite = HeuristicRunSuite(
+starter_run_suite = LoadSpec(
     name="starter",
-    requests_per_second_rates=(1, 2),
-    test_length_in_seconds=30,
-    load_types=(
-        LoadType(prompt_length=512, prefix_length=128, output_length=32, weight=1),
-        LoadType(prompt_length=640, prefix_length=568, output_length=12, weight=1),
+    requests_per_second_phases=(1, 2),
+    seconds_per_phase=30,
+    load_type=HeuristicLoad(
+        prompt_length=512,
+        prefix_length=128,
+        output_length=32,
+        task=DEFAULT_HEURISTIC_TASK,
+        token_set=DEFAULT_TOKEN_SET,
     ),
-    task=builtin_heuristic_tasks[0],
-    token_set=builtin_heuristic_token_sets[0],
     error_limit=DEFAULT_ERROR_RATE_LIMIT,
 )
 
@@ -30,9 +32,13 @@ starter_observation_spec = ObservationSpec(
     name="starter",
     duration_hours=1.0,
     polling_interval_minutes=15,
-    load_type=LoadType(prompt_length=512, prefix_length=128, output_length=32),
+    load_type=HeuristicLoad(
+        prompt_length=512,
+        prefix_length=128,
+        output_length=32,
+        task=DEFAULT_HEURISTIC_TASK,
+        token_set=DEFAULT_TOKEN_SET,
+    ),
     num_requests=5,
     within_seconds=2.0,
-    task=builtin_heuristic_tasks[0],
-    token_set=builtin_heuristic_token_sets[0],
 )

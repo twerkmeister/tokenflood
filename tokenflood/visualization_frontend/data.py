@@ -21,7 +21,7 @@ from tokenflood.visualization_frontend.metrics import Metric
 T = TypeVar("T", bound=Union[str, datetime])
 
 
-@dataclass
+@dataclass(frozen=True)
 class AggregationTrace(Generic[T]):
     x: list[T]
     y: list[numeric]

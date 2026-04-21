@@ -9,18 +9,14 @@ from litellm.types.utils import ModelResponse, Usage
 from tqdm import tqdm
 
 from tokenflood.constants import ERROR_RING_BUFFER_SIZE
-from tokenflood.heuristic import (
-    create_heuristic_messages,
-)
 from tokenflood.io import IOContext
 from tokenflood.logging import global_warn_once_filter
 from tokenflood.models.endpoint_spec import EndpointSpec
-from tokenflood.models.error_data import ErrorContext, ErrorData
-from tokenflood.models.llm_request_data import LLMRequestContext, LLMRequestData
+from tokenflood.models.data.error_data import ErrorContext, ErrorData
+from tokenflood.models.data.llm_request_data import LLMRequestContext, LLMRequestData
 from tokenflood.models.messages import MessageList, create_message_list_from_prompt
-from tokenflood.models.ping_request_data import PingData, PingRequestContext
-from tokenflood.models.run_spec import HeuristicRunSpec
-from tokenflood.models.run_suite import HeuristicRunSuite
+from tokenflood.models.data.ping_request_data import PingData, PingRequestContext
+from tokenflood.models.run_specs.load_spec import LoadSpec, LoadPhase
 from tokenflood.networking import (
     ObserveURLMiddleware,
     option_request_endpoint,
@@ -33,6 +29,7 @@ log = logging.getLogger(__name__)
 
 litellm.disable_cache()
 litellm.suppress_debug_info = True
+
 
 def handle_error(
     io_context: IOContext, error_context: ErrorContext
@@ -104,19 +101,16 @@ def make_empty_response() -> ModelResponse:
 async def run_heuristic_test(
     test_description: str,
     phase: int,
-    run_suite: HeuristicRunSuite,
-    run_spec: HeuristicRunSpec,
+    load_spec: LoadSpec,
+    load_phase: LoadPhase,
     endpoint_spec: EndpointSpec,
     io_context: IOContext,
 ) -> bool:
-    schedule = create_load_test_phase_schedule(run_spec)
-
-    prompt_lengths, prefix_lengths, output_lengths = run_spec.sample()
-    message_lists = create_heuristic_messages(
-        prompt_lengths, prefix_lengths, run_suite.token_set, run_suite.task
-    )
+    schedule = create_load_test_phase_schedule(load_phase, load_spec.burstiness)
+    load_type = load_spec.load_type
+    message_lists = load_type.create_message_lists(len(schedule))
     error_context = ErrorContext(
-        requests_per_second_phase=run_spec.requests_per_second, group_id=str(phase)
+        requests_per_second_phase=load_phase.requests_per_second, group_id=str(phase)
     )
     error_threshold_tripped = False
     error_rate = 0.0
@@ -129,15 +123,15 @@ async def run_heuristic_test(
     for i in pbar:
         error_rate = io_context.error_rate()
         pbar.set_postfix({"error rate": round(error_rate, 2)})
-        if error_rate > run_suite.error_limit:
+        if error_rate > load_spec.error_limit:
             error_threshold_tripped = True
             break
         request_context = LLMRequestContext(
             datetime=get_exact_date_str(),
-            expected_input_tokens=prompt_lengths[i],
-            expected_prefix_tokens=prefix_lengths[i],
-            expected_output_tokens=output_lengths[i],
-            requests_per_second_phase=run_spec.requests_per_second,
+            expected_input_tokens=load_type.get_expected_prompt_length(),
+            expected_prefix_tokens=load_type.get_expected_prefix_length(),
+            expected_output_tokens=load_type.get_expected_output_length(),
+            requests_per_second_phase=load_phase.requests_per_second,
             request_number=i,
             model=endpoint_spec.provider_model_str,
             prompt=message_lists[i][0]["content"],
@@ -147,7 +141,7 @@ async def run_heuristic_test(
             send_llm_request(
                 endpoint_spec,
                 message_lists[i],
-                output_lengths[i],
+                load_type.get_expected_output_length(),
             )
         )
         t.add_done_callback(
@@ -161,7 +155,7 @@ async def run_heuristic_test(
             ping_context = PingRequestContext(
                 datetime=get_exact_date_str(),
                 endpoint_url=str(url_observer.url),
-                requests_per_second_phase=run_spec.requests_per_second,
+                requests_per_second_phase=load_phase.requests_per_second,
                 group_id=str(phase),
             )
             pt = asyncio.create_task(
@@ -225,10 +219,8 @@ async def send_llm_request(
     return response
 
 
-def make_test_description(
-    suite: HeuristicRunSuite, phase: int, run_spec: HeuristicRunSpec
-) -> str:
-    return f"Run suite {suite.name} phase {phase}: {run_spec.requests_per_second:.2f} requests/s"
+def make_test_description(suite: LoadSpec, phase: int, run_spec: LoadPhase) -> str:
+    return f"Load test {suite.name} phase {phase}: {run_spec.requests_per_second:.2f} requests/s"
 
 
 async def get_warm_session(
@@ -246,12 +238,12 @@ async def get_warm_session(
     return error
 
 
-async def run_suite(
-    endpoint_spec: EndpointSpec, suite: HeuristicRunSuite, io_context: IOContext
+async def run_load_test(
+    endpoint_spec: EndpointSpec, load_spec: LoadSpec, io_context: IOContext
 ):
     io_context.activate()
     await io_context.wait_for_pending_writes()
-    run_specs = suite.create_run_specs()
+    load_phases = load_spec.create_load_phases()
     log.info("Warming up.")
     error = await get_warm_session(endpoint_spec, io_context)
     if error:
@@ -259,17 +251,16 @@ async def run_suite(
         # letting any writes finish
         await asyncio.sleep(0.1)
         return
-    for phase, run_spec in enumerate(run_specs):
-        test_description = make_test_description(suite, phase + 1, run_spec)
+    for phase, run_spec in enumerate(load_phases):
+        test_description = make_test_description(load_spec, phase + 1, run_spec)
         error_threshold_tripped = await run_heuristic_test(
             test_description,
             phase,
-            suite,
+            load_spec,
             run_spec,
             endpoint_spec,
             io_context,
         )
-
         if error_threshold_tripped:
             log.error("Ending the run because the error threshold was tripped.")
             break
