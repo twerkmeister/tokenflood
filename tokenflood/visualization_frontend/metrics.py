@@ -10,6 +10,7 @@ class Metric:
     field_name: str
     file: str
     name: str
+    explanation: str
 
 
 class RequestLatency(Metric):

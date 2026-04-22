@@ -2,7 +2,7 @@ import asyncio
 import os
 import datetime
 import time
-from typing import Callable, Optional
+from typing import Callable, Optional, cast
 import logging
 
 import litellm
@@ -41,6 +41,7 @@ def handle_error(
     def on_done(task: asyncio.Task):
         error = task.exception()
         if error is not None:
+            log.error(error)
             io_context.write_error(
                 ErrorData(
                     datetime=get_exact_date_str(),
@@ -100,7 +101,7 @@ def make_empty_response() -> ModelResponse:
     )
 
 
-async def run_heuristic_test(
+async def run_load_phase(
     test_description: str,
     phase: int,
     load_spec: LoadSpec,
@@ -203,34 +204,29 @@ async def send_llm_request(
     first_token_time = None
     start_time = time.time()
     start = datetime.datetime.now()
-    try:
-        response = await acompletion(
-            model=endpoint_spec.provider_model_str,
-            messages=messages,
-            max_tokens=num_generation_tokens,
-            base_url=endpoint_spec.base_url,
-            api_key=os.getenv(endpoint_spec.api_key_env_var)
-            if endpoint_spec.api_key_env_var is not None
-            else None,
-            deployment_id=endpoint_spec.deployment,
-            extra_headers=endpoint_spec.extra_headers,
-            extra_body=endpoint_spec.extra_body,
-            max_retries=0,
-            reasoning_effort=endpoint_spec.reasoning_effort,
-            stream=True,
-            stream_options={"include_usage": True},
-        )
-        chunks = []
-        async for chunk in response:
-            if first_token_time is None and (
-                chunk.choices[0].delta.content
-                or chunk.choices[0].delta.reasoning_content
-            ):
-                first_token_time = time.time()
-            chunks.append(chunk)
-    except Exception as e:
-        log.error(e)
-        raise
+    response = await acompletion(
+        model=endpoint_spec.provider_model_str,
+        messages=messages,
+        max_tokens=num_generation_tokens,
+        base_url=endpoint_spec.base_url,
+        api_key=os.getenv(endpoint_spec.api_key_env_var)
+        if endpoint_spec.api_key_env_var is not None
+        else None,
+        deployment_id=endpoint_spec.deployment,
+        extra_headers=endpoint_spec.extra_headers,
+        extra_body=endpoint_spec.extra_body,
+        max_retries=0,
+        reasoning_effort=endpoint_spec.reasoning_effort,
+        stream=True,
+        stream_options={"include_usage": True},
+    )
+    chunks = []
+    async for chunk in response:
+        if first_token_time is None and (
+            chunk.choices[0].delta.content or chunk.choices[0].delta.reasoning_content
+        ):
+            first_token_time = time.time()
+        chunks.append(chunk)
     end_time = time.time()
     end = datetime.datetime.now()
     total_duration = end_time - start_time
@@ -244,7 +240,16 @@ async def send_llm_request(
     model_response = litellm.stream_chunk_builder(
         chunks, messages, start_time=start, end_time=end
     )
-    completion_tokens = model_response.usage.completion_tokens
+    model_response = cast(ModelResponse, model_response)
+    if model_response is None and len(chunks) == 0:
+        raise ValueError("Wasn't able to create a model response from empty chunks.")
+    elif model_response is None:
+        raise ValueError("Wasn't able to create a model response.")
+
+    if hasattr(model_response, "usage") and isinstance(model_response.usage, Usage):
+        completion_tokens = model_response.usage.completion_tokens
+    else:
+        completion_tokens = 0
 
     if completion_tokens > 1:
         avg_tpot = decoding_latency / (completion_tokens - 1)
@@ -299,7 +304,7 @@ async def run_load_test(
         return
     for phase, run_spec in enumerate(load_phases):
         test_description = make_test_description(load_spec, phase + 1, run_spec)
-        error_threshold_tripped = await run_heuristic_test(
+        error_threshold_tripped = await run_load_phase(
             test_description,
             phase,
             load_spec,

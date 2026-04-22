@@ -60,6 +60,10 @@ async def ping_endpoint(host: str, port: int):
 async def option_request_endpoint(
     session: ClientSession, url: str, headers: CIMultiDict[str]
 ):
+    if session is None or url is None or headers is None:
+        raise ValueError(
+            "Cannot send option request to endpoint without previously observed session, url or headers."
+        )
     del_keys = [
         key
         for key in headers.keys()

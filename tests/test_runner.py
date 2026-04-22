@@ -14,7 +14,7 @@ from tokenflood.models.run_specs.load_spec import LoadPhase
 from tokenflood.runner import (
     get_warm_session,
     make_empty_response,
-    run_heuristic_test,
+    run_load_phase,
     run_load_test,
     send_llm_request,
 )
@@ -54,7 +54,7 @@ async def test_run_heuristic_test(
     load_phase = tiny_load_spec.create_load_phases()[0]
     assert error is None
     start = time.time()
-    error_threshold_tripped = await run_heuristic_test(
+    error_threshold_tripped = await run_load_phase(
         "test",
         0,
         tiny_load_spec,
@@ -140,7 +140,8 @@ async def test_run_tiny_suite_bad_endpoint_but_fake_warmup(
     )
     with caplog.at_level(logging.ERROR):
         await run_load_test(bad_endpoint_spec, tiny_load_spec, file_io_context)
-    assert len(caplog.messages) == 3
+    assert len(caplog.messages) == 4
     assert caplog.messages[0].endswith("[Connect call failed ('127.0.0.1', 8001)]")
-    assert caplog.messages[1].startswith("Aborting the phase")
-    assert caplog.messages[2].startswith("Ending the run because")
+    assert caplog.messages[1].endswith("observed session, url or headers.")
+    assert caplog.messages[2].startswith("Aborting the phase")
+    assert caplog.messages[3].startswith("Ending the run because")
