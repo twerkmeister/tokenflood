@@ -49,8 +49,8 @@ class HeuristicLoad(LoadType, frozen=True):
 
         The prompt is structured like this:
 
-        1. Common Prefix (using the TokenSet)
-        2. Random Tokens (using the TokenSet)
+        1. Common Prefix (using the prompt filler tokens)
+        2. Random Tokens (using the prompt filler tokens)
         3. A single newline to separate the task from the random part
         4. The Task
         """
