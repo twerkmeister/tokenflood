@@ -9,5 +9,5 @@ def test_get_fields():
         "prefix_length",
         "output_length",
         "task",
-        "token_set",
+        "prompt_filler_tokens",
     ]

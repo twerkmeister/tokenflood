@@ -9,10 +9,8 @@ load_type:
   prompt_length: 512
   prefix_length: 128
   output_length: 32
-  task:
-    task: 'Task: Count up to 10000 naming each individual number like this: 1 2 3 4'
-  token_set:
-    tokens: [' A', ' B', ' C', ' D', ' E', ' F', ' G', ' H', ' I', ' J', ' K', ' L',
+  task: 'Task: Count up to 10000 naming each individual number like this: 1 2 3 4'
+  prompt_filler_tokens: [' A', ' B', ' C', ' D', ' E', ' F', ' G', ' H', ' I', ' J', ' K', ' L',
     ' M', ' N', ' O', ' P', ' Q', ' R', ' S', ' T', ' U', ' V', ' W', ' X', ' Y',
     ' Z']
 error_limit: 0.3

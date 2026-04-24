@@ -28,6 +28,9 @@ def default_heuristic_load_kwargs() -> Dict:
         ({"output_length": -12}, pytest.raises(ValueError)),
         ({"output_length": 12.1}, pytest.raises(ValueError)),
         ({"output_length": 0}, pytest.raises(ValueError)),
+        ({"task": ""}, pytest.raises(ValueError)),
+        ({"prompt_filler_tokens": ("A",)}, pytest.raises(ValueError)),
+        ({"prompt_filler_tokens": ("A", "A")}, pytest.raises(ValueError)),
     ],
 )
 def test_heuristic_load_validation(

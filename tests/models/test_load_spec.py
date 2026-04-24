@@ -15,7 +15,7 @@ def default_run_suite_kwargs() -> Dict:
         seconds_per_phase=30,
         load_type=HeuristicLoad(
             prompt_length=1024, prefix_length=400, output_length=12
-        ),
+         ),
     ).model_dump()
 
 

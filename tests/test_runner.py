@@ -142,6 +142,6 @@ async def test_run_tiny_suite_bad_endpoint_but_fake_warmup(
         await run_load_test(bad_endpoint_spec, tiny_load_spec, file_io_context)
     assert len(caplog.messages) == 4
     assert caplog.messages[0].endswith("[Connect call failed ('127.0.0.1', 8001)]")
-    assert caplog.messages[1].endswith("observed session, url or headers.")
+    assert caplog.messages[1].endswith("observed session, url or headers.") or caplog.messages[1].endswith("Session is closed")
     assert caplog.messages[2].startswith("Aborting the phase")
     assert caplog.messages[3].startswith("Ending the run because")

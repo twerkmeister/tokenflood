@@ -451,7 +451,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             inputs=[stored_results_folder, run_type_dropdown],
             outputs=[runs_dropdown],
         )
-        run_type_dropdown.input(
+        run_type_dropdown.change(
             update_runs_for_type,
             inputs=[stored_results_folder, run_type_dropdown],
             outputs=[runs_dropdown],

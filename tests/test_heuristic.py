@@ -30,13 +30,13 @@ def test_create_prompt(heuristic_load):
     assert len(prompt) > 2048
     assert (
         prompt[: heuristic_load.prefix_length * 2]
-        == heuristic_load.token_set.tokens[0] * heuristic_load.prefix_length
+        == heuristic_load.prompt_filler_tokens[0] * heuristic_load.prefix_length
     )
     assert (
         prompt[heuristic_load.prefix_length * 2 : heuristic_load.prefix_length * 2 + 32]
-        != heuristic_load.token_set.tokens[0] * 16
+        != heuristic_load.prompt_filler_tokens[0] * 16
     )
-    assert prompt.endswith(heuristic_load.task.task)
+    assert prompt.endswith(heuristic_load.task)
 
 
 def test_create_heuristic_messages(heuristic_load, tokenizer):

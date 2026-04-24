@@ -1,4 +1,5 @@
 import datetime
+import math
 from typing import Callable, Optional, Sequence, TypeVar
 import numpy as np
 
@@ -51,3 +52,7 @@ def find_idx(s: Sequence[T], predicate: Callable[[T], bool]) -> Optional[int]:
         if predicate(s[i]):
             return i
     return None
+
+
+def roughly_estimated_token_cost(s: str) -> int:
+    return math.ceil(len(s) / 3.5)

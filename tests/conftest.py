@@ -21,10 +21,8 @@ from tokenflood.io import (
     read_load_spec,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
-from tokenflood.models.load_types.heuristic_task import HeuristicTask
 from tokenflood.models.run_specs.observation_spec import ObservationSpec
 from tokenflood.models.run_specs.load_spec import LoadSpec
-from tokenflood.models.load_types.token_set import TokenSet, DEFAULT_TOKEN_SET
 from tokenflood.networking import (
     ObserveURLMiddleware,
     patch_aiohttp_client_session,
@@ -167,16 +165,6 @@ def file_io_context(unique_temporary_folder) -> FileIOContext:
         network_latency_file=network_latency_file,
         error_file=error_file,
     )
-
-
-@pytest.fixture(scope="session")
-def token_set() -> TokenSet:
-    return DEFAULT_TOKEN_SET
-
-
-@pytest.fixture(scope="session")
-def heuristic_task() -> HeuristicTask:
-    return HeuristicTask(task="Ignore the random input and write a letter to Santa.")
 
 
 @pytest.fixture()
