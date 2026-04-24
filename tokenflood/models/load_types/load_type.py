@@ -5,8 +5,12 @@ from pydantic import BaseModel, Field
 
 from tokenflood.constants import DEFAULT_HEURISTIC_TASK, DEFAULT_PROMPT_FILLER_TOKENS
 from tokenflood.models.messages import MessageList
-from tokenflood.models.validation_types import NonNegativeInteger, PositiveInteger, AtLeastTwoUniqueStrings, \
-    NonEmptyString
+from tokenflood.models.validation_types import (
+    NonNegativeInteger,
+    PositiveInteger,
+    AtLeastTwoUniqueStrings,
+    NonEmptyString,
+)
 from tokenflood.util import roughly_estimated_token_cost
 
 

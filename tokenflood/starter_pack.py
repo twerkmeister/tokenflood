@@ -1,4 +1,8 @@
-from tokenflood.constants import DEFAULT_ERROR_RATE_LIMIT, DEFAULT_HEURISTIC_TASK, DEFAULT_PROMPT_FILLER_TOKENS
+from tokenflood.constants import (
+    DEFAULT_ERROR_RATE_LIMIT,
+    DEFAULT_HEURISTIC_TASK,
+    DEFAULT_PROMPT_FILLER_TOKENS,
+)
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.load_types.load_type import HeuristicLoad
 from tokenflood.models.run_specs.observation_spec import ObservationSpec

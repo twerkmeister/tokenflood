@@ -28,4 +28,4 @@ ERROR_RING_BUFFER_SIZE = 30
 DEFAULT_PERCENTILES_STR = "50, 90, 99"
 
 DEFAULT_HEURISTIC_TASK = "Task: Write a 3-page essay on Popperian falsification."
-DEFAULT_PROMPT_FILLER_TOKENS = tokens=tuple([" " + chr(c) for c in range(65, 91)])
+DEFAULT_PROMPT_FILLER_TOKENS = tokens = tuple([" " + chr(c) for c in range(65, 91)])
