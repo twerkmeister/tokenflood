@@ -1,14 +1,17 @@
+import random
 from typing import Literal, Annotated
 
 from pydantic import BaseModel, Field
 
-from tokenflood.models.load_types.heuristic_task import (
-    HeuristicTask,
-    DEFAULT_HEURISTIC_TASK,
-)
+from tokenflood.constants import DEFAULT_HEURISTIC_TASK, DEFAULT_PROMPT_FILLER_TOKENS
 from tokenflood.models.messages import MessageList
-from tokenflood.models.load_types.token_set import TokenSet, DEFAULT_TOKEN_SET
-from tokenflood.models.validation_types import NonNegativeInteger, PositiveInteger
+from tokenflood.models.validation_types import (
+    NonNegativeInteger,
+    PositiveInteger,
+    AtLeastTwoUniqueStrings,
+    NonEmptyString,
+)
+from tokenflood.util import roughly_estimated_token_cost
 
 
 class LoadType(BaseModel, frozen=True):
@@ -35,8 +38,8 @@ class HeuristicLoad(LoadType, frozen=True):
     prompt_length: PositiveInteger
     prefix_length: NonNegativeInteger
     output_length: PositiveInteger
-    task: HeuristicTask = DEFAULT_HEURISTIC_TASK
-    token_set: TokenSet = DEFAULT_TOKEN_SET
+    task: NonEmptyString = DEFAULT_HEURISTIC_TASK
+    prompt_filler_tokens: AtLeastTwoUniqueStrings = DEFAULT_PROMPT_FILLER_TOKENS
 
     def create_prompts(self, n: int) -> list[str]:
         return [self.create_prompt() for _ in range(n)]
@@ -46,12 +49,12 @@ class HeuristicLoad(LoadType, frozen=True):
 
         The prompt is structured like this:
 
-        1. Common Prefix (using the TokenSet)
-        2. Random Tokens (using the TokenSet)
+        1. Common Prefix (using the prompt filler tokens)
+        2. Random Tokens (using the prompt filler tokens)
         3. A single newline to separate the task from the random part
         4. The Task
         """
-        task_tokens = self.task.roughly_estimated_token_cost
+        task_tokens = roughly_estimated_token_cost(self.task)
         random_prompt_tokens = self.prompt_length - self.prefix_length - task_tokens
         prompt = ""
         prompt += self.create_prompt_prefix(self.prefix_length)
@@ -59,16 +62,16 @@ class HeuristicLoad(LoadType, frozen=True):
             prompt += self.create_prompt_random_part(random_prompt_tokens)
         if len(prompt) > 0:
             prompt += "\n\n"
-        prompt += self.task.task
+        prompt += self.task
         return prompt
 
     def create_prompt_prefix(self, length: int) -> str:
         """Create a predictable prefix for prompts."""
-        return self.token_set.tokens[0] * max(0, length)
+        return self.prompt_filler_tokens[0] * max(0, length)
 
     def create_prompt_random_part(self, length: int) -> str:
         """Create the random prompt part between prefix and task."""
-        return "".join(self.token_set.sample(length))
+        return "".join(random.choices(self.prompt_filler_tokens, k=length))
 
     def create_message_lists(self, n: int) -> list[MessageList]:
         return [

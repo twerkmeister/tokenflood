@@ -6,7 +6,7 @@ run arbitrary load profiles without needing specific prompt and response data.
 and tokenflood simulates this workload for you.** 
 
 Tokenflood makes it easy to explore how latency changes when using different providers, 
-hardware, quantizations, or prompt and output lengths.
+hardware, quantizations, or prompts.
 
 ### Table of Contents
 
@@ -35,13 +35,13 @@ hardware, quantizations, or prompt and output lengths.
 
 ![latency-comparison](./images/run_comparison.png)
 
-We see three experiments in comparison coded by color in this graph. 
-The blue lines represent the base model Qwen3.5-A35B-A3B with around 5000 input tokens, 1000 prefix tokens, and 200 output tokens.
-The green lines represent the same model but with the output tokens slashed by half (i.e. 100), e.g. by prompting the model to be concise and not to overthink.
-The red lines represent the FP8 version of the model with the same token parameters as the green lines.
+We see four prompt configurations compared in this graph. 
+The blue lines represent the base model Gemma4-26B-A4B with around 3000 input tokens, 1000 prefix tokens, and 200 output tokens.
+The green lines represent the same model but with a longer prefix section of 2000 instead of 1000 tokens, achieved e.g. by reordering the prompt so that the static parts are all at the beginning. 
+The red lines represent the same model but with the output tokens slashed to 120, e.g. by prompting the model to be concise and not to overthink, or by adjusting the structured output format.
+Finally, the gray lines combine both optimizations, showing that they are complimentary and both worth pursuing.
 
-While the output tokens change might make it feasible to run the task with 50% more throughput (3 instead of 2 rps), the switch to FP8 on top gives us 100% more throughput at an acceptable latency compared to the base case.
-
+With totally reasonable optimizations, we can see really meaningful latency gains. 
 Tokenflood allows you to find worthwhile goals for prompt parameter or model improvements before implementing the changes in your codebase or infrastructure.
 
 ### Example 2: Find out when people start stealing your latency
@@ -49,11 +49,7 @@ Tokenflood allows you to find worthwhile goals for prompt parameter or model imp
 Load testing large providers does not really make sense as their datacenters are huge, shared resources. 
 While a single company or user usually does not have much effect on them, these shared resources are subject to intraday latency variations, often coinciding with daily business hours.
 
-![observing-intraday-latency-variation](./images/observe.png)
-
-Here we see that once business starts in the US, latency of this openai-hosted model increases by 500-1000ms for our chosen prompt parameters. 
-
-Tokenflood allows you to assess these patterns before going into production with a vendor. 
+Tokenflood also allows you to assess these patterns before going into production with a vendor using observational tests. 
 
 ## 🛠️ Professional Services 🛠️
 
@@ -202,10 +198,10 @@ load_type:                  # This run suite has two load types with equal weigh
   prompt_length: 512        # prompt length in tokens
   prefix_length: 128        # prompt prefix length in tokens
   output_length: 32         # output length in tokens
-  task:                     # A "pretend" task to generate a lot of tokens which we can truncate using the max token parameters. This makes sure we do not produce too few tokens and underestimate the true load.
-    task: 'Task: Count up to 1000 naming each individual number like this: 1 2 3 4'
-  token_set:                # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length
-    tokens: [' A', ' B', ' C', ' D', ' E', ' F', ' G', ' H', ' I', ' J', ' K', ' L',
+  # A "pretend" task to generate a lot of tokens which we can truncate using the max token parameters. This makes sure we do not produce too few tokens and underestimate the true load.
+  task: 'Task: Write a 3-page essay on Popperian falsification.'                  
+  # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length
+  prompt_filler_tokens: [' A', ' B', ' C', ' D', ' E', ' F', ' G', ' H', ' I', ' J', ' K', ' L',
     ' M', ' N', ' O', ' P', ' Q', ' R', ' S', ' T', ' U', ' V', ' W', ' X', ' Y',
     ' Z']
 error_limit: 0.3            # the fraction of errors in requests that are acceptable for the last 30 requests. The test will end once this limit is breached.
@@ -230,10 +226,10 @@ load_type:                      # observation runs just have one load type
   prompt_length: 512            # prompt length in tokens
   prefix_length: 128            # prompt prefix length in tokens
   output_length: 32             # output length in tokens
-  task:                         # A "pretend" task to generate a lot of tokens which we can truncate using the max token parameters. This makes sure we do not produce too few tokens and underestimate the true load.
-    task: 'Task: Count up to 1000 naming each individual number like this: 1 2 3 4'
-  token_set:                    # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length
-    tokens: [' A', ' B', ' C', ' D', ' E', ' F', ' G', ' H', ' I', ' J', ' K', ' L',
+  # A "pretend" task to generate a lot of tokens which we can truncate using the max token parameters. This makes sure we do not produce too few tokens and underestimate the true load.
+  task: 'Task: Write a 3-page essay on Popperian falsification.'                  
+  # The 1-token strings tokenflood uses to fill up the prompt and prefix up to the desired length
+  prompt_filler_tokens: [' A', ' B', ' C', ' D', ' E', ' F', ' G', ' H', ' I', ' J', ' K', ' L',
     ' M', ' N', ' O', ' P', ' Q', ' R', ' S', ' T', ' U', ' V', ' W', ' X', ' Y',
     ' Z']
 num_requests: 5                 # how many requests to send at the start of an interval
@@ -243,8 +239,8 @@ within_seconds: 2.0             # within how many seconds to send the requests a
 
 ## Visualizing Results
 
-Tokenflood comes with a builtin gradio frontend to visualize the results in a convenient 
-manner and compare multiple runs against one another. Simply run `tokenflood viz` in the
+Tokenflood comes with a builtin frontend to visualize the results and compare 
+multiple runs and metrics. Run `tokenflood viz` in the
 same working directory in which you started your load tests.
 
 You can check out [this public huggingface space](https://huggingface.co/spaces/twerkmeister/tokenflood-viz) to have a look at the gradio frontend.
@@ -280,7 +276,7 @@ mechanisms.
 Heuristic load testing comes with the risk of not perfectly achieving the desired token 
 counts for specific models. If that happens, tokenflood will warn you during a run if 
 any request diverges more than 10% from the expected input or output token lengths. The
-visualisation frontend also shows absolute and relative token errors.
+visualization frontend also shows absolute and relative token errors.
 
 > [!IMPORTANT]
 > You can specify the prefix length, however, whether the prefix is used will depend on the 

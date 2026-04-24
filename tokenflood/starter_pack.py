@@ -1,10 +1,12 @@
-from tokenflood.constants import DEFAULT_ERROR_RATE_LIMIT
+from tokenflood.constants import (
+    DEFAULT_ERROR_RATE_LIMIT,
+    DEFAULT_HEURISTIC_TASK,
+    DEFAULT_PROMPT_FILLER_TOKENS,
+)
 from tokenflood.models.endpoint_spec import EndpointSpec
-from tokenflood.models.load_types.heuristic_task import DEFAULT_HEURISTIC_TASK
 from tokenflood.models.load_types.load_type import HeuristicLoad
 from tokenflood.models.run_specs.observation_spec import ObservationSpec
 from tokenflood.models.run_specs.load_spec import LoadSpec
-from tokenflood.models.load_types.token_set import DEFAULT_TOKEN_SET
 
 starter_run_suite = LoadSpec(
     name="starter",
@@ -15,7 +17,7 @@ starter_run_suite = LoadSpec(
         prefix_length=128,
         output_length=32,
         task=DEFAULT_HEURISTIC_TASK,
-        token_set=DEFAULT_TOKEN_SET,
+        prompt_filler_tokens=DEFAULT_PROMPT_FILLER_TOKENS,
     ),
     error_limit=DEFAULT_ERROR_RATE_LIMIT,
 )
@@ -37,7 +39,7 @@ starter_observation_spec = ObservationSpec(
         prefix_length=128,
         output_length=32,
         task=DEFAULT_HEURISTIC_TASK,
-        token_set=DEFAULT_TOKEN_SET,
+        prompt_filler_tokens=DEFAULT_PROMPT_FILLER_TOKENS,
     ),
     num_requests=5,
     within_seconds=2.0,
