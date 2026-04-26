@@ -27,15 +27,13 @@ class LLMRequestResult(BaseModel, frozen=True):
     @classmethod
     def from_model_response(cls, model_response: ModelResponse) -> Self:
         usage = model_response.usage  # type:ignore[attr-defined]
+        hp = model_response._hidden_params
+        msg = model_response.choices[0]["message"]
         return cls(
-            latency=int(model_response._hidden_params[LLMRequestData.F.latency]),
-            time_to_first_token=int(
-                model_response._hidden_params[LLMRequestData.F.time_to_first_token]
-            ),
-            decoding_latency=int(
-                model_response._hidden_params[LLMRequestData.F.decoding_latency]
-            ),
-            average_time_per_output_token=model_response._hidden_params[
+            latency=int(hp[LLMRequestData.F.latency]),
+            time_to_first_token=int(hp[LLMRequestData.F.time_to_first_token]),
+            decoding_latency=int(hp[LLMRequestData.F.decoding_latency]),
+            average_time_per_output_token=hp[
                 LLMRequestData.F.average_time_per_output_token
             ],
             measured_input_tokens=usage.prompt_tokens,
@@ -46,10 +44,8 @@ class LLMRequestResult(BaseModel, frozen=True):
             measured_reasoning_tokens=usage.completion_tokens_details.reasoning_tokens
             if usage.completion_tokens_details
             else 0,
-            generated_text=model_response.choices[0]["message"]["content"] or "",
-            generated_reasoning=model_response.choices[0].message.get(
-                "reasoning_content", ""
-            ),
+            generated_text=msg.get("content", ""),
+            generated_reasoning=msg.get("reasoning_content", ""),
         )
 
 
