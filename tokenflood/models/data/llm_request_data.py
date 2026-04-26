@@ -37,7 +37,7 @@ class LLMRequestResult(BaseModel, frozen=True):
                 LLMRequestData.F.average_time_per_output_token
             ],
             measured_input_tokens=usage.prompt_tokens,
-            measured_prefix_tokens=usage.prompt_tokens_details.cached_tokens or 0
+            measured_prefix_tokens=(usage.prompt_tokens_details.cached_tokens or 0)
             if usage.prompt_tokens_details
             else 0,
             measured_output_tokens=usage.completion_tokens,
