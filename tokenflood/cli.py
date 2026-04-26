@@ -36,7 +36,7 @@ from tokenflood.io import (
     read_run_spec,
     IOContext,
 )
-from tokenflood.logging import global_warn_once_filter
+from tokenflood.logging_utils import global_warn_once_filter
 from tokenflood.networking import (
     patch_aiohttp_client_session,
     unpatch_aiohttp_client_session,

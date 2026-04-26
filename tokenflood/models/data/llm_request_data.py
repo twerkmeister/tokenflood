@@ -5,7 +5,7 @@ from litellm.types.utils import ModelResponse
 from pydantic import BaseModel, NonNegativeFloat, NonNegativeInt
 
 from tokenflood.constants import WARNING_LIMIT
-from tokenflood.logging import WARN_ONCE_KEY
+from tokenflood.logging_utils import WARN_ONCE_KEY
 from tokenflood.models.validation_types import NonEmptyString
 from tokenflood.util import calculate_relative_error
 
@@ -20,7 +20,9 @@ class LLMRequestResult(BaseModel, frozen=True):
     measured_input_tokens: NonNegativeInt
     measured_prefix_tokens: NonNegativeInt
     measured_output_tokens: NonNegativeInt
+    measured_reasoning_tokens: NonNegativeInt
     generated_text: str
+    generated_reasoning: str
 
     @classmethod
     def from_model_response(cls, model_response: ModelResponse) -> Self:
@@ -41,7 +43,13 @@ class LLMRequestResult(BaseModel, frozen=True):
             if usage.prompt_tokens_details
             else 0,
             measured_output_tokens=usage.completion_tokens,
+            measured_reasoning_tokens=usage.completion_tokens_details.reasoning_tokens
+            if usage.completion_tokens_details
+            else 0,
             generated_text=model_response.choices[0]["message"]["content"] or "",
+            generated_reasoning=model_response.choices[0].message.get(
+                "reasoning_content", ""
+            ),
         )
 
 
@@ -72,8 +80,10 @@ class LLMRequestData(BaseModel, frozen=True):
     measured_prefix_tokens: NonNegativeInt
     expected_output_tokens: NonNegativeInt
     measured_output_tokens: NonNegativeInt
+    measured_reasoning_tokens: NonNegativeInt
     group_id: NonEmptyString
     generated_text: str
+    generated_reasoning: str
     prompt: str
 
     @classmethod

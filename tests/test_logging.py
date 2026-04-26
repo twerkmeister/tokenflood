@@ -1,6 +1,6 @@
 import logging
 
-from tokenflood.logging import WARN_ONCE_KEY, WarnOnceLogFilter
+from tokenflood.logging_utils import WARN_ONCE_KEY, WarnOnceLogFilter
 
 
 def test_warnings_filter_log_once(caplog):

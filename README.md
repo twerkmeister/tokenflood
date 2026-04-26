@@ -72,7 +72,7 @@ pip install tokenflood
 For a quick start, make sure that [vllm](https://github.com/vllm-project/vllm) is installed, and you serve a small model:
 ```bash
 pip install vllm
-vllm serve HuggingFaceTB/SmolLM-135M-Instruct
+vllm serve HuggingFaceTB/SmolLM-135M-Instruct --enable-prompt-tokens-details
 ```
 
 Afterward, create the basic config files and do a first run:
@@ -283,11 +283,8 @@ visualization frontend also shows absolute and relative token errors.
 > specific endpoint and its configuration. Some providers, like OpenAI, will only start to
 > use prefix caching once your total prompt length exceeds 1024 tokens. Additionally,
 > it seems litellm does not always record the usage of prefix caching. When
-> using vllm as the inference server, it never reports any cached tokens. At the same 
-> time, one can see a big difference in latency between using and not using prefix 
-> caching despite the cached tokens not being reported properly. Due to this issue,
-> tokenflood currently does not warn when the desired prefix tokens diverge from the 
-> measured ones.
+> using vllm as the inference server, make sure to specify `--enable-prompt-tokens-details`
+> to measure the prefixed tokens correctly.
 
 
 ## 🚨 Safety 🚨

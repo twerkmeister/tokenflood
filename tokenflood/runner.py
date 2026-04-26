@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 from tokenflood.constants import ERROR_RING_BUFFER_SIZE
 from tokenflood.io import IOContext
-from tokenflood.logging import global_warn_once_filter
+from tokenflood.logging_utils import global_warn_once_filter
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.data.error_data import ErrorContext, ErrorData
 from tokenflood.models.data.llm_request_data import LLMRequestContext, LLMRequestData
