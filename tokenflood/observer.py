@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from tokenflood.io import IOContext
-from tokenflood.logging import global_warn_once_filter
+from tokenflood.logging_utils import global_warn_once_filter
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.data.error_data import ErrorContext
 from tokenflood.models.data.llm_request_data import LLMRequestContext

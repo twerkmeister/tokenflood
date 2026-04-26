@@ -3,7 +3,7 @@ test:
 	pytest --cov-report=term-missing --cov=tokenflood tests
 
 ci-vllm:
-	vllm serve HuggingFaceTB/SmolLM-135M-Instruct
+	vllm serve HuggingFaceTB/SmolLM-135M-Instruct --enable-prompt-tokens-details
 
 lint:
 	poetry run ruff check tokenflood tests --fix

@@ -24,7 +24,9 @@ def default_llm_request_data():
         measured_prefix_tokens=500,
         expected_output_tokens=32,
         measured_output_tokens=32,
+        measured_reasoning_tokens=0,
         generated_text="1 2 3 4",
+        generated_reasoning="",
         prompt="Count up to 10000.",
     )
 

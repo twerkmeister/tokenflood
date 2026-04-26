@@ -5,7 +5,7 @@ from litellm.types.utils import ModelResponse
 from pydantic import BaseModel, NonNegativeFloat, NonNegativeInt
 
 from tokenflood.constants import WARNING_LIMIT
-from tokenflood.logging import WARN_ONCE_KEY
+from tokenflood.logging_utils import WARN_ONCE_KEY
 from tokenflood.models.validation_types import NonEmptyString
 from tokenflood.util import calculate_relative_error
 
@@ -20,28 +20,32 @@ class LLMRequestResult(BaseModel, frozen=True):
     measured_input_tokens: NonNegativeInt
     measured_prefix_tokens: NonNegativeInt
     measured_output_tokens: NonNegativeInt
+    measured_reasoning_tokens: NonNegativeInt
     generated_text: str
+    generated_reasoning: str
 
     @classmethod
     def from_model_response(cls, model_response: ModelResponse) -> Self:
         usage = model_response.usage  # type:ignore[attr-defined]
+        hp = model_response._hidden_params
+        msg = model_response.choices[0]["message"]
         return cls(
-            latency=int(model_response._hidden_params[LLMRequestData.F.latency]),
-            time_to_first_token=int(
-                model_response._hidden_params[LLMRequestData.F.time_to_first_token]
-            ),
-            decoding_latency=int(
-                model_response._hidden_params[LLMRequestData.F.decoding_latency]
-            ),
-            average_time_per_output_token=model_response._hidden_params[
+            latency=int(hp[LLMRequestData.F.latency]),
+            time_to_first_token=int(hp[LLMRequestData.F.time_to_first_token]),
+            decoding_latency=int(hp[LLMRequestData.F.decoding_latency]),
+            average_time_per_output_token=hp[
                 LLMRequestData.F.average_time_per_output_token
             ],
             measured_input_tokens=usage.prompt_tokens,
-            measured_prefix_tokens=usage.prompt_tokens_details.cached_tokens or 0
+            measured_prefix_tokens=(usage.prompt_tokens_details.cached_tokens or 0)
             if usage.prompt_tokens_details
             else 0,
             measured_output_tokens=usage.completion_tokens,
-            generated_text=model_response.choices[0]["message"]["content"] or "",
+            measured_reasoning_tokens=(usage.completion_tokens_details.reasoning_tokens or 0)
+            if usage.completion_tokens_details
+            else 0,
+            generated_text=msg.get("content", ""),
+            generated_reasoning=msg.get("reasoning_content", ""),
         )
 
 
@@ -72,8 +76,10 @@ class LLMRequestData(BaseModel, frozen=True):
     measured_prefix_tokens: NonNegativeInt
     expected_output_tokens: NonNegativeInt
     measured_output_tokens: NonNegativeInt
+    measured_reasoning_tokens: NonNegativeInt
     group_id: NonEmptyString
     generated_text: str
+    generated_reasoning: str
     prompt: str
 
     @classmethod
