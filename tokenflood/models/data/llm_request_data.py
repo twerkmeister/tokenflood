@@ -41,7 +41,9 @@ class LLMRequestResult(BaseModel, frozen=True):
             if usage.prompt_tokens_details
             else 0,
             measured_output_tokens=usage.completion_tokens,
-            measured_reasoning_tokens=(usage.completion_tokens_details.reasoning_tokens or 0)
+            measured_reasoning_tokens=(
+                usage.completion_tokens_details.reasoning_tokens or 0
+            )
             if usage.completion_tokens_details
             else 0,
             generated_text=msg.get("content", ""),
