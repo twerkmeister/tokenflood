@@ -12,10 +12,14 @@ from tokenflood.constants import (
     LLM_REQUESTS_FILE,
     NETWORK_LATENCY_FILE,
     ENDPOINT_SPEC_FILE,
-    LOAD_SPEC_FILE,
+    LOAD_TEST_SPEC_FILE,
     OBSERVATION_SPEC_FILE,
 )
-from tokenflood.io import is_load_result_folder, is_observation_result_folder, read_file
+from tokenflood.io import (
+    is_load_test_result_folder,
+    is_observation_result_folder,
+    read_file,
+)
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +48,7 @@ def get_runs(
 
 
 def get_load_test_runs(folder: str) -> list[str]:
-    return get_runs(folder, is_load_result_folder)
+    return get_runs(folder, is_load_test_result_folder)
 
 
 def get_observation_runs(folder: str) -> list[str]:
@@ -60,7 +64,7 @@ def get_endpoint_spec_file(run_folder: str) -> str:
 
 
 def get_run_spec_file(run_folder: str) -> str:
-    return read_file(os.path.join(run_folder, LOAD_SPEC_FILE))
+    return read_file(os.path.join(run_folder, LOAD_TEST_SPEC_FILE))
 
 
 def get_observation_spec_file(run_folder: str) -> str:

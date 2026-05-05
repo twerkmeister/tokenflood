@@ -13,17 +13,17 @@ from tokenflood.io import (
     folder_contains_files,
     get_first_available_filename_like,
     is_observation_result_folder,
-    is_load_result_folder,
+    is_load_test_result_folder,
     list_dir_relative,
     make_run_folder,
     read_file,
     read_pydantic_yaml_list,
-    read_load_spec,
+    read_load_test_spec,
     write_file,
     write_pydantic_yaml,
     write_pydantic_yaml_list,
 )
-from tokenflood.models.run_specs.load_spec import LoadSpec
+from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
 
 
 def test_read_base_endpoint_spec(base_endpoint_spec):
@@ -32,26 +32,28 @@ def test_read_base_endpoint_spec(base_endpoint_spec):
     assert base_endpoint_spec.base_url == "http://127.0.0.1:8000/v1"
 
 
-def test_read_base_run_suite(base_load_spec):
-    assert base_load_spec.load_type
-    assert base_load_spec.name == "ABC"
-    assert base_load_spec.requests_per_second_phases == tuple(range(1, 5))
-    assert base_load_spec.seconds_per_phase == 30
+def test_read_base_run_suite(base_load_test_spec):
+    assert base_load_test_spec.load_type
+    assert base_load_test_spec.name == "ABC"
+    assert base_load_test_spec.requests_per_second_phases == tuple(range(1, 5))
+    assert base_load_test_spec.seconds_per_phase == 30
 
 
-def test_read_write_pydantic_model(base_load_spec, unique_temporary_file):
-    write_pydantic_yaml(unique_temporary_file, base_load_spec)
-    re_read_base_run_suite = read_load_spec(unique_temporary_file)
-    assert re_read_base_run_suite == base_load_spec
+def test_read_write_pydantic_model(base_load_test_spec, unique_temporary_file):
+    write_pydantic_yaml(unique_temporary_file, base_load_test_spec)
+    re_read_base_run_suite = read_load_test_spec(unique_temporary_file)
+    assert re_read_base_run_suite == base_load_test_spec
 
 
-def test_read_write_pydantic_model_list(base_load_spec, unique_temporary_file):
-    object_list = [base_load_spec, base_load_spec]
+def test_read_write_pydantic_model_list(base_load_test_spec, unique_temporary_file):
+    object_list = [base_load_test_spec, base_load_test_spec]
     write_pydantic_yaml_list(unique_temporary_file, object_list)
-    re_read_base_run_suites = read_pydantic_yaml_list(LoadSpec)(unique_temporary_file)
+    re_read_base_run_suites = read_pydantic_yaml_list(LoadTestSpec)(
+        unique_temporary_file
+    )
     assert len(re_read_base_run_suites) == len(object_list)
-    assert re_read_base_run_suites[0] == base_load_spec
-    assert re_read_base_run_suites[1] == base_load_spec
+    assert re_read_base_run_suites[0] == base_load_test_spec
+    assert re_read_base_run_suites[1] == base_load_test_spec
 
 
 def test_make_run_folder(unique_temporary_folder):
@@ -196,8 +198,8 @@ def test_folder_contains_files(unique_temporary_folder):
     assert folder_contains_files(unique_temporary_folder, set(filenames))
 
 
-def test_is_load_result_folder(run_suite_results_folder):
-    assert is_load_result_folder(run_suite_results_folder)
+def test_is_load_test_result_folder(load_test_results_folder):
+    assert is_load_test_result_folder(load_test_results_folder)
 
 
 def test_is_observation_result_folder(observation_results_folder):

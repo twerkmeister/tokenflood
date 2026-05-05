@@ -18,7 +18,7 @@ from tokenflood.models.data.error_data import ErrorContext, ErrorData
 from tokenflood.models.data.llm_request_data import LLMRequestContext, LLMRequestData
 from tokenflood.models.messages import MessageList, create_message_list_from_prompt
 from tokenflood.models.data.ping_request_data import PingData, PingRequestContext
-from tokenflood.models.run_specs.load_spec import LoadSpec, LoadPhase
+from tokenflood.models.run_specs.load_test_spec import LoadTestSpec, LoadTestPhase
 from tokenflood.networking import (
     ObserveURLMiddleware,
     option_request_endpoint,
@@ -101,16 +101,16 @@ def make_empty_response() -> ModelResponse:
     )
 
 
-async def run_load_phase(
+async def run_load_test_phase(
     test_description: str,
     phase: int,
-    load_spec: LoadSpec,
-    load_phase: LoadPhase,
+    load_test_spec: LoadTestSpec,
+    load_phase: LoadTestPhase,
     endpoint_spec: EndpointSpec,
     io_context: IOContext,
 ) -> bool:
-    schedule = create_load_test_phase_schedule(load_phase, load_spec.burstiness)
-    load_type = load_spec.load_type
+    schedule = create_load_test_phase_schedule(load_phase, load_test_spec.burstiness)
+    load_type = load_test_spec.load_type
     message_lists = load_type.create_message_lists(len(schedule))
     error_context = ErrorContext(
         requests_per_second_phase=load_phase.requests_per_second, group_id=str(phase)
@@ -126,7 +126,7 @@ async def run_load_phase(
     for i in pbar:
         error_rate = io_context.error_rate()
         pbar.set_postfix({"error rate": round(error_rate, 2)})
-        if error_rate > load_spec.error_limit:
+        if error_rate > load_test_spec.error_limit:
             error_threshold_tripped = True
             break
         request_context = LLMRequestContext(
@@ -270,8 +270,10 @@ async def send_llm_request(
     return model_response
 
 
-def make_test_description(suite: LoadSpec, phase: int, run_spec: LoadPhase) -> str:
-    return f"Load test {suite.name} phase {phase}: {run_spec.requests_per_second:.2f} requests/s"
+def make_test_description(
+    load_test_spec: LoadTestSpec, phase: int, load_test_phase: LoadTestPhase
+) -> str:
+    return f"Load test {load_test_spec.name} phase {phase}: {load_test_phase.requests_per_second:.2f} requests/s"
 
 
 async def get_warm_session(
@@ -290,11 +292,11 @@ async def get_warm_session(
 
 
 async def run_load_test(
-    endpoint_spec: EndpointSpec, load_spec: LoadSpec, io_context: IOContext
+    endpoint_spec: EndpointSpec, load_test_spec: LoadTestSpec, io_context: IOContext
 ):
     io_context.activate()
     await io_context.wait_for_pending_writes()
-    load_phases = load_spec.create_load_phases()
+    load_test_phases = load_test_spec.create_load_test_phases()
     log.info("Warming up.")
     error = await get_warm_session(endpoint_spec, io_context)
     if error:
@@ -302,13 +304,13 @@ async def run_load_test(
         # letting any writes finish
         await asyncio.sleep(0.1)
         return
-    for phase, run_spec in enumerate(load_phases):
-        test_description = make_test_description(load_spec, phase + 1, run_spec)
-        error_threshold_tripped = await run_load_phase(
+    for i, load_test_phase in enumerate(load_test_phases):
+        test_description = make_test_description(load_test_spec, i + 1, load_test_phase)
+        error_threshold_tripped = await run_load_test_phase(
             test_description,
-            phase,
-            load_spec,
-            run_spec,
+            i,
+            load_test_spec,
+            load_test_phase,
             endpoint_spec,
             io_context,
         )

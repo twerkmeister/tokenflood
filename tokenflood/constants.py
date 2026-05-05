@@ -2,7 +2,7 @@ RESULTS_FOLDER = "results"
 LLM_REQUESTS_FILE = "llm_requests.csv"
 NETWORK_LATENCY_FILE = "network_latency.csv"
 ENDPOINT_SPEC_FILE = "endpoint.yml"
-LOAD_SPEC_FILE = "load.yml"
+LOAD_TEST_SPEC_FILE = "load_test.yml"
 OBSERVATION_SPEC_FILE = "observation.yml"
 ERROR_FILE = "errors.csv"
 REQUESTS_PER_SECOND_COLUMN_NAME = "requests_per_second_at_the_time"
@@ -16,7 +16,7 @@ COMMON_RESULT_FILES = {
     ERROR_FILE,
 }
 
-LOAD_RESULT_FILES = {LOAD_SPEC_FILE}
+LOAD_TEST_RESULT_FILES = {LOAD_TEST_SPEC_FILE}
 
 OBSERVATION_RESULT_FILES = {OBSERVATION_SPEC_FILE}
 

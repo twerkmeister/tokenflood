@@ -6,9 +6,9 @@ from tokenflood.constants import (
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.load_types.load_type import HeuristicLoad
 from tokenflood.models.run_specs.observation_spec import ObservationSpec
-from tokenflood.models.run_specs.load_spec import LoadSpec
+from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
 
-starter_run_suite = LoadSpec(
+starter_run_suite = LoadTestSpec(
     name="starter",
     requests_per_second_phases=(1, 2),
     seconds_per_phase=30,

@@ -17,7 +17,7 @@ from tokenflood.analysis import Mean
 from tokenflood.constants import (
     DEFAULT_PERCENTILES_STR,
     WARNING_LIMIT_PERCENTAGE,
-    LOAD_SPEC_FILE,
+    LOAD_TEST_SPEC_FILE,
     OBSERVATION_SPEC_FILE,
     ENDPOINT_SPEC_FILE,
 )
@@ -406,7 +406,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                                     if run_type == LOAD_TEST:
                                         make_yaml_code_element(
                                             get_run_spec_file(run_folder),
-                                            LOAD_SPEC_FILE,
+                                            LOAD_TEST_SPEC_FILE,
                                         )
                                     else:
                                         make_yaml_code_element(

@@ -4,12 +4,12 @@ import pytest
 
 from tests.utils import does_not_raise
 from tokenflood.models.load_types.load_type import HeuristicLoad
-from tokenflood.models.run_specs.load_spec import LoadSpec
+from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
 
 
 @pytest.fixture()
-def default_run_suite_kwargs() -> Dict:
-    return LoadSpec(
+def default_load_test_spec_kwargs() -> Dict:
+    return LoadTestSpec(
         name="ABC",
         requests_per_second_phases=(1, 2, 3, 4),
         seconds_per_phase=30,
@@ -33,17 +33,19 @@ def default_run_suite_kwargs() -> Dict:
         ({"load_type": None}, pytest.raises(ValueError)),
     ],
 )
-def test_load_spec_validation(kwargs_override, expectation, default_run_suite_kwargs):
+def test_load_test_spec_validation(
+    kwargs_override, expectation, default_load_test_spec_kwargs
+):
     with expectation:
-        LoadSpec(**{**default_run_suite_kwargs, **kwargs_override})
+        LoadTestSpec(**{**default_load_test_spec_kwargs, **kwargs_override})
 
 
-def test_create_load_phases(default_run_suite_kwargs):
-    load_spec = LoadSpec(**default_run_suite_kwargs)
+def test_create_load_test_phases(default_load_test_spec_kwargs):
+    load_test_spec = LoadTestSpec(**default_load_test_spec_kwargs)
 
-    load_phases = load_spec.create_load_phases()
-    assert len(load_phases) == len(load_spec.requests_per_second_phases)
+    load_phases = load_test_spec.create_load_test_phases()
+    assert len(load_phases) == len(load_test_spec.requests_per_second_phases)
 
     assert all(
-        [rs.duration_seconds == load_spec.seconds_per_phase for rs in load_phases]
+        [rs.duration_seconds == load_test_spec.seconds_per_phase for rs in load_phases]
     )
