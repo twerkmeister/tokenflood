@@ -1,7 +1,7 @@
 import pytest
 
 from tests.utils import does_not_raise
-from tokenflood.models.run_specs.load_spec import LoadPhase
+from tokenflood.models.run_specs.load_test_spec import LoadTestPhase
 
 
 @pytest.mark.parametrize(
@@ -15,9 +15,11 @@ from tokenflood.models.run_specs.load_spec import LoadPhase
         (0.1, 1, pytest.raises(ValueError)),
     ],
 )
-def test_run_spec_validation(requests_per_second, test_length_in_seconds, expectation):
+def test_load_test_phase_validation(
+    requests_per_second, test_length_in_seconds, expectation
+):
     with expectation:
-        LoadPhase(
+        LoadTestPhase(
             requests_per_second=requests_per_second,
             duration_seconds=test_length_in_seconds,
         )

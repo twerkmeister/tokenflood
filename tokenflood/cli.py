@@ -21,10 +21,10 @@ from tokenflood.constants import (
     NETWORK_LATENCY_FILE,
     LLM_REQUESTS_FILE,
     OBSERVATION_SPEC_FILE,
-    LOAD_SPEC_FILE,
+    LOAD_TEST_SPEC_FILE,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
-from tokenflood.models.run_specs.load_spec import LoadSpec
+from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
 from tokenflood.models.run_specs.observation_spec import ObservationSpec
 from tokenflood.visualization_frontend.gradio import visualize_results
 from tokenflood.io import (
@@ -154,26 +154,28 @@ def create_starter_files(args: argparse.Namespace):
     available_endpoint_spec_filename = get_first_available_filename_like(
         ENDPOINT_SPEC_FILE
     )
-    available_load_spec_filename = get_first_available_filename_like(LOAD_SPEC_FILE)
+    available_load_test_spec_filename = get_first_available_filename_like(
+        LOAD_TEST_SPEC_FILE
+    )
     available_observation_spec_file = get_first_available_filename_like(
         OBSERVATION_SPEC_FILE
     )
     log.info(
         "Creating starter files for load, observation and endpoint specifications: \n"
-        f"[green]* {available_load_spec_filename} [/]\n"
+        f"[green]* {available_load_test_spec_filename} [/]\n"
         f"[green]* {available_endpoint_spec_filename} [/]\n"
         f"[green]* {available_observation_spec_file} [/]"
     )
 
     write_pydantic_yaml(available_endpoint_spec_filename, starter_endpoint_spec_vllm)
-    write_pydantic_yaml(available_load_spec_filename, starter_run_suite)
+    write_pydantic_yaml(available_load_test_spec_filename, starter_run_suite)
     write_pydantic_yaml(available_observation_spec_file, starter_observation_spec)
 
     log.info(
         "Inspect those files, boot up a vllm server with a tiny model using \n"
         f"[blue]vllm serve {starter_model_id}[/]\n"
         "and run a first load test against it using\n"
-        f"[blue]tokenflood run {available_load_spec_filename} {available_endpoint_spec_filename}[/]\n"
+        f"[blue]tokenflood run {available_load_test_spec_filename} {available_endpoint_spec_filename}[/]\n"
         "or do a longer term observation using\n"
         f"[blue]tokenflood run {available_observation_spec_file} {available_endpoint_spec_filename}[/]"
     )
@@ -214,19 +216,19 @@ def run(args: argparse.Namespace):
     log.info("Done.")
 
 
-T = TypeVar("T", bound=LoadSpec | ObservationSpec)
+T = TypeVar("T", bound=LoadTestSpec | ObservationSpec)
 
 
 def get_test_procedure(
     run_spec: T,
 ) -> Callable[[EndpointSpec, Any, IOContext], Coroutine]:
-    if isinstance(run_spec, LoadSpec):
+    if isinstance(run_spec, LoadTestSpec):
         return run_load_test
     elif isinstance(run_spec, ObservationSpec):
         return run_observation
     raise ValueError(
         f"Invalid run spec type: {type(run_spec)}. "
-        f"Must be {LoadSpec.__name__} or {ObservationSpec.__name__}."
+        f"Must be {LoadTestSpec.__name__} or {ObservationSpec.__name__}."
     )
 
 

@@ -1,16 +1,17 @@
-type: load
+type: load_test
 name: ABC
 requests_per_second_phases:
   - 1
+  - 2
   - 3
-seconds_per_phase: 2
+  - 4
+seconds_per_phase: 30
 load_type:
   type: heuristic
-  prompt_length: 256
-  prefix_length: 128
-  output_length: 2
+  prompt_length: 1024
+  prefix_length: 124
+  output_length: 16
   task: 'Task: Count up to 10000 naming each individual number like this: 1 2 3 4'
   prompt_filler_tokens: [' A', ' B', ' C', ' D', ' E', ' F', ' G', ' H', ' I', ' J', ' K', ' L',
     ' M', ' N', ' O', ' P', ' Q', ' R', ' S', ' T', ' U', ' V', ' W', ' X', ' Y',
     ' Z']
-

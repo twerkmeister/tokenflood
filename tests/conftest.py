@@ -12,17 +12,17 @@ from tokenflood.constants import (
     ERROR_FILE,
     LLM_REQUESTS_FILE,
     NETWORK_LATENCY_FILE,
-    LOAD_SPEC_FILE,
+    LOAD_TEST_SPEC_FILE,
 )
 from tokenflood.io import (
     FileIOContext,
     read_endpoint_spec,
     read_observation_spec,
-    read_load_spec,
+    read_load_test_spec,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_specs.observation_spec import ObservationSpec
-from tokenflood.models.run_specs.load_spec import LoadSpec
+from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
 from tokenflood.networking import (
     ObserveURLMiddleware,
     patch_aiohttp_client_session,
@@ -51,7 +51,7 @@ def data_folder(test_folder: str) -> str:
 
 @pytest.fixture(scope="session")
 def run_suites_folder(data_folder: str) -> str:
-    return join_folder_checked(data_folder, "load_specs")
+    return join_folder_checked(data_folder, "load_test_specs")
 
 
 @pytest.fixture(scope="session")
@@ -70,8 +70,8 @@ def results_folder(data_folder: str) -> str:
 
 
 @pytest.fixture(scope="session")
-def run_suite_results_folder(results_folder: str) -> str:
-    return join_folder_checked(results_folder, "load_results")
+def load_test_results_folder(results_folder: str) -> str:
+    return join_folder_checked(results_folder, "load_test_results")
 
 
 @pytest.fixture(scope="session")
@@ -92,27 +92,27 @@ def superfast_observation_spec(observation_specs_folder) -> ObservationSpec:
 
 
 @pytest.fixture
-def base_load_spec(run_suites_folder) -> LoadSpec:
+def base_load_test_spec(run_suites_folder) -> LoadTestSpec:
     filename = os.path.join(run_suites_folder, "base.yml")
-    return read_load_spec(filename)
+    return read_load_test_spec(filename)
 
 
 @pytest.fixture
-def tiny_load_spec(run_suites_folder) -> LoadSpec:
+def tiny_load_test_spec(run_suites_folder) -> LoadTestSpec:
     filename = os.path.join(run_suites_folder, "tiny.yml")
-    return read_load_spec(filename)
+    return read_load_test_spec(filename)
 
 
 @pytest.fixture
-def llm_requests_csv_file(run_suite_results_folder) -> str:
-    filename = os.path.join(run_suite_results_folder, LLM_REQUESTS_FILE)
+def llm_requests_csv_file(load_test_results_folder) -> str:
+    filename = os.path.join(load_test_results_folder, LLM_REQUESTS_FILE)
     assert os.path.isfile(filename)
     return filename
 
 
 @pytest.fixture
-def network_latency_csv_file(run_suite_results_folder) -> str:
-    filename = os.path.join(run_suite_results_folder, NETWORK_LATENCY_FILE)
+def network_latency_csv_file(load_test_results_folder) -> str:
+    filename = os.path.join(load_test_results_folder, NETWORK_LATENCY_FILE)
     assert os.path.isfile(filename)
     return filename
 
@@ -134,15 +134,15 @@ def base_endpoint_spec(endpoint_specs_folder) -> EndpointSpec:
 
 
 @pytest.fixture
-def results_endpoint_spec(run_suite_results_folder) -> EndpointSpec:
-    filename = os.path.join(run_suite_results_folder, ENDPOINT_SPEC_FILE)
+def results_endpoint_spec(load_test_results_folder) -> EndpointSpec:
+    filename = os.path.join(load_test_results_folder, ENDPOINT_SPEC_FILE)
     return read_endpoint_spec(filename)
 
 
 @pytest.fixture
-def results_run_suite(run_suite_results_folder) -> LoadSpec:
-    filename = os.path.join(run_suite_results_folder, LOAD_SPEC_FILE)
-    return read_load_spec(filename)
+def results_run_suite(load_test_results_folder) -> LoadTestSpec:
+    filename = os.path.join(load_test_results_folder, LOAD_TEST_SPEC_FILE)
+    return read_load_test_spec(filename)
 
 
 @pytest.fixture

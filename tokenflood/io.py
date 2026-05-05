@@ -14,14 +14,14 @@ from tokenflood.constants import (
     ERROR_RING_BUFFER_SIZE,
     OBSERVATION_RESULT_FILES,
     RESULTS_FOLDER,
-    LOAD_RESULT_FILES,
+    LOAD_TEST_RESULT_FILES,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.data.error_data import ErrorData
 from tokenflood.models.data.llm_request_data import LLMRequestData
 from tokenflood.models.run_specs.observation_spec import ObservationSpec
 from tokenflood.models.data.ping_request_data import PingData
-from tokenflood.models.run_specs.load_spec import LoadSpec
+from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
 from tokenflood.models.run_specs.typing import SpecificRunSpec
 from tokenflood.models.util import get_fields
 
@@ -104,8 +104,8 @@ def read_run_spec(filename: str) -> SpecificRunSpec:
     return read_pydantic_yaml(TypeAdapter(SpecificRunSpec))(filename)
 
 
-def read_load_spec(filename: str) -> LoadSpec:
-    return read_pydantic_yaml(LoadSpec)(filename)
+def read_load_test_spec(filename: str) -> LoadTestSpec:
+    return read_pydantic_yaml(LoadTestSpec)(filename)
 
 
 def read_observation_spec(filename: str) -> ObservationSpec:
@@ -175,9 +175,9 @@ def is_observation_result_folder(folder: str) -> bool:
     )
 
 
-def is_load_result_folder(folder) -> bool:
+def is_load_test_result_folder(folder) -> bool:
     return folder_contains_files(folder, COMMON_RESULT_FILES) and folder_contains_files(
-        folder, LOAD_RESULT_FILES
+        folder, LOAD_TEST_RESULT_FILES
     )
 
 

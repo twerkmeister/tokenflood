@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 
-from tokenflood.models.run_specs.load_spec import LoadPhase
+from tokenflood.models.run_specs.load_test_spec import LoadTestPhase
 
 highest_burstiness_control = 21
 
@@ -19,7 +19,7 @@ def burstiness_to_burstiness_control(burstiness: int) -> int:
 
 
 def create_load_test_phase_schedule(
-    load_phase: LoadPhase, burstiness: int
+    load_phase: LoadTestPhase, burstiness: int
 ) -> List[float]:
     """Create a bursty randomized schedule with a guaranteed total length."""
     burstiness_control = burstiness_to_burstiness_control(burstiness)

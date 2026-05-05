@@ -15,15 +15,15 @@ from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
     OBSERVATION_SPEC_FILE,
     RESULTS_FOLDER,
-    LOAD_SPEC_FILE,
+    LOAD_TEST_SPEC_FILE,
 )
 from tokenflood.io import (
     is_observation_result_folder,
-    is_load_result_folder,
+    is_load_test_result_folder,
     list_dir_relative,
     read_endpoint_spec,
     read_observation_spec,
-    read_load_spec,
+    read_load_test_spec,
     write_pydantic_yaml,
 )
 from tokenflood.starter_pack import (
@@ -35,10 +35,10 @@ from tokenflood.starter_pack import (
 
 def test_parse_args_run():
     endpoint_spec = "endpoint.yml"
-    run_spec = "load.yml"
-    args = parse_args(["run", run_spec, endpoint_spec])
+    load_test_spec = "load_test.yml"
+    args = parse_args(["run", load_test_spec, endpoint_spec])
     assert args.endpoint == endpoint_spec
-    assert args.run_spec == run_spec
+    assert args.run_spec == load_test_spec
     assert args.func.__name__ == run.__name__
 
 
@@ -56,10 +56,10 @@ def test_init(unique_temporary_folder, monkeypatch):
     monkeypatch.chdir(unique_temporary_folder)
     args = parse_args(["init"])
     create_starter_files(args)
-    os.path.isfile(LOAD_SPEC_FILE)
+    os.path.isfile(LOAD_TEST_SPEC_FILE)
     os.path.isfile(ENDPOINT_SPEC_FILE)
     os.path.isfile(OBSERVATION_SPEC_FILE)
-    run_suite = read_load_spec(LOAD_SPEC_FILE)
+    run_suite = read_load_test_spec(LOAD_TEST_SPEC_FILE)
     endpoint_spec = read_endpoint_spec(ENDPOINT_SPEC_FILE)
     observation_spec = read_observation_spec(OBSERVATION_SPEC_FILE)
     assert run_suite == starter_run_suite
@@ -77,28 +77,28 @@ def test_init_does_not_override(unique_temporary_folder, monkeypatch):
 
 
 def test_load_test(
-    monkeypatch, unique_temporary_folder, tiny_load_spec, base_endpoint_spec
+    monkeypatch, unique_temporary_folder, tiny_load_test_spec, base_endpoint_spec
 ):
     monkeypatch.chdir(unique_temporary_folder)
-    write_pydantic_yaml(LOAD_SPEC_FILE, tiny_load_spec)
+    write_pydantic_yaml(LOAD_TEST_SPEC_FILE, tiny_load_test_spec)
     write_pydantic_yaml(ENDPOINT_SPEC_FILE, base_endpoint_spec)
-    args = parse_args(["run", LOAD_SPEC_FILE, ENDPOINT_SPEC_FILE, "-y"])
+    args = parse_args(["run", LOAD_TEST_SPEC_FILE, ENDPOINT_SPEC_FILE, "-y"])
     run(args)
     assert os.path.exists(RESULTS_FOLDER)
     run_folders = list_dir_relative(RESULTS_FOLDER)
     assert len(run_folders) == 1
-    assert is_load_result_folder(run_folders[0])
+    assert is_load_test_result_folder(run_folders[0])
 
 
 def test_load_test_decline(
-    monkeypatch, unique_temporary_folder, tiny_load_spec, base_endpoint_spec
+    monkeypatch, unique_temporary_folder, tiny_load_test_spec, base_endpoint_spec
 ):
     monkeypatch.chdir(unique_temporary_folder)
     monkeypatch.setattr("builtins.input", lambda _: "no")
 
-    write_pydantic_yaml(LOAD_SPEC_FILE, tiny_load_spec)
+    write_pydantic_yaml(LOAD_TEST_SPEC_FILE, tiny_load_test_spec)
     write_pydantic_yaml(ENDPOINT_SPEC_FILE, base_endpoint_spec)
-    args = parse_args(["run", LOAD_SPEC_FILE, ENDPOINT_SPEC_FILE])
+    args = parse_args(["run", LOAD_TEST_SPEC_FILE, ENDPOINT_SPEC_FILE])
     run(args)
     assert not os.path.exists(RESULTS_FOLDER)
 
@@ -148,7 +148,7 @@ def test_start_visualization(monkeypatch, unique_temporary_folder, results_folde
     copy_of_results_folder = os.path.join(unique_temporary_folder, "results")
     shutil.copytree(results_folder, copy_of_results_folder)
     assert "results" in os.listdir(unique_temporary_folder)
-    assert "load_results" in os.listdir(copy_of_results_folder)
+    assert "load_test_results" in os.listdir(copy_of_results_folder)
 
     args = parse_args(["viz"])
     app, url = start_visualization(args, False, False)
