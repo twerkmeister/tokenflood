@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Literal
 import re
 
 from pydantic import BaseModel
@@ -13,7 +13,9 @@ class EndpointSpec(BaseModel):
     deployment: Optional[str] = None
     extra_headers: Dict = {}
     extra_body: Dict = {}
-    reasoning_effort: Optional[str] = None
+    reasoning_effort: (
+        Literal["none", "minimal", "low", "medium", "high", "xhigh", "default"] | None
+    ) = None
 
     @property
     def folder_name(self) -> str:

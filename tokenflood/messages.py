@@ -7,7 +7,6 @@ from tokenizers import Tokenizer
 
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.message_list import MessageList
-from tokenflood.util import exec_sync_or_async_func
 
 USER_ROLE = "user"
 ASSISTANT_ROLE = "assistant"
@@ -122,16 +121,10 @@ async def get_input_output_prefix_token_lengths(
     else:
         func = partial(count_tokens_using_api, endpoint_spec=endpoint_spec)
 
-    input_token_lengths = [
-        await exec_sync_or_async_func(func, messages=m) for m in input_message_lists
-    ]
-    output_token_lengths = [
-        await exec_sync_or_async_func(func, messages=m) for m in output_message_lists
-    ]
+    input_token_lengths = [await func(messages=m) for m in input_message_lists]
+    output_token_lengths = [await func(messages=m) for m in output_message_lists]
     if common_prefix:
-        common_prefix_lengths = [
-            await exec_sync_or_async_func(func, messages=common_prefix)
-        ]
+        common_prefix_lengths = [await func(messages=common_prefix)]
 
     return (
         input_token_lengths,

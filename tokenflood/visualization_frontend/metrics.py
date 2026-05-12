@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import ClassVar
+
 
 from tokenflood.constants import LLM_REQUESTS_FILE, NETWORK_LATENCY_FILE
 from tokenflood.models.data.llm_request_data import LLMRequestData
@@ -7,10 +9,10 @@ from tokenflood.models.data.ping_request_data import PingData
 
 @dataclass(frozen=True)
 class Metric:
-    field_name: str
-    file: str
-    name: str
-    explanation: str
+    field_name: ClassVar[str]
+    file: ClassVar[str]
+    name: ClassVar[str]
+    explanation: ClassVar[str]
 
 
 class RequestLatency(Metric):

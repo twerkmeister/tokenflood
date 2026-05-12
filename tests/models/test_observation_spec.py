@@ -28,7 +28,7 @@ def default_observation_spec():
 )
 def test_num_polls(spec_update, expected_result, default_observation_spec):
     observation_spec = default_observation_spec.model_copy(update=spec_update)
-    assert observation_spec.num_polls() == expected_result
+    assert observation_spec.num_polls == expected_result
 
 
 @pytest.mark.parametrize(
@@ -41,4 +41,4 @@ def test_num_polls(spec_update, expected_result, default_observation_spec):
 )
 def test_total_num_requests(spec_update, expected_result, default_observation_spec):
     observation_spec = default_observation_spec.model_copy(update=spec_update)
-    assert observation_spec.total_num_requests() == expected_result
+    assert observation_spec.total_num_requests == expected_result

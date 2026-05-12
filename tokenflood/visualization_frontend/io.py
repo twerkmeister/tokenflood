@@ -26,7 +26,8 @@ log = logging.getLogger(__name__)
 
 @functools.lru_cache(maxsize=100)
 def read_dataframe(path: str, csv_file: str = "") -> pd.DataFrame:
-    path = os.path.join(path, csv_file)
+    if csv_file:
+        path = os.path.join(path, csv_file)
     df = pd.DataFrame()
     try:
         df = pd.read_csv(path)

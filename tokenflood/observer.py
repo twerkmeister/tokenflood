@@ -30,6 +30,7 @@ async def run_observation(
     observation_spec: ObservationSpec,
     io_context: IOContext,
 ):
+    url_observer = ObserveURLMiddleware()
     io_context.activate()
     await io_context.wait_for_pending_writes()
     log.info("Warming up.")
@@ -37,26 +38,22 @@ async def run_observation(
 
     if error:
         log.error(f"Not starting observation due to error: {error}")
-        await io_context.wait_for_pending_writes()
+        await asyncio.sleep(0.1)
         return
-
-    url_observer = ObserveURLMiddleware()
 
     llm_request_tasks = set()
     ping_tasks = set()
     num_pings = 0
     load_type = observation_spec.load_type
-    message_lists = load_type.create_message_lists(
-        observation_spec.total_num_requests()
-    )
-    request_per_second_phase = observation_spec.requests_per_second_during_polling()
+    message_lists = load_type.create_message_lists(observation_spec.total_num_requests)
+    request_per_second_phase = observation_spec.requests_per_second_during_polling
     i = 0
     burst_pauses = create_even_schedule(
         observation_spec.num_requests, observation_spec.within_seconds
     )
     inter_polling_pause = observation_spec.get_inter_polling_pause()
-    log.info(f"Doing {observation_spec.num_polls()} polls in total.")
-    for poll_idx in range(observation_spec.num_polls()):
+    log.info(f"Doing {observation_spec.num_polls} polls in total.")
+    for poll_idx in range(observation_spec.num_polls):
         log.info(f"Starting poll {poll_idx + 1}.")
         error_context = ErrorContext(
             requests_per_second_phase=request_per_second_phase, group_id=str(poll_idx)
@@ -114,7 +111,7 @@ async def run_observation(
                 num_pings += 1
                 await asyncio.sleep(burst_pauses[burst_idx])
             i += 1
-        if poll_idx < observation_spec.num_polls() - 1:
+        if poll_idx < observation_spec.num_polls - 1:
             log.info(f"Sleeping {inter_polling_pause}s until next polling phase")
             await asyncio.sleep(inter_polling_pause)
             global_warn_once_filter.clear()
@@ -122,6 +119,6 @@ async def run_observation(
     log.info("Waiting for all requests to come back.")
     while llm_request_tasks or ping_tasks:
         await asyncio.sleep(1.0)
-
+    await asyncio.sleep(0.1)
     # make sure all data can be flushed
     await io_context.wait_for_pending_writes()
