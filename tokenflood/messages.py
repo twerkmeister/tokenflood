@@ -89,6 +89,12 @@ async def count_tokens_using_api(
     return response.total_tokens
 
 
+async def count_tokens_using_tokenizer(
+    messages: MessageList, model: str, tokenizer: dict
+):
+    return token_counter(model, custom_tokenizer=tokenizer, messages=messages)
+
+
 async def get_input_output_prefix_token_lengths(
     message_lists: list[MessageList],
     endpoint_spec: EndpointSpec,
@@ -96,19 +102,22 @@ async def get_input_output_prefix_token_lengths(
 ) -> tuple[list[int], list[int], list[int], MessageList]:
     if len(message_lists) == 0:
         return [], [], [], []
-    input_message_lists, output_message_lists = zip(
-        *[split_off_last_assistant_answer(messages) for messages in message_lists]
-    )
+    input_message_lists, output_message_lists = [], []
+    for messages in message_lists:
+        input_messages, output_messages = split_off_last_assistant_answer(messages)
+        input_message_lists.append(input_messages)
+        if output_messages is not None:
+            output_message_lists.append(output_messages)
+
     common_prefix = get_common_prefix(input_message_lists)
     common_prefix_lengths = []
-    valid_output_message_lists = [om for om in output_message_lists if om is not None]
     if use_hf_tokenizer:
         tokenizer = {
             "type": "huggingface_tokenizer",
             "tokenizer": Tokenizer.from_pretrained(endpoint_spec.model),
         }
         func = partial(
-            token_counter, model=endpoint_spec.model, custom_tokenizer=tokenizer
+            count_tokens_using_tokenizer, tokenizer=tokenizer, model=endpoint_spec.model
         )
     else:
         func = partial(count_tokens_using_api, endpoint_spec=endpoint_spec)
@@ -117,8 +126,7 @@ async def get_input_output_prefix_token_lengths(
         await exec_sync_or_async_func(func, messages=m) for m in input_message_lists
     ]
     output_token_lengths = [
-        await exec_sync_or_async_func(func, messages=m)
-        for m in valid_output_message_lists
+        await exec_sync_or_async_func(func, messages=m) for m in output_message_lists
     ]
     if common_prefix:
         common_prefix_lengths = [
