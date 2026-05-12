@@ -1,5 +1,6 @@
 import asyncio
 import csv
+import json
 import os
 from collections import deque
 from io import StringIO
@@ -19,6 +20,7 @@ from tokenflood.constants import (
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.data.error_data import ErrorData
 from tokenflood.models.data.llm_request_data import LLMRequestData
+from tokenflood.models.message_list import MessageList
 from tokenflood.models.run_specs.observation_spec import ObservationSpec
 from tokenflood.models.data.ping_request_data import PingData
 from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
@@ -155,6 +157,14 @@ def write_file(filename: str, s: str):
 def read_file(filename: str) -> str:
     with open(filename) as f:
         return f.read()
+
+
+def read_jsonl_messages(file_name: str) -> list[MessageList]:
+    with open(file_name) as f:
+        data = f.read()
+
+    lines = data.splitlines()
+    return [json.loads(line)["messages"] for line in lines if line.strip()]
 
 
 def folder_contains_file(folder: str, filename: str) -> bool:
