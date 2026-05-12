@@ -1,4 +1,6 @@
+import asyncio
 import datetime
+import inspect
 import math
 from typing import Callable, Optional, Sequence, TypeVar
 import numpy as np
@@ -56,3 +58,10 @@ def find_idx(s: Sequence[T], predicate: Callable[[T], bool]) -> Optional[int]:
 
 def roughly_estimated_token_cost(s: str) -> int:
     return math.ceil(len(s) / 3.5)
+
+
+async def exec_sync_or_async_func(func, *args, **kwargs):
+    if inspect.iscoroutinefunction(func):
+        return await func(*args, **kwargs)
+    else:
+        return await asyncio.to_thread(func, *args, **kwargs)
