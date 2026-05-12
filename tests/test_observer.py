@@ -54,10 +54,10 @@ async def test_run_observation(
     assert len(error_df) == 0
 
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
-    assert len(df) == superfast_observation_spec.total_num_requests()
+    assert len(df) == superfast_observation_spec.total_num_requests
 
     ping_df = pd.read_csv(file_io_context.network_latency_sink.destination)
-    assert len(ping_df) == superfast_observation_spec.num_polls()
+    assert len(ping_df) == superfast_observation_spec.num_polls
 
 
 @pytest.mark.asyncio

@@ -63,3 +63,9 @@ class LoadTestSpec(RunSpec, frozen=True):
     @property
     def run_spec_file(self) -> str:
         return LOAD_TEST_SPEC_FILE
+
+    @property
+    def total_num_requests(self) -> int:
+        return sum(
+            [phase.total_num_requests for phase in self.create_load_test_phases()]
+        )

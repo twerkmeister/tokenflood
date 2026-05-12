@@ -223,8 +223,12 @@ async def send_llm_request(
     )
     chunks = []
     async for chunk in response:
+        delta = chunk.choices[0].delta
         if first_token_time is None and (
-            chunk.choices[0].delta.content or chunk.choices[0].delta.reasoning_content
+            hasattr(delta, "content")
+            and delta.content
+            or hasattr(delta, "reasoning_content")
+            and delta.reasoning_content
         ):
             first_token_time = time.time()
         chunks.append(chunk)

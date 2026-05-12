@@ -16,12 +16,15 @@ class ObservationSpec(RunSpec, frozen=True):
     num_requests: int = Field(ge=1)
     within_seconds: NonNegativeFloat
 
+    @property
     def num_polls(self) -> int:
         return int((self.duration_hours * 60) / self.polling_interval_minutes)
 
+    @property
     def total_num_requests(self) -> int:
-        return self.num_requests * self.num_polls()
+        return self.num_requests * self.num_polls
 
+    @property
     def requests_per_second_during_polling(self) -> float:
         return self.num_requests / self.within_seconds
 

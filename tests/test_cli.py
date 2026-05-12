@@ -19,6 +19,7 @@ from tokenflood.constants import (
     OBSERVATION_SPEC_FILE,
     RESULTS_FOLDER,
     LOAD_TEST_SPEC_FILE,
+    LLM_REQUESTS_FILE,
 )
 from tokenflood.io import (
     is_observation_result_folder,
@@ -34,6 +35,7 @@ from tokenflood.starter_pack import (
     starter_observation_spec,
     starter_run_suite,
 )
+from tokenflood.visualization_frontend.io import read_dataframe
 
 
 def test_parse_args_run():
@@ -80,7 +82,11 @@ def test_init_does_not_override(unique_temporary_folder, monkeypatch):
 
 
 def test_load_test(
-    monkeypatch, unique_temporary_folder, tiny_load_test_spec, base_endpoint_spec
+    monkeypatch,
+    unique_temporary_folder,
+    tiny_load_test_spec,
+    base_endpoint_spec,
+    with_patched_aiohttp_session,
 ):
     monkeypatch.chdir(unique_temporary_folder)
     write_pydantic_yaml(LOAD_TEST_SPEC_FILE, tiny_load_test_spec)
@@ -91,6 +97,10 @@ def test_load_test(
     run_folders = list_dir_relative(RESULTS_FOLDER)
     assert len(run_folders) == 1
     assert is_load_test_result_folder(run_folders[0])
+
+    llm_requests_df_file = os.path.join(run_folders[0], LLM_REQUESTS_FILE)
+    llm_requests_df = read_dataframe(llm_requests_df_file)
+    assert len(llm_requests_df) == tiny_load_test_spec.total_num_requests
 
 
 def test_load_test_decline(
@@ -107,7 +117,11 @@ def test_load_test_decline(
 
 
 def test_observe_endpoint(
-    monkeypatch, unique_temporary_folder, superfast_observation_spec, base_endpoint_spec
+    monkeypatch,
+    unique_temporary_folder,
+    superfast_observation_spec,
+    base_endpoint_spec,
+    with_patched_aiohttp_session,
 ):
     monkeypatch.chdir(unique_temporary_folder)
 
@@ -119,6 +133,10 @@ def test_observe_endpoint(
     run_folders = list_dir_relative(RESULTS_FOLDER)
     assert len(run_folders) == 1
     assert is_observation_result_folder(run_folders[0])
+
+    llm_requests_df_file = os.path.join(run_folders[0], LLM_REQUESTS_FILE)
+    llm_requests_df = read_dataframe(llm_requests_df_file)
+    assert len(llm_requests_df) == superfast_observation_spec.total_num_requests
 
 
 def test_observe_endpoint_decline(
