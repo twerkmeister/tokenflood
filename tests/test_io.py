@@ -3,6 +3,7 @@ import os
 
 import pytest
 
+from tests.utils import does_not_raise
 from tokenflood.constants import ERROR_RING_BUFFER_SIZE
 from tokenflood.io import (
     CSVFileSink,
@@ -22,6 +23,7 @@ from tokenflood.io import (
     write_file,
     write_pydantic_yaml,
     write_pydantic_yaml_list,
+    read_jsonl_messages,
 )
 from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
 
@@ -204,3 +206,23 @@ def test_is_load_test_result_folder(load_test_results_folder):
 
 def test_is_observation_result_folder(observation_results_folder):
     assert is_observation_result_folder(observation_results_folder)
+
+
+@pytest.mark.parametrize(
+    "file, expectation, num_lines",
+    [
+        ("empty.jsonl", does_not_raise(), 0),
+        ("sample_from_tokenflood.jsonl", does_not_raise(), 2),
+        ("sample_error_json_format.jsonl", pytest.raises(ValueError), 0),
+        ("sample_error_list.jsonl", pytest.raises(ValueError), 0),
+        ("sample_error_no_role.jsonl", pytest.raises(ValueError), 0),
+        ("sample_error_bad_role.jsonl", pytest.raises(ValueError), 0),
+        ("sample_error_main_key.jsonl", pytest.raises(ValueError), 0),
+        ("sample_error_sub_keys.jsonl", pytest.raises(ValueError), 0),
+    ],
+)
+def test_read_jsonl_messages_errors(prompts_folder, file, expectation, num_lines):
+    f = os.path.join(prompts_folder, file)
+    with expectation:
+        message_lists = read_jsonl_messages(f)
+        assert len(message_lists) == num_lines

@@ -8,6 +8,8 @@ from typing import Any, Callable, Dict, List, Set, Type, TypeVar, Iterable
 
 import aiofiles
 import yaml
+from jsonschema import validate
+from jsonschema.exceptions import ValidationError
 from pydantic import BaseModel, TypeAdapter
 
 from tokenflood.constants import (
@@ -20,7 +22,7 @@ from tokenflood.constants import (
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.data.error_data import ErrorData
 from tokenflood.models.data.llm_request_data import LLMRequestData
-from tokenflood.models.message_list import MessageList
+from tokenflood.models.message_list import MessageList, chat_schema
 from tokenflood.models.run_specs.observation_spec import ObservationSpec
 from tokenflood.models.data.ping_request_data import PingData
 from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
@@ -164,7 +166,16 @@ def read_jsonl_messages(file_name: str) -> list[MessageList]:
         data = f.read()
 
     lines = data.splitlines()
-    return [json.loads(line)["messages"] for line in lines if line.strip()]
+    message_lists = []
+    for idx, line in enumerate(lines, start=1):
+        try:
+            message_list = json.loads(line)["messages"]
+            validate(instance=message_list, schema=chat_schema)
+            message_lists.append(message_list)
+        except (json.JSONDecodeError, KeyError, TypeError, ValidationError) as e:
+            raise ValueError(f"{file_name}:{idx}:{str(e)}")
+
+    return message_lists
 
 
 def folder_contains_file(folder: str, filename: str) -> bool:
