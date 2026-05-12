@@ -94,6 +94,8 @@ async def get_input_output_prefix_token_lengths(
     endpoint_spec: EndpointSpec,
     use_hf_tokenizer: bool,
 ) -> tuple[list[int], list[int], list[int], MessageList]:
+    if len(message_lists) == 0:
+        return [], [], [], []
     input_message_lists, output_message_lists = zip(
         *[split_off_last_assistant_answer(messages) for messages in message_lists]
     )

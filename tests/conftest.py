@@ -70,6 +70,11 @@ def results_folder(data_folder: str) -> str:
 
 
 @pytest.fixture(scope="session")
+def prompts_folder(data_folder: str) -> str:
+    return join_folder_checked(data_folder, "prompts")
+
+
+@pytest.fixture(scope="session")
 def load_test_results_folder(results_folder: str) -> str:
     return join_folder_checked(results_folder, "load_test_results")
 

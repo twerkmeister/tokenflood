@@ -262,35 +262,35 @@ def count_prompt_tokens(args: argparse.Namespace):
         )
     )
 
-    print("Input token lengths")
-    print("===================")
+    log.info("Input token lengths")
+    log.info("===================")
     if len(input_lengths) > 0:
-        print(f"number of input prompts: {len(input_lengths)}")
-        print(f"min: {min(input_lengths)}")
-        print(f"max: {max(input_lengths)}")
-        print(f"avg: {sum(input_lengths) / len(input_lengths)}")
+        log.info(f"number of input prompts: {len(input_lengths)}")
+        log.info(f"min: {min(input_lengths)}")
+        log.info(f"max: {max(input_lengths)}")
+        log.info(f"avg: {sum(input_lengths) / len(input_lengths)}")
     else:
-        print("no data")
-    print("")
+        log.info("no data")
+    log.info("")
 
-    print("Output token lengths")
-    print("===================")
+    log.info("Output token lengths")
+    log.info("===================")
     if len(output_lengths) > 0:
-        print(f"number of output prompts: {len(output_lengths)}")
-        print(f"min: {min(output_lengths)}")
-        print(f"max: {max(output_lengths)}")
-        print(f"avg: {sum(output_lengths) / len(output_lengths)}")
+        log.info(f"number of output prompts: {len(output_lengths)}")
+        log.info(f"min: {min(output_lengths)}")
+        log.info(f"max: {max(output_lengths)}")
+        log.info(f"avg: {sum(output_lengths) / len(output_lengths)}")
     else:
-        print("no data")
-    print("")
+        log.info("no data")
+    log.info("")
 
-    print("Common Prefix")
-    print("===================")
+    log.info("Common Prefix")
+    log.info("===================")
     if prefix_lengths:
-        print(f"prefix:\n{json.dumps(common_prefix, indent=4, ensure_ascii=False)}")
-        print(f"length: {prefix_lengths[0]}")
+        log.info(f"prefix:\n{json.dumps(common_prefix, indent=4, ensure_ascii=False)}")
+        log.info(f"length: {prefix_lengths[0]}")
     else:
-        print("no data")
+        log.info("no data")
 
 
 T = TypeVar("T", bound=LoadTestSpec | ObservationSpec)
