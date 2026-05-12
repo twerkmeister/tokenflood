@@ -16,7 +16,8 @@ from tokenflood.logging_utils import global_warn_once_filter
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.data.error_data import ErrorContext, ErrorData
 from tokenflood.models.data.llm_request_data import LLMRequestContext, LLMRequestData
-from tokenflood.models.messages import MessageList, create_message_list_from_prompt
+from tokenflood.messages import create_message_list_from_prompt
+from tokenflood.models.message_list import MessageList
 from tokenflood.models.data.ping_request_data import PingData, PingRequestContext
 from tokenflood.models.run_specs.load_test_spec import LoadTestSpec, LoadTestPhase
 from tokenflood.networking import (

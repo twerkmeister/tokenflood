@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-
+from tokenflood.messages import create_message_list_from_prompt
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_specs.load_test_spec import LoadTestPhase
 from tokenflood.runner import (
@@ -37,7 +37,7 @@ def test_create_schedule(requests_per_second: float, test_length_in_seconds: int
 @pytest.mark.asyncio
 async def test_send_llm_request(base_endpoint_spec: EndpointSpec):
     prompt = "ping"
-    messages = [{"content": prompt, "role": "user"}]
+    messages = create_message_list_from_prompt(prompt)
     response = await send_llm_request(base_endpoint_spec, messages, 1)
     assert response
 

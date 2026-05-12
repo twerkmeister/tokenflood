@@ -4,7 +4,8 @@ from typing import Literal, Annotated
 from pydantic import BaseModel, Field
 
 from tokenflood.constants import DEFAULT_HEURISTIC_TASK, DEFAULT_PROMPT_FILLER_TOKENS
-from tokenflood.models.messages import MessageList
+from tokenflood.messages import create_message_list_from_prompt
+from tokenflood.models.message_list import MessageList
 from tokenflood.models.validation_types import (
     NonNegativeInteger,
     PositiveInteger,
@@ -75,7 +76,7 @@ class HeuristicLoad(LoadType, frozen=True):
 
     def create_message_lists(self, n: int) -> list[MessageList]:
         return [
-            [{"role": "user", "content": prompt}] for prompt in self.create_prompts(n)
+            create_message_list_from_prompt(prompt) for prompt in self.create_prompts(n)
         ]
 
     def get_expected_prompt_length(self) -> int:

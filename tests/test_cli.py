@@ -1,7 +1,9 @@
+import logging
 import os
 import shutil
 import sys
 
+import pytest
 import requests
 
 from tokenflood.cli import (
@@ -10,6 +12,7 @@ from tokenflood.cli import (
     parse_args,
     run,
     start_visualization,
+    count_prompt_tokens,
 )
 from tokenflood.constants import (
     ENDPOINT_SPEC_FILE,
@@ -155,3 +158,54 @@ def test_start_visualization(monkeypatch, unique_temporary_folder, results_folde
 
     response = requests.get(url)
     assert response.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "files, format, num_expected_input_prompts, num_expected_output_prompts",
+    [
+        (["empty.jsonl"], "chat", 0, 0),
+        (["sample_from_tokenflood.jsonl"], "chat", 2, 2),
+        (["sample_no_prefix.jsonl"], "chat", 2, 2),
+        (["sample_no_prefix_only_one_output.jsonl"], "chat", 2, 1),
+        (["sample_no_prefix_single.jsonl"], "chat", 1, 1),
+        (
+            ["sample_no_prefix_single.jsonl", "sample_no_prefix_single.jsonl"],
+            "chat",
+            2,
+            2,
+        ),
+        (["sample_text.txt"], "text", 1, 0),
+        (["sample_text.txt", "sample_text.txt"], "text", 2, 0),
+    ],
+)
+def test_count_tokens(
+    caplog,
+    unique_temporary_folder,
+    monkeypatch,
+    prompts_folder,
+    base_endpoint_spec,
+    files,
+    format,
+    num_expected_input_prompts,
+    num_expected_output_prompts,
+):
+    prompts_folder = os.path.abspath(prompts_folder)
+    monkeypatch.chdir(unique_temporary_folder)
+    write_pydantic_yaml(ENDPOINT_SPEC_FILE, base_endpoint_spec)
+    files = [os.path.join(prompts_folder, f) for f in files]
+    tokenizer_flag = "--use-hf-tokenizer"
+    args = parse_args(
+        ["count", "-f", format, *files, ENDPOINT_SPEC_FILE, tokenizer_flag]
+    )
+    with caplog.at_level(logging.INFO):
+        count_prompt_tokens(args)
+
+    if num_expected_input_prompts > 0:
+        assert f"number of input prompts: {num_expected_input_prompts}" in caplog.text
+    else:
+        assert "number of input prompts:" not in caplog.text
+
+    if num_expected_output_prompts > 0:
+        assert f"number of output prompts: {num_expected_output_prompts}" in caplog.text
+    else:
+        assert "number of output prompts:" not in caplog.text

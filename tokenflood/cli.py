@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import json
 import os
 import sys
 from io import StringIO
@@ -11,6 +12,7 @@ import logging
 
 from rich.highlighter import NullHighlighter
 from rich.logging import RichHandler
+
 from tokenflood import __version__
 
 from dotenv import load_dotenv
@@ -24,6 +26,10 @@ from tokenflood.constants import (
     LOAD_TEST_SPEC_FILE,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
+from tokenflood.messages import (
+    create_message_list_from_prompt,
+    get_input_output_prefix_token_lengths,
+)
 from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
 from tokenflood.models.run_specs.observation_spec import ObservationSpec
 from tokenflood.visualization_frontend.gradio import visualize_results
@@ -35,6 +41,8 @@ from tokenflood.io import (
     write_pydantic_yaml,
     read_run_spec,
     IOContext,
+    read_file,
+    read_jsonl_messages,
 )
 from tokenflood.logging_utils import global_warn_once_filter
 from tokenflood.networking import (
@@ -123,6 +131,27 @@ def create_argument_parser():
         help="[blue]Create starter files for load testing and observation of endpoints.[/]",
     )
     init_cmd_parser.set_defaults(func=create_starter_files)
+
+    # count
+    count_cmd_parser = subparsers.add_parser(
+        "count", help="[blue]Count tokens in a set of prompts.[/]"
+    )
+    count_cmd_parser.add_argument("prompt_file", type=str, nargs="+")
+    count_cmd_parser.add_argument("endpoint", type=str)
+    count_cmd_parser.add_argument(
+        "-f",
+        "--format",
+        choices=["text", "chat"],
+        default="text",
+        help="Format of the prompt files. Can be a files containing single prompts in text format (text) or a jsonl files with chat messages format.",
+    )
+    count_cmd_parser.add_argument(
+        "--use-hf-tokenizer",
+        help="Use the huggingface tokenizer for an open model instead of the endpoint api.",
+        action="store_true",
+    )
+
+    count_cmd_parser.set_defaults(func=count_prompt_tokens)
 
     return parser
 
@@ -214,6 +243,54 @@ def run(args: argparse.Namespace):
     asyncio.run(test_procedure(endpoint_spec, run_spec, io_context))
     io_context.close()
     log.info("Done.")
+
+
+def count_prompt_tokens(args: argparse.Namespace):
+    endpoint_spec = read_endpoint_spec(args.endpoint)
+
+    message_lists = []
+    for prompt_file in args.prompt_file:
+        if args.format == "text":
+            prompt = read_file(prompt_file)
+            message_lists.extend([create_message_list_from_prompt(prompt)])
+        else:
+            message_lists.extend(read_jsonl_messages(prompt_file))
+
+    input_lengths, output_lengths, prefix_lengths, common_prefix = asyncio.run(
+        get_input_output_prefix_token_lengths(
+            message_lists, endpoint_spec, args.use_hf_tokenizer
+        )
+    )
+
+    log.info("Input token lengths")
+    log.info("===================")
+    if len(input_lengths) > 0:
+        log.info(f"number of input prompts: {len(input_lengths)}")
+        log.info(f"min: {min(input_lengths)}")
+        log.info(f"max: {max(input_lengths)}")
+        log.info(f"avg: {sum(input_lengths) / len(input_lengths)}")
+    else:
+        log.info("no data")
+    log.info("")
+
+    log.info("Output token lengths")
+    log.info("===================")
+    if len(output_lengths) > 0:
+        log.info(f"number of output prompts: {len(output_lengths)}")
+        log.info(f"min: {min(output_lengths)}")
+        log.info(f"max: {max(output_lengths)}")
+        log.info(f"avg: {sum(output_lengths) / len(output_lengths)}")
+    else:
+        log.info("no data")
+    log.info("")
+
+    log.info("Common Prefix")
+    log.info("===================")
+    if prefix_lengths:
+        log.info(f"prefix:\n{json.dumps(common_prefix, indent=4, ensure_ascii=False)}")
+        log.info(f"length: {prefix_lengths[0]}")
+    else:
+        log.info("no data")
 
 
 T = TypeVar("T", bound=LoadTestSpec | ObservationSpec)

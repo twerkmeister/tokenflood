@@ -1,5 +1,6 @@
 import pytest
 
+from tokenflood.messages import create_message_list_from_prompt
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.networking import (
     ObserveURLMiddleware,
@@ -17,7 +18,7 @@ async def test_observe_url_middleware(
     with_patched_aiohttp_session,
 ):
     prompt = "ping"
-    messages = [{"content": prompt, "role": "user"}]
+    messages = create_message_list_from_prompt(prompt)
     response = await send_llm_request(base_endpoint_spec, messages, 1)
     assert response
     assert url_observer.host == "127.0.0.1"
@@ -33,7 +34,7 @@ async def test_unpatched_observe_url_middleware(
     assert url_observer.port is None
     assert url_observer.session is None
     prompt = "ping"
-    messages = [{"content": prompt, "role": "user"}]
+    messages = create_message_list_from_prompt(prompt)
     response = await send_llm_request(base_endpoint_spec, messages, 1)
     assert response
     assert url_observer.host is None
@@ -54,7 +55,7 @@ async def test_option_request_endpoint(
     url_observer: ObserveURLMiddleware,
 ):
     prompt = "ping"
-    messages = [{"content": prompt, "role": "user"}]
+    messages = create_message_list_from_prompt(prompt)
     await send_llm_request(base_endpoint_spec, messages, 1)
     latency = await time_async_func(
         option_request_endpoint(
@@ -71,7 +72,7 @@ async def test_observe_url_middleware_singleton(
     with_patched_aiohttp_session,
 ):
     prompt = "ping"
-    messages = [{"content": prompt, "role": "user"}]
+    messages = create_message_list_from_prompt(prompt)
     response = await send_llm_request(base_endpoint_spec, messages, 1)
     assert response
     assert url_observer.host == "127.0.0.1"
