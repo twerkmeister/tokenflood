@@ -22,6 +22,7 @@ hardware, quantizations, or prompts.
   * [Endpoint Specs](#endpoint-specs)
     * [Endpoint Examples](#endpoint-examples)
 * [Visualizing Results](#visualizing-results)
+* [Counting Tokens](#counting-tokens)
 * [Heuristic Load Testing Explained](#heuristic-load-testing)
 * [Safety](#-safety-)
 
@@ -246,6 +247,31 @@ same working directory in which you started your load tests.
 
 You can check out [this public huggingface space](https://huggingface.co/spaces/twerkmeister/tokenflood-viz) to have a look at the gradio frontend.
 
+## Counting Tokens
+
+If you'd like to have an idea what your input, output or prefix tokens currently look like to 
+better define your load test, you can use tokenflood's built in token counting mechanism.
+
+You can either provide one or multiple text files containing one prompt each:
+```bash
+tokenflood count --format text prompt_1.txt prompt_2.txt endpoint.yml
+```
+Or you can provide prompts in chat format in one or multiple jsonl files:
+```bash
+tokenflood count --format chat prompts.jsonl endpoint.yml
+```
+
+Note that the prefix tokens are only meaningful if you provide multiple distinct prompts.
+
+Defining the endpoint is necessary to know which tokenizer to use or which endpoint to use as 
+some providers (e.g. anthropic) only provide a token counting API but not a tokenizer that
+can be used independently. A minimal `endpoint.yml` config like this will suffice for token counting
+without needing to actually start an inference server:
+```yaml
+provider: hosted_vllm
+model: Qwen/Qwen3.6-35B-A3B-FP8
+```
+ 
 
 ## Heuristic Load Testing
 

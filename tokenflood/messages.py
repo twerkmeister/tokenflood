@@ -11,10 +11,12 @@ from tokenflood.models.message_list import MessageList
 USER_ROLE = "user"
 ASSISTANT_ROLE = "assistant"
 SYSTEM_ROLE = "system"
+ROLE_KEY = "role"
+CONTENT_KEY = "content"
 
 
 def make_message(role: str, content: str) -> dict[str, str]:
-    return {"role": role, "content": content}
+    return {ROLE_KEY: role, CONTENT_KEY: content}
 
 
 def make_user_message(content: str) -> dict[str, str]:
@@ -36,7 +38,7 @@ ROLE_CONTENT_SEPERATOR = uuid.uuid4().hex
 
 def apply_fake_chat_template(messages: MessageList) -> str:
     return MESSAGE_SEPERATOR.join(
-        [f"{m['role']}{ROLE_CONTENT_SEPERATOR}{m['content']}" for m in messages]
+        [f"{m[ROLE_KEY]}{ROLE_CONTENT_SEPERATOR}{m[CONTENT_KEY]}" for m in messages]
     )
 
 
@@ -56,7 +58,7 @@ def parse_fake_chat_template(s: str) -> MessageList:
 def split_off_last_assistant_answer(
     messages: MessageList,
 ) -> tuple[MessageList, MessageList | None]:
-    if len(messages) > 0 and messages[-1]["role"] == ASSISTANT_ROLE:
+    if len(messages) > 0 and messages[-1][ROLE_KEY] == ASSISTANT_ROLE:
         return messages[:-1], messages[-1:]
     else:
         return messages, None
