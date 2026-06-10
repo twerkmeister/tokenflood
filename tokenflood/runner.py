@@ -307,7 +307,7 @@ async def run_load_test(
     if error:
         log.error(f"Not starting run due to error during warmup: {error}")
         # letting any writes finish
-        await asyncio.sleep(0.1)
+        await io_context.wait_for_pending_writes()
         return
     for i, load_test_phase in enumerate(load_test_phases):
         test_description = make_test_description(load_test_spec, i + 1, load_test_phase)

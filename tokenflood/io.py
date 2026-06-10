@@ -318,6 +318,7 @@ class FileIOContext(IOContext):
         self.llm_request_sink.activate()
 
     async def wait_for_pending_writes(self):
+        await asyncio.sleep(0.1)
         await self.error_sink.wait_for_pending_writes()
         await self.llm_request_sink.wait_for_pending_writes()
         await self.network_latency_sink.wait_for_pending_writes()
