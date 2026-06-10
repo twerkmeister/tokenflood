@@ -38,7 +38,7 @@ async def run_observation(
 
     if error:
         log.error(f"Not starting observation due to error: {error}")
-        await asyncio.sleep(0.1)
+        await io_context.wait_for_pending_writes()
         return
 
     llm_request_tasks = set()
@@ -119,6 +119,5 @@ async def run_observation(
     log.info("Waiting for all requests to come back.")
     while llm_request_tasks or ping_tasks:
         await asyncio.sleep(1.0)
-    await asyncio.sleep(0.1)
     # make sure all data can be flushed
     await io_context.wait_for_pending_writes()

@@ -137,7 +137,6 @@ def create_argument_parser():
         "count", help="[blue]Count tokens in a set of prompts.[/]"
     )
     count_cmd_parser.add_argument("prompt_file", type=str, nargs="+")
-    count_cmd_parser.add_argument("endpoint", type=str)
     count_cmd_parser.add_argument(
         "-f",
         "--format",
@@ -145,10 +144,18 @@ def create_argument_parser():
         default="text",
         help="Format of the prompt files. Can be a files containing single prompts in text format (text) or a jsonl files with chat messages format.",
     )
-    count_cmd_parser.add_argument(
-        "--use-hf-tokenizer",
-        help="Use the huggingface tokenizer for an open model instead of the endpoint api.",
-        action="store_true",
+    group = count_cmd_parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "--endpoint",
+        type=str,
+        default=None,
+        help="Specify the endpoint spec to use for api-based token counting. Works only for openai, bedrock, azure, anthropic, gemini and vertex ai models. Others will fallback to local tiktoken.",
+    )
+    group.add_argument(
+        "--tokenizer",
+        type=str,
+        default=None,
+        help="Specify the huggingface model name whose tokenizer to use for token counting",
     )
 
     count_cmd_parser.set_defaults(func=count_prompt_tokens)
@@ -246,7 +253,7 @@ def run(args: argparse.Namespace):
 
 
 def count_prompt_tokens(args: argparse.Namespace):
-    endpoint_spec = read_endpoint_spec(args.endpoint)
+    endpoint_spec = read_endpoint_spec(args.endpoint) if args.endpoint else None
 
     message_lists = []
     for prompt_file in args.prompt_file:
@@ -258,7 +265,7 @@ def count_prompt_tokens(args: argparse.Namespace):
 
     input_lengths, output_lengths, prefix_lengths, common_prefix = asyncio.run(
         get_input_output_prefix_token_lengths(
-            message_lists, endpoint_spec, args.use_hf_tokenizer
+            message_lists, endpoint_spec, args.tokenizer
         )
     )
 

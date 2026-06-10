@@ -22,6 +22,7 @@ hardware, quantizations, or prompts.
   * [Endpoint Specs](#endpoint-specs)
     * [Endpoint Examples](#endpoint-examples)
 * [Visualizing Results](#visualizing-results)
+* [Counting tokens](#counting-tokens)
 * [Heuristic Load Testing Explained](#heuristic-load-testing)
 * [Safety](#-safety-)
 
@@ -246,6 +247,37 @@ same working directory in which you started your load tests.
 
 You can check out [this public huggingface space](https://huggingface.co/spaces/twerkmeister/tokenflood-viz) to have a look at the gradio frontend.
 
+## Counting tokens
+
+Tokenflood also comes with builtin functionality to count tokens of existing prompts to give you 
+an idea where to start with token counts. The token counting supports text- and chat-based prompts
+as well as API-based and local tokenization.
+
+You can run local tokenization on text-based prompts like this:
+
+```bash
+tokenflood count -f text prompt1.txt prompt2.txt promptN.txt --tokenizer Qwen/Qwen3.5-35B-A3B
+```
+
+Or use chat-based format like this:
+
+```bash
+tokenflood count -f chat prompts.jsonl --tokenizer Qwen/Qwen3.5-35B-A3B-FP8 
+```
+
+both chat- and text-based prompts allow you specify multiple files.
+
+API-based tokenization is available for openai, anthropic, gemini, azure, bedrock and vertex ai models.
+It can be used like so:
+
+```bash
+tokenflood count -f chat prompts.jsonl --endpoint my_endpoint_spec.yml
+```
+
+where `my_endpoint_spec.yml` is a [standard tokenflood endpoint spec](#endpoint-specs) for one of the supported providers.
+
+As a result of a token counting you will receive the min/avg/max of input and output tokens for the prompts as well as the
+longest prefix shared by **all** provided prompts.
 
 ## Heuristic Load Testing
 

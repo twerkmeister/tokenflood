@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 from unittest import mock
@@ -76,7 +75,7 @@ async def test_run_observation_openai_missing_api_key(
         )
     assert "API key" in caplog.text
 
-    await asyncio.sleep(0.1)
+    await file_io_context.wait_for_pending_writes()
 
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     assert len(df) == 0

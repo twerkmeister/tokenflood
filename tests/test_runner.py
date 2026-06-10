@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os.path
 import time
@@ -65,7 +64,7 @@ async def test_run_load_test_phase(
     end = time.time()
     assert end - start < load_test_phase.duration_seconds + 5
     assert not error_threshold_tripped
-    await asyncio.sleep(0.1)
+    await file_io_context.wait_for_pending_writes()
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     assert len(df) == load_test_phase.total_num_requests
 
@@ -99,7 +98,7 @@ async def test_run_tiny_suite_openai_missing_api_key(
 ):
     with caplog.at_level(logging.ERROR):
         await run_load_test(openai_endpoint_spec, tiny_load_test_spec, file_io_context)
-    await asyncio.sleep(0.1)
+    await file_io_context.wait_for_pending_writes()
     run_specs = tiny_load_test_spec.create_load_test_phases()
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     assert len(df) == 0
@@ -121,7 +120,7 @@ async def test_run_tiny_suite_bad_endpoint(
     )
     with caplog.at_level(logging.ERROR):
         await run_load_test(bad_endpoint_spec, tiny_load_test_spec, file_io_context)
-    await asyncio.sleep(0.1)
+    await file_io_context.wait_for_pending_writes()
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     assert len(df) == 0
     assert len(tiny_load_test_spec.create_load_test_phases()) > 1

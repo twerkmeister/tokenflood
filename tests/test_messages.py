@@ -135,26 +135,26 @@ async def test_count_tokens_using_api(messages, base_endpoint_spec):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "message_lists, use_hf_tokenizer",
+    "message_lists, tokenizer_name",
     [
         (
             [
                 [make_user_message("abc")],
                 [make_user_message("abcdef"), make_assistant_message("ghi")],
             ],
-            True,
+            "HuggingFaceTB/SmolLM-135M-Instruct",
         ),
         (
             [
                 [make_user_message("abc")],
                 [make_user_message("abcdef"), make_assistant_message("ghi")],
             ],
-            False,
+            None,
         ),
     ],
 )
 async def test_get_input_output_prefix_token_lengths(
-    message_lists, use_hf_tokenizer, base_endpoint_spec
+    message_lists, tokenizer_name, base_endpoint_spec
 ):
     (
         input_lengths,
@@ -162,7 +162,7 @@ async def test_get_input_output_prefix_token_lengths(
         prefix_length,
         _,
     ) = await get_input_output_prefix_token_lengths(
-        message_lists, base_endpoint_spec, use_hf_tokenizer
+        message_lists, base_endpoint_spec, tokenizer_name
     )
     assert len(input_lengths) == 2
     assert len(output_lengths) == 1
