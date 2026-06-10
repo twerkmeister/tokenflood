@@ -179,21 +179,22 @@ def test_start_visualization(monkeypatch, unique_temporary_folder, results_folde
 
 
 @pytest.mark.parametrize(
-    "files, format, num_expected_input_prompts, num_expected_output_prompts",
+    "files, format, num_expected_input_prompts, num_expected_output_prompts, use_local_tokenizer",
     [
-        (["empty.jsonl"], "chat", 0, 0),
-        (["sample_from_tokenflood.jsonl"], "chat", 2, 2),
-        (["sample_no_prefix.jsonl"], "chat", 2, 2),
-        (["sample_no_prefix_only_one_output.jsonl"], "chat", 2, 1),
-        (["sample_no_prefix_single.jsonl"], "chat", 1, 1),
+        (["empty.jsonl"], "chat", 0, 0, True),
+        (["sample_from_tokenflood.jsonl"], "chat", 2, 2, True),
+        (["sample_no_prefix.jsonl"], "chat", 2, 2, True),
+        (["sample_no_prefix_only_one_output.jsonl"], "chat", 2, 1, True),
+        (["sample_no_prefix_single.jsonl"], "chat", 1, 1, False),
         (
             ["sample_no_prefix_single.jsonl", "sample_no_prefix_single.jsonl"],
             "chat",
             2,
             2,
+            False,
         ),
-        (["sample_text.txt"], "text", 1, 0),
-        (["sample_text.txt", "sample_text.txt"], "text", 2, 0),
+        (["sample_text.txt"], "text", 1, 0, False),
+        (["sample_text.txt", "sample_text.txt"], "text", 2, 0, False),
     ],
 )
 def test_count_tokens(
@@ -206,15 +207,17 @@ def test_count_tokens(
     format,
     num_expected_input_prompts,
     num_expected_output_prompts,
+    use_local_tokenizer: bool,
 ):
     prompts_folder = os.path.abspath(prompts_folder)
     monkeypatch.chdir(unique_temporary_folder)
     write_pydantic_yaml(ENDPOINT_SPEC_FILE, base_endpoint_spec)
     files = [os.path.join(prompts_folder, f) for f in files]
-    tokenizer_flag = "--use-hf-tokenizer"
-    args = parse_args(
-        ["count", "-f", format, *files, ENDPOINT_SPEC_FILE, tokenizer_flag]
-    )
+    if use_local_tokenizer:
+        target_flag = ["--tokenizer", base_endpoint_spec.model]
+    else:
+        target_flag = ["--endpoint", ENDPOINT_SPEC_FILE]
+    args = parse_args(["count", "-f", format, *files] + target_flag)
     with caplog.at_level(logging.INFO):
         count_prompt_tokens(args)
 

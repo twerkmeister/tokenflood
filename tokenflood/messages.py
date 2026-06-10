@@ -96,8 +96,8 @@ async def count_tokens_using_tokenizer(
 
 async def get_input_output_prefix_token_lengths(
     message_lists: list[MessageList],
-    endpoint_spec: EndpointSpec,
-    use_hf_tokenizer: bool,
+    endpoint_spec: EndpointSpec | None,
+    hf_tokenizer: str | None,
 ) -> tuple[list[int], list[int], list[int], MessageList]:
     if len(message_lists) == 0:
         return [], [], [], []
@@ -110,17 +110,18 @@ async def get_input_output_prefix_token_lengths(
 
     common_prefix = get_common_prefix(input_message_lists)
     common_prefix_lengths = []
-    if use_hf_tokenizer:
+    if hf_tokenizer is not None:
         tokenizer = {
             "type": "huggingface_tokenizer",
-            "tokenizer": Tokenizer.from_pretrained(endpoint_spec.model),
+            "tokenizer": Tokenizer.from_pretrained(hf_tokenizer),
         }
         func = partial(
-            count_tokens_using_tokenizer, tokenizer=tokenizer, model=endpoint_spec.model
+            count_tokens_using_tokenizer, tokenizer=tokenizer, model=hf_tokenizer
         )
-    else:
+    elif endpoint_spec is not None:
         func = partial(count_tokens_using_api, endpoint_spec=endpoint_spec)
-
+    else:
+        raise ValueError("Either tokenizer or endpoint must be defined.")
     input_token_lengths = [await func(messages=m) for m in input_message_lists]
     output_token_lengths = [await func(messages=m) for m in output_message_lists]
     if common_prefix:
