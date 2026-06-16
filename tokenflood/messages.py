@@ -1,5 +1,7 @@
 import os
+import random
 import uuid
+import bisect
 from functools import partial
 
 from litellm import acount_tokens, token_counter
@@ -40,6 +42,52 @@ def apply_fake_chat_template(messages: MessageList) -> str:
     )
 
 
+def simulate_prefix_caching(sorted_input_strings: list[str]) -> list[str]:
+    """Simulates the process of prefix caching and returns the best prefix for each incoming query."""
+    if not len(sorted_input_strings):
+        return []
+
+    best_prefixes: list[str] = []
+    seen_indices: list[int] = []
+    random_order = list(range(len(sorted_input_strings)))
+    random.shuffle(random_order)
+    for idx in random_order:
+        if len(seen_indices) == 0:
+            seen_indices.append(idx)
+            best_prefixes.append("")
+        else:
+            insertion_pos = bisect.bisect_left(seen_indices, idx)
+            previous_idx = (
+                seen_indices[insertion_pos - 1] if insertion_pos > 0 else None
+            )
+            # pre insertion, the next idx is still at insertion pos
+            next_idx = (
+                seen_indices[insertion_pos]
+                if insertion_pos < len(seen_indices)
+                else None
+            )
+
+            prefix_with_previous_idx = ""
+            prefix_with_next_idx = ""
+            if previous_idx is not None:
+                prefix_with_previous_idx = os.path.commonprefix(
+                    [sorted_input_strings[previous_idx], sorted_input_strings[idx]]
+                )
+            if next_idx is not None:
+                prefix_with_next_idx = os.path.commonprefix(
+                    [sorted_input_strings[idx], sorted_input_strings[next_idx]]
+                )
+            best_prefix = (
+                prefix_with_previous_idx
+                if len(prefix_with_previous_idx) > len(prefix_with_next_idx)
+                else prefix_with_next_idx
+            )
+
+            best_prefixes.append(best_prefix)
+            seen_indices.insert(insertion_pos, idx)
+    return best_prefixes
+
+
 def parse_fake_chat_template(s: str) -> MessageList:
     if s == "":
         return []
@@ -74,6 +122,20 @@ def get_common_prefix(input_message_lists: list[MessageList]) -> MessageList:
     return parse_fake_chat_template(prefix)
 
 
+def get_prefixes_from_simulation(
+    input_message_lists: list[MessageList],
+) -> list[MessageList]:
+    if len(input_message_lists) == 0:
+        return []
+    input_strings = [
+        apply_fake_chat_template(messages) for messages in input_message_lists
+    ]
+    sorted_input_strings = sorted(input_strings)
+    best_prefixes = simulate_prefix_caching(sorted_input_strings)
+    # first and the last one are the most distinct strings in terms of prefixes
+    return [parse_fake_chat_template(prefix) for prefix in best_prefixes]
+
+
 async def count_tokens_using_api(
     messages: MessageList, endpoint_spec: EndpointSpec
 ) -> int:
@@ -98,9 +160,9 @@ async def get_input_output_prefix_token_lengths(
     message_lists: list[MessageList],
     endpoint_spec: EndpointSpec | None,
     hf_tokenizer: str | None,
-) -> tuple[list[int], list[int], list[int], MessageList]:
+) -> tuple[list[int], list[int], list[int], list[int], MessageList]:
     if len(message_lists) == 0:
-        return [], [], [], []
+        return [], [], [], [], []
     input_message_lists, output_message_lists = [], []
     for messages in message_lists:
         input_messages, output_messages = split_off_last_assistant_answer(messages)
@@ -109,7 +171,9 @@ async def get_input_output_prefix_token_lengths(
             output_message_lists.append(output_messages)
 
     common_prefix = get_common_prefix(input_message_lists)
+    prefixes_from_simulation = get_prefixes_from_simulation(input_message_lists)
     common_prefix_lengths = []
+    simulation_prefix_lengths = []
     if hf_tokenizer is not None:
         tokenizer = {
             "type": "huggingface_tokenizer",
@@ -126,10 +190,15 @@ async def get_input_output_prefix_token_lengths(
     output_token_lengths = [await func(messages=m) for m in output_message_lists]
     if common_prefix:
         common_prefix_lengths = [await func(messages=common_prefix)]
+    if prefixes_from_simulation:
+        simulation_prefix_lengths = [
+            await func(messages=m) for m in prefixes_from_simulation
+        ]
 
     return (
         input_token_lengths,
         output_token_lengths,
         common_prefix_lengths,
+        simulation_prefix_lengths,
         common_prefix,
     )

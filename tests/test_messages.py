@@ -13,6 +13,7 @@ from tokenflood.messages import (
     get_common_prefix,
     count_tokens_using_api,
     get_input_output_prefix_token_lengths,
+    get_prefixes_from_simulation,
 )
 
 
@@ -160,10 +161,35 @@ async def test_get_input_output_prefix_token_lengths(
         input_lengths,
         output_lengths,
         prefix_length,
+        simulated_prefix_lengths,
         _,
     ) = await get_input_output_prefix_token_lengths(
         message_lists, base_endpoint_spec, tokenizer_name
     )
     assert len(input_lengths) == 2
     assert len(output_lengths) == 1
+    assert len(simulated_prefix_lengths) == 2
     assert len(prefix_length) == 1
+
+
+@pytest.mark.parametrize(
+    "message_lists, expected_prefixes",
+    [
+        (
+            [
+                [make_user_message("abc")],
+                [make_user_message("abcdef"), make_assistant_message("ghi")],
+            ],
+            [[], [make_user_message("abc")]],
+        ),
+        (
+            [
+                [make_user_message("abc")],
+                [make_user_message("def"), make_assistant_message("ghi")],
+            ],
+            [[], [make_user_message("")]],
+        ),
+    ],
+)
+def test_get_prefixes_from_simulation(message_lists, expected_prefixes):
+    assert get_prefixes_from_simulation(message_lists) == expected_prefixes
