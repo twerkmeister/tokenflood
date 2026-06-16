@@ -263,7 +263,13 @@ def count_prompt_tokens(args: argparse.Namespace):
         else:
             message_lists.extend(read_jsonl_messages(prompt_file))
 
-    input_lengths, output_lengths, prefix_lengths, common_prefix = asyncio.run(
+    (
+        input_lengths,
+        output_lengths,
+        common_prefix_lengths,
+        simulation_prefix_lengths,
+        common_prefix,
+    ) = asyncio.run(
         get_input_output_prefix_token_lengths(
             message_lists, endpoint_spec, args.tokenizer
         )
@@ -281,7 +287,7 @@ def count_prompt_tokens(args: argparse.Namespace):
     log.info("")
 
     log.info("Output token lengths")
-    log.info("===================")
+    log.info("====================")
     if len(output_lengths) > 0:
         log.info(f"number of output prompts: {len(output_lengths)}")
         log.info(f"min: {min(output_lengths)}")
@@ -291,11 +297,24 @@ def count_prompt_tokens(args: argparse.Namespace):
         log.info("no data")
     log.info("")
 
-    log.info("Common Prefix")
-    log.info("===================")
-    if prefix_lengths:
+    log.info("Prefix token lengths")
+    log.info("====================")
+    if len(simulation_prefix_lengths) > 0:
+        log.info(f"number of prompts: {len(simulation_prefix_lengths)}")
+        log.info(f"min: {min(simulation_prefix_lengths)}")
+        log.info(f"max: {max(simulation_prefix_lengths)}")
+        log.info(
+            f"avg: {sum(simulation_prefix_lengths) / len(simulation_prefix_lengths)}"
+        )
+    else:
+        log.info("no data")
+    log.info("")
+
+    log.info("Prefix shared by all examples")
+    log.info("=============================")
+    if common_prefix_lengths:
         log.info(f"prefix:\n{json.dumps(common_prefix, indent=4, ensure_ascii=False)}")
-        log.info(f"length: {prefix_lengths[0]}")
+        log.info(f"length: {common_prefix_lengths[0]}")
     else:
         log.info("no data")
 
