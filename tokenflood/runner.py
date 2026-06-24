@@ -145,7 +145,7 @@ async def run_load_test_phase(
             send_llm_request(
                 endpoint_spec,
                 message_lists[i],
-                load_type.get_expected_output_length(),
+                load_type.get_max_output_length(),
             )
         )
         t.add_done_callback(
@@ -208,7 +208,7 @@ async def send_llm_request(
     response = await acompletion(
         model=endpoint_spec.provider_model_str,
         messages=messages,
-        max_tokens=num_generation_tokens,
+        max_tokens=num_generation_tokens if num_generation_tokens > 0 else None,
         base_url=endpoint_spec.base_url,
         api_key=os.getenv(endpoint_spec.api_key_env_var)
         if endpoint_spec.api_key_env_var is not None

@@ -4,13 +4,11 @@ import json
 import os
 from collections import deque
 from io import StringIO
-from typing import Any, Callable, Dict, List, Set, Type, TypeVar, Iterable
+from typing import Any, Dict, List, Set, Literal
 
 import aiofiles
-import yaml
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
-from pydantic import BaseModel, TypeAdapter
 
 from tokenflood.constants import (
     COMMON_RESULT_FILES,
@@ -19,101 +17,12 @@ from tokenflood.constants import (
     RESULTS_FOLDER,
     LOAD_TEST_RESULT_FILES,
 )
-from tokenflood.models.endpoint_spec import EndpointSpec
+from tokenflood.messages import create_message_list_from_prompt
 from tokenflood.models.data.error_data import ErrorData
 from tokenflood.models.data.llm_request_data import LLMRequestData
 from tokenflood.models.message_list import MessageList, chat_schema
-from tokenflood.models.run_specs.observation_spec import ObservationSpec
 from tokenflood.models.data.ping_request_data import PingData
-from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
-from tokenflood.models.run_specs.typing import SpecificRunSpec
 from tokenflood.models.util import get_fields
-
-T = TypeVar("T", bound=BaseModel)
-
-
-def create_from_basemodel_or_type_adapter(
-    data: dict, class_type: Type[T] | TypeAdapter[T]
-) -> T:
-    if isinstance(class_type, type) and issubclass(class_type, BaseModel):
-        return class_type(**data)
-    elif isinstance(class_type, TypeAdapter):
-        return class_type.validate_python(data)
-    else:
-        raise ValueError
-
-
-def read_pydantic_yaml(class_type: Type[T] | TypeAdapter[T]) -> Callable[[str], T]:
-    def read_class_type(filename: str) -> T:
-        with open(filename) as f:
-            data = yaml.safe_load(f)
-        return create_from_basemodel_or_type_adapter(data, class_type)
-
-    return read_class_type
-
-
-def read_pydantic_yaml_list(
-    class_type: Type[T] | TypeAdapter[T],
-) -> Callable[[str], List[T]]:
-    def read_class_type_list(filename: str) -> List[T]:
-        with open(filename) as f:
-            list_data = yaml.safe_load(f)
-        return [
-            create_from_basemodel_or_type_adapter(data, class_type)
-            for data in list_data
-        ]
-
-    return read_class_type_list
-
-
-class CustomDumper(yaml.SafeDumper):
-    def represent_sequence(
-        self, tag: str, sequence: Iterable[Any], flow_style: bool | None = None
-    ):
-        # making sure an iterator argument is not exhausted
-        sequence = list(sequence)
-        is_simple = all(isinstance(item, (int, float, str, bool)) for item in sequence)
-        return super().represent_sequence(tag, sequence, flow_style=is_simple)
-
-
-def write_pydantic_yaml(filename: str, o: T) -> None:
-    with open(filename, "w") as f:
-        yaml.dump(
-            o.model_dump(),
-            f,
-            sort_keys=False,
-            indent=2,
-            Dumper=CustomDumper,
-            default_flow_style=False,
-        )
-
-
-def write_pydantic_yaml_list(filename: str, objects: List[T]) -> None:
-    with open(filename, "w") as f:
-        yaml.dump(
-            [o.model_dump() for o in objects],
-            f,
-            sort_keys=False,
-            Dumper=CustomDumper,
-            indent=2,
-            default_flow_style=False,
-        )
-
-
-def read_endpoint_spec(filename: str) -> EndpointSpec:
-    return read_pydantic_yaml(EndpointSpec)(filename)
-
-
-def read_run_spec(filename: str) -> SpecificRunSpec:
-    return read_pydantic_yaml(TypeAdapter(SpecificRunSpec))(filename)
-
-
-def read_load_test_spec(filename: str) -> LoadTestSpec:
-    return read_pydantic_yaml(LoadTestSpec)(filename)
-
-
-def read_observation_spec(filename: str) -> ObservationSpec:
-    return read_pydantic_yaml(ObservationSpec)(filename)
 
 
 def make_run_folder(run_name: str) -> str:
@@ -327,3 +236,18 @@ class FileIOContext(IOContext):
         self.error_sink.close()
         self.llm_request_sink.close()
         self.network_latency_sink.close()
+
+
+def read_prompts(
+    files: list[str], file_format: Literal["chat", "text"]
+) -> list[MessageList]:
+    message_lists = []
+    for prompt_file in files:
+        if file_format == "text":
+            prompt = read_file(prompt_file)
+            message_lists.extend([create_message_list_from_prompt(prompt)])
+        elif file_format == "chat":
+            message_lists.extend(read_jsonl_messages(prompt_file))
+        else:
+            raise ValueError(f"Bad prompt file format: {file_format}")
+    return message_lists

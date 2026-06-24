@@ -27,7 +27,6 @@ from tokenflood.constants import (
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.messages import (
-    create_message_list_from_prompt,
     get_input_output_prefix_token_lengths,
 )
 from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
@@ -37,13 +36,10 @@ from tokenflood.io import (
     FileIOContext,
     get_first_available_filename_like,
     make_run_folder,
-    read_endpoint_spec,
-    write_pydantic_yaml,
-    read_run_spec,
     IOContext,
-    read_file,
-    read_jsonl_messages,
+    read_prompts,
 )
+from tokenflood.io_typed import write_pydantic_yaml, read_endpoint_spec, read_run_spec
 from tokenflood.logging_utils import global_warn_once_filter
 from tokenflood.networking import (
     patch_aiohttp_client_session,
@@ -255,14 +251,7 @@ def run(args: argparse.Namespace):
 def count_prompt_tokens(args: argparse.Namespace):
     endpoint_spec = read_endpoint_spec(args.endpoint) if args.endpoint else None
 
-    message_lists = []
-    for prompt_file in args.prompt_file:
-        if args.format == "text":
-            prompt = read_file(prompt_file)
-            message_lists.extend([create_message_list_from_prompt(prompt)])
-        else:
-            message_lists.extend(read_jsonl_messages(prompt_file))
-
+    message_lists = read_prompts(args.prompt_file, args.format)
     (
         input_lengths,
         output_lengths,

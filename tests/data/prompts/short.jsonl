@@ -1,0 +1,1 @@
+{"messages": [{"role": "user", "content": "static part: abc\ndynamic_part: bcd"}]}
