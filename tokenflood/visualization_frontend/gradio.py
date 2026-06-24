@@ -282,16 +282,28 @@ def make_yaml_code_element(text: str, label: str) -> gr.Code:
 def on_select(evt: gr.SelectData):
     return evt.index
 
+def get_runs_and_type(results_folder) -> tuple[list[str], list[str], str]:
+    load_tests = get_load_test_runs(results_folder)
+    latest_runs = load_tests[:1]
+    runs = load_tests
+    run_type = LOAD_TEST
+    observation_tests = get_observation_runs(results_folder)
+    if len(load_tests) == 0 and len(observation_tests) > 0:
+        latest_runs = observation_tests[:1]
+        runs = observation_tests
+        run_type = OBSERVATION_TEST
+    return latest_runs, runs, run_type
+
+
 
 def create_gradio_blocks(results_folder: str) -> Blocks:
-    runs = get_load_test_runs(results_folder)
-    latest_run = runs[:1]
+    latest_runs, all_runs, starter_run_type = get_runs_and_type(results_folder)
     title = f"Tokenflood v{__version__}"
     with gr.Blocks(title=title, analytics_enabled=False) as blocks:
         timer = gr.Timer(2)
         stored_percentiles = gr.State(DEFAULT_PERCENTILES_STR)
         stored_results_folder = gr.State(results_folder)
-        stored_runs = gr.State(latest_run)
+        stored_runs = gr.State(latest_runs)
         dummy_state = gr.State(
             None
         )  # needed for debounce js of runs dropdown to make array return possible
@@ -315,13 +327,13 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             with gr.Column(scale=1):
                 run_type_dropdown = gr.Dropdown(
                     [LOAD_TEST, OBSERVATION_TEST],
-                    value=LOAD_TEST,
+                    value=starter_run_type,
                     label="Run type",
                 )
             with gr.Column(scale=3):
                 runs_dropdown = gr.Dropdown(
-                    runs,
-                    value=latest_run,
+                    all_runs,
+                    value=latest_runs,
                     multiselect=True,
                     filterable=True,
                     interactive=True,
@@ -351,16 +363,16 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
 
         data_plot = make_plot(
             results_folder,
-            latest_run,
-            LOAD_TEST,
+            latest_runs,
+            starter_run_type,
             RequestLatency.name,
             DEFAULT_PERCENTILES_STR,
         )
         data_table = gr.DataFrame(
             make_table(
                 results_folder,
-                latest_run,
-                LOAD_TEST,
+                latest_runs,
+                starter_run_type,
                 RequestLatency.name,
                 DEFAULT_PERCENTILES_STR,
             ),
