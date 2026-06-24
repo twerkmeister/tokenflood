@@ -282,6 +282,7 @@ def make_yaml_code_element(text: str, label: str) -> gr.Code:
 def on_select(evt: gr.SelectData):
     return evt.index
 
+
 def get_runs_and_type(results_folder) -> tuple[list[str], list[str], str]:
     load_tests = get_load_test_runs(results_folder)
     latest_runs = load_tests[:1]
@@ -293,7 +294,6 @@ def get_runs_and_type(results_folder) -> tuple[list[str], list[str], str]:
         runs = observation_tests
         run_type = OBSERVATION_TEST
     return latest_runs, runs, run_type
-
 
 
 def create_gradio_blocks(results_folder: str) -> Blocks:

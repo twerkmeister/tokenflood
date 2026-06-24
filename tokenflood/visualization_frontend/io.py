@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import os
 from typing import Callable, Optional
 
@@ -20,11 +19,12 @@ from tokenflood.io import (
     is_observation_result_folder,
     read_file,
 )
+from tokenflood.visualization_frontend.utils import cache_if_csv_stayed_the_same
 
 log = logging.getLogger(__name__)
 
 
-@functools.lru_cache(maxsize=100)
+@cache_if_csv_stayed_the_same
 def read_dataframe(path: str, csv_file: str = "") -> pd.DataFrame:
     if csv_file:
         path = os.path.join(path, csv_file)

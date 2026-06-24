@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import os.path
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -17,6 +16,7 @@ from tokenflood.analysis import (
 from tokenflood.models.util import numeric
 from tokenflood.visualization_frontend.io import read_dataframe
 from tokenflood.visualization_frontend.metrics import Metric
+from tokenflood.visualization_frontend.utils import cache_if_run_data_stayed_the_same
 
 T = TypeVar("T", bound=Union[str, datetime])
 
@@ -29,7 +29,7 @@ class AggregationTrace(Generic[T]):
     run: str
 
 
-@functools.cache
+@cache_if_run_data_stayed_the_same
 def aggregate_data(
     run_folder: str,
     metric: Type[Metric],

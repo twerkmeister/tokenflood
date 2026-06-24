@@ -4,7 +4,10 @@ import pytest
 import requests
 
 from tokenflood.visualization_frontend.gradio import (
-    visualize_results, LOAD_TEST, OBSERVATION_TEST, get_runs_and_type,
+    visualize_results,
+    LOAD_TEST,
+    OBSERVATION_TEST,
+    get_runs_and_type,
 )
 from tokenflood.visualization_frontend.percentiles import (
     percentiles_to_str,
@@ -44,13 +47,18 @@ def test_percentiles_to_str():
     assert percentiles_to_str([50, 90, 99]) == "50,90,99"
 
 
-@pytest.mark.parametrize("result_folder, expected_run, expected_starter_type", [
-    ("empty", [], LOAD_TEST),
-    ("only_load_tests", ["load_test_results"], LOAD_TEST),
-    ("only_observation_tests", ["observation_results"], OBSERVATION_TEST),
-    ("both", ["load_test_results"], LOAD_TEST)
-])
-def test_runs_and_type(result_folder, expected_run, expected_starter_type, diverse_results_folder):
+@pytest.mark.parametrize(
+    "result_folder, expected_run, expected_starter_type",
+    [
+        ("empty", [], LOAD_TEST),
+        ("only_load_tests", ["load_test_results"], LOAD_TEST),
+        ("only_observation_tests", ["observation_results"], OBSERVATION_TEST),
+        ("both", ["load_test_results"], LOAD_TEST),
+    ],
+)
+def test_runs_and_type(
+    result_folder, expected_run, expected_starter_type, diverse_results_folder
+):
     target_folder = os.path.join(diverse_results_folder, result_folder)
     latest_run, _, starter_type = get_runs_and_type(target_folder)
     assert latest_run == expected_run
