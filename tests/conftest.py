@@ -16,9 +16,11 @@ from tokenflood.constants import (
 )
 from tokenflood.io import (
     FileIOContext,
+)
+from tokenflood.io_typed import (
     read_endpoint_spec,
-    read_observation_spec,
     read_load_test_spec,
+    read_observation_spec,
 )
 from tokenflood.models.endpoint_spec import EndpointSpec
 from tokenflood.models.run_specs.observation_spec import ObservationSpec
@@ -50,7 +52,7 @@ def data_folder(test_folder: str) -> str:
 
 
 @pytest.fixture(scope="session")
-def run_suites_folder(data_folder: str) -> str:
+def load_test_specs_folder(data_folder: str) -> str:
     return join_folder_checked(data_folder, "load_test_specs")
 
 
@@ -102,14 +104,26 @@ def superfast_observation_spec(observation_specs_folder) -> ObservationSpec:
 
 
 @pytest.fixture
-def base_load_test_spec(run_suites_folder) -> LoadTestSpec:
-    filename = os.path.join(run_suites_folder, "base.yml")
+def base_load_test_spec(load_test_specs_folder) -> LoadTestSpec:
+    filename = os.path.join(load_test_specs_folder, "base.yml")
     return read_load_test_spec(filename)
 
 
 @pytest.fixture
-def tiny_load_test_spec(run_suites_folder) -> LoadTestSpec:
-    filename = os.path.join(run_suites_folder, "tiny.yml")
+def tiny_load_test_spec(load_test_specs_folder) -> LoadTestSpec:
+    filename = os.path.join(load_test_specs_folder, "tiny.yml")
+    return read_load_test_spec(filename)
+
+
+@pytest.fixture
+def prompt_based_dynamic_load_test_spec(load_test_specs_folder) -> LoadTestSpec:
+    filename = os.path.join(load_test_specs_folder, "prompt_based_dynamic.yml")
+    return read_load_test_spec(filename)
+
+
+@pytest.fixture
+def prompt_based_static_load_test_spec(load_test_specs_folder) -> LoadTestSpec:
+    filename = os.path.join(load_test_specs_folder, "prompt_based_static.yml")
     return read_load_test_spec(filename)
 
 

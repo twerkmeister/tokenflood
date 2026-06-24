@@ -1,10 +1,6 @@
 type: load_test
 name: ABC
-requests_per_second_phases:
-  - 1
-  - 2
-  - 3
-  - 4
+requests_per_second_phases: [1, 2, 3, 4]
 seconds_per_phase: 30
 load_type:
   type: heuristic

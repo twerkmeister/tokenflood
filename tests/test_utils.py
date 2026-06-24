@@ -1,4 +1,6 @@
 import asyncio
+from itertools import islice, product
+from typing import Counter
 
 import pytest
 
@@ -12,6 +14,9 @@ from tokenflood.util import (
     find_idx,
     get_date_str,
     get_run_name,
+    empty_generator,
+    sample_exhaustively,
+    sample_unique_concatenations_exhaustively,
 )
 
 
@@ -90,3 +95,36 @@ async def test_tasking():
 
     await asyncio.wait([task])
     print("done")
+
+
+def test_empty_generator():
+    generator = empty_generator()
+    with pytest.raises(StopIteration):
+        next(generator)
+
+
+def test_sample_exhaustively_samples_exhaustively():
+    population = list(range(10))
+    for i in range(1000):
+        generator = sample_exhaustively(population)
+        first_9 = list(islice(generator, 9))
+        # no duplicates
+        assert len(set(first_9)) == len(first_9)
+
+
+def test_sample_exhaustively_restarts():
+    population = list(range(10))
+    for i in range(1000):
+        generator = sample_exhaustively(population)
+        first_19 = list(islice(generator, 19))
+        counter = Counter(first_19)
+        assert counter.most_common(1)[0][1] == 2
+
+
+def test_sample_unique_concatenations_exhaustively():
+    population = ["a", "b", "c"]
+    generator = sample_unique_concatenations_exhaustively(population)
+    first_20 = list(islice(generator, 20))
+    pp = ["".join(t) for t in product(population, population)]
+    ppp = ["".join(t) for t in product(population, population, population)]
+    assert first_20 == population + pp + ppp[:8]

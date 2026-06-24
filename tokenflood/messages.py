@@ -1,8 +1,10 @@
+import copy
 import os
 import random
 import uuid
 import bisect
 from functools import partial
+from typing import Literal
 
 from litellm import acount_tokens, token_counter
 from tokenizers import Tokenizer
@@ -108,6 +110,26 @@ def split_off_last_assistant_answer(
         return messages[:-1], messages[-1:]
     else:
         return messages, None
+
+
+def inject_into_prompt(
+    messages: MessageList,
+    inject_after_str: str,
+    inject_after_occurrence: Literal["last", "first"],
+    s: str,
+) -> MessageList:
+    messages = copy.deepcopy(messages)
+    step = 1 if inject_after_occurrence == "first" else -1
+    for message in messages[::step]:
+        if inject_after_str in message["content"]:
+            if inject_after_occurrence == "first":
+                pre, post = message["content"].split(inject_after_str, 1)
+            else:
+                pre, post = message["content"].rsplit(inject_after_str, 1)
+
+            message["content"] = pre + inject_after_str + s + post
+            break
+    return messages
 
 
 def get_common_prefix(input_message_lists: list[MessageList]) -> MessageList:
