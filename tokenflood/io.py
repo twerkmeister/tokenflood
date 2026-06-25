@@ -229,6 +229,7 @@ class FileSink:
         self.consumer_task = asyncio.create_task(self._consume())
 
     async def wait_for_pending_writes(self):
+        await asyncio.sleep(0.05)
         while not self.queue.empty():
             await asyncio.sleep(0.01)
 

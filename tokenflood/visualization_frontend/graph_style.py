@@ -1,6 +1,6 @@
 import colorsys
 
-from tokenflood.analysis import Mean, PERCENTILE_PREFIX
+from tokenflood.constants import PERCENTILE_PREFIX
 
 
 def brighten_color(hex_color: str, steps: int, max_steps=50):
@@ -34,7 +34,7 @@ BASE_COLORS = [
 
 
 def aggregation_name_to_color_step(aggregation_name: str) -> int:
-    if aggregation_name == Mean.name:
+    if aggregation_name == "mean":
         return 0
     if aggregation_name.startswith(PERCENTILE_PREFIX) and len(aggregation_name) <= 4:
         try:
@@ -47,6 +47,6 @@ def aggregation_name_to_color_step(aggregation_name: str) -> int:
 
 
 def aggregation_name_to_line_style(aggregation_name: str) -> str:
-    if aggregation_name == Mean.name:
+    if aggregation_name == "mean":
         return "dash"
     return "solid"

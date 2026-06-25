@@ -12,7 +12,7 @@ import gradio as gr
 from gradio import Blocks
 
 from tokenflood import __version__
-from tokenflood.analysis import Mean
+from tokenflood.visualization_frontend.aggregation_func import AggregationFunc
 
 from tokenflood.constants import (
     DEFAULT_PERCENTILES_STR,
@@ -26,7 +26,6 @@ from tokenflood.models.data.divergence import TokenDivergence
 from tokenflood.models.util import numeric
 from tokenflood.visualization_frontend.data import (
     aggregate_data,
-    LabelFunc,
     get_load_group_label,
     get_observation_group_label,
     AggregationTrace,
@@ -160,11 +159,13 @@ def get_plot_func(
         return make_observation_latency_plot
 
 
-def get_label_func(run_type: str) -> LabelFunc:
+def get_label_func(run_type: str) -> AggregationFunc:
     if run_type == LOAD_TEST:
-        return get_load_group_label
+        return AggregationFunc(
+            get_load_group_label, "label", 10000, "requests_per_second_phase"
+        )
     else:
-        return get_observation_group_label
+        return AggregationFunc(get_observation_group_label, "label", 10000, "datetime")
 
 
 def collect_trace_groups(
@@ -175,15 +176,20 @@ def collect_trace_groups(
     percentiles: str,
 ) -> list[list[AggregationTrace]]:
     label_func = get_label_func(run_type)
-    aggregation_funcs = sorted(
-        [Mean] + percentiles_to_aggregation_funcs(percentiles), key=lambda x: -x.order
+    aggregation_funcs = tuple(
+        sorted(
+            [
+                label_func,
+                AggregationFunc(lambda x: x.mean(), "mean", 49.5, metric.field_name),
+            ]
+            + percentiles_to_aggregation_funcs(percentiles, metric),
+            key=lambda x: -x.order,
+        )
     )
     trace_groups: list[list[AggregationTrace]] = []
     for run in runs:
         run_folder = os.path.join(results_folder, run)
-        trace_groups.append([])
-        for f in aggregation_funcs:
-            trace_groups[-1].append(aggregate_data(run_folder, metric, f, label_func))  # type: ignore[arg-type]
+        trace_groups.append(aggregate_data(run_folder, metric, aggregation_funcs))
     return trace_groups
 
 
@@ -283,15 +289,27 @@ def on_select(evt: gr.SelectData):
     return evt.index
 
 
+def get_runs_and_type(results_folder) -> tuple[list[str], list[str], str]:
+    load_tests = get_load_test_runs(results_folder)
+    latest_runs = load_tests[:1]
+    runs = load_tests
+    run_type = LOAD_TEST
+    observation_tests = get_observation_runs(results_folder)
+    if len(load_tests) == 0 and len(observation_tests) > 0:
+        latest_runs = observation_tests[:1]
+        runs = observation_tests
+        run_type = OBSERVATION_TEST
+    return latest_runs, runs, run_type
+
+
 def create_gradio_blocks(results_folder: str) -> Blocks:
-    runs = get_load_test_runs(results_folder)
-    latest_run = runs[:1]
+    latest_runs, all_runs, starter_run_type = get_runs_and_type(results_folder)
     title = f"Tokenflood v{__version__}"
     with gr.Blocks(title=title, analytics_enabled=False) as blocks:
         timer = gr.Timer(2)
         stored_percentiles = gr.State(DEFAULT_PERCENTILES_STR)
         stored_results_folder = gr.State(results_folder)
-        stored_runs = gr.State(latest_run)
+        stored_runs = gr.State(latest_runs)
         dummy_state = gr.State(
             None
         )  # needed for debounce js of runs dropdown to make array return possible
@@ -315,13 +333,13 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             with gr.Column(scale=1):
                 run_type_dropdown = gr.Dropdown(
                     [LOAD_TEST, OBSERVATION_TEST],
-                    value=LOAD_TEST,
+                    value=starter_run_type,
                     label="Run type",
                 )
             with gr.Column(scale=3):
                 runs_dropdown = gr.Dropdown(
-                    runs,
-                    value=latest_run,
+                    all_runs,
+                    value=latest_runs,
                     multiselect=True,
                     filterable=True,
                     interactive=True,
@@ -351,16 +369,16 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
 
         data_plot = make_plot(
             results_folder,
-            latest_run,
-            LOAD_TEST,
+            latest_runs,
+            starter_run_type,
             RequestLatency.name,
             DEFAULT_PERCENTILES_STR,
         )
         data_table = gr.DataFrame(
             make_table(
                 results_folder,
-                latest_run,
-                LOAD_TEST,
+                latest_runs,
+                starter_run_type,
                 RequestLatency.name,
                 DEFAULT_PERCENTILES_STR,
             ),

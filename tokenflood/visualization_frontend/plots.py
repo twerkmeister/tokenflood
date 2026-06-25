@@ -17,6 +17,7 @@ from tokenflood.visualization_frontend.metrics import Metric
 
 def plot_base(trace_groups: list[list[AggregationTrace]]) -> go.Figure:
     fig = go.Figure()
+    traces = []
     for i, trace_group in enumerate(trace_groups):
         base_color = BASE_COLORS[i % len(BASE_COLORS)]
         for trace in trace_group:
@@ -24,7 +25,7 @@ def plot_base(trace_groups: list[list[AggregationTrace]]) -> go.Figure:
                 base_color, aggregation_name_to_color_step(trace.aggregation_name)
             )
             style = aggregation_name_to_line_style(trace.aggregation_name)
-            fig.add_trace(
+            traces.append(
                 go.Scatter(
                     x=trace.x,
                     y=trace.y,
@@ -35,6 +36,7 @@ def plot_base(trace_groups: list[list[AggregationTrace]]) -> go.Figure:
                     hovertemplate="<b>%{fullData.name}</b>: %{y:.2f} ms<extra></extra>",
                 )
             )
+    fig.add_traces(traces)
     fig.update_traces(mode="markers+lines")
     fig.update_layout(
         yaxis_title="latency in ms",
