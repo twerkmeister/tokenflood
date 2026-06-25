@@ -1,4 +1,3 @@
-import asyncio
 import os
 
 import pytest
@@ -116,8 +115,10 @@ async def test_file_sink(unique_temporary_file):
     sink.activate()
     for item in items:
         sink.write(item)
-        await asyncio.sleep(0.001)
     sink.close()
+
+    with pytest.raises(RuntimeError):
+        sink.write("another item")
 
     await sink.wait_for_pending_writes()
 
@@ -133,7 +134,6 @@ async def test_csv_file_sink(unique_temporary_file):
     sink.activate()
     for item in items:
         sink.write_dict(item)
-        await asyncio.sleep(0.001)
     sink.close()
 
     await sink.wait_for_pending_writes()

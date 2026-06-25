@@ -31,6 +31,11 @@ def percentiles_to_aggregation_funcs(
 ) -> list[AggregationFunc]:
     percentiles = str_to_percentiles(percentiles_text)
     return [
-        AggregationFunc(lambda x: x.quantile(p / 100), f"p{p}", p, metric.field_name)
+        AggregationFunc(
+            lambda x, q=p / 100: x.quantile(q),  # type:ignore[misc]
+            f"p{p}",
+            p,
+            metric.field_name,
+        )
         for p in percentiles
     ]
