@@ -14,6 +14,7 @@ PositiveInteger = Annotated[int, Field(gt=0)]
 PositiveFloat = Annotated[float, Field(gt=0.0)]
 NonNegativeInteger = Annotated[int, Field(ge=0)]
 NonEmptyString = Annotated[str, StringConstraints(min_length=1)]
+GroupID = Annotated[int, Field(ge=-1)]
 NonEmptyStrings = Annotated[
     Tuple[str, ...],
     AfterValidator(non_empty_list),

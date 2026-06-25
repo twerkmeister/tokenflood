@@ -3,16 +3,12 @@ from __future__ import annotations
 import os.path
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable, TypeVar, Union, Generic, Type
+from typing import Callable, TypeVar, Union, Generic, Type, Sequence
 
 import pandas as pd
 
-from tokenflood.analysis import (
-    get_group_data,
-    get_group_ids,
-    AggregationFunc,
-    aggregate,
-)
+from tokenflood.visualization_frontend.aggregation_func import AggregationFunc
+from tokenflood.constants import GROUP_ID
 from tokenflood.models.util import numeric
 from tokenflood.visualization_frontend.io import read_dataframe
 from tokenflood.visualization_frontend.metrics import Metric
@@ -33,29 +29,37 @@ class AggregationTrace(Generic[T]):
 def aggregate_data(
     run_folder: str,
     metric: Type[Metric],
-    aggregation_func: AggregationFunc,
-    label_func: LabelFunc,
-) -> AggregationTrace:
+    aggregation_funcs: Sequence[AggregationFunc],
+) -> list[AggregationTrace]:
     df = read_dataframe(run_folder, metric.file)
-    group_ids = get_group_ids(df)
-    x = []
-    y = []
-    for group_id in group_ids:
-        group_data = get_group_data(df, group_id)
-        group_label = label_func(group_data)
-        x.append(group_label)
-        y.append(aggregate(group_data, metric.field_name, aggregation_func))
-    return AggregationTrace(x, y, aggregation_func.name, os.path.basename(run_folder))
+    aggregations = {
+        aggregation_func.name: pd.NamedAgg(aggregation_func.field, aggregation_func.f)
+        for aggregation_func in aggregation_funcs
+    }
+    aggregated_df = df.groupby(GROUP_ID).agg(**aggregations)
+    traces = []
+    for func in aggregation_funcs:
+        if func.name == "label":
+            continue
+        traces.append(
+            AggregationTrace(
+                list(aggregated_df["label"]),
+                list(aggregated_df[func.name]),
+                func.name,
+                os.path.basename(run_folder),
+            )
+        )
+    return traces
 
 
 X = TypeVar("X")
-LabelFunc = Callable[[pd.DataFrame], X]
+LabelFunc = Callable[[pd.Series], X]
 
 
-def get_observation_group_label(df: pd.DataFrame) -> datetime:
-    date_str = str(df["datetime"].iloc[0][:-9])
+def get_observation_group_label(s: pd.Series) -> datetime:
+    date_str = str(s.iloc[0][:-9])
     return datetime.strptime(date_str, "%Y-%m-%d_%H-%M-%S").replace(tzinfo=timezone.utc)
 
 
-def get_load_group_label(df: pd.DataFrame) -> str:
-    return df["requests_per_second_phase"].iloc[0]
+def get_load_group_label(s: pd.Series) -> str:
+    return s.iloc[0]

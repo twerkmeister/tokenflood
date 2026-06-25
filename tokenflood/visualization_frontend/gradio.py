@@ -12,7 +12,7 @@ import gradio as gr
 from gradio import Blocks
 
 from tokenflood import __version__
-from tokenflood.analysis import Mean
+from tokenflood.visualization_frontend.aggregation_func import AggregationFunc
 
 from tokenflood.constants import (
     DEFAULT_PERCENTILES_STR,
@@ -26,7 +26,6 @@ from tokenflood.models.data.divergence import TokenDivergence
 from tokenflood.models.util import numeric
 from tokenflood.visualization_frontend.data import (
     aggregate_data,
-    LabelFunc,
     get_load_group_label,
     get_observation_group_label,
     AggregationTrace,
@@ -160,11 +159,13 @@ def get_plot_func(
         return make_observation_latency_plot
 
 
-def get_label_func(run_type: str) -> LabelFunc:
+def get_label_func(run_type: str) -> AggregationFunc:
     if run_type == LOAD_TEST:
-        return get_load_group_label
+        return AggregationFunc(
+            get_load_group_label, "label", 10000, "requests_per_second_phase"
+        )
     else:
-        return get_observation_group_label
+        return AggregationFunc(get_observation_group_label, "label", 10000, "datetime")
 
 
 def collect_trace_groups(
@@ -175,15 +176,20 @@ def collect_trace_groups(
     percentiles: str,
 ) -> list[list[AggregationTrace]]:
     label_func = get_label_func(run_type)
-    aggregation_funcs = sorted(
-        [Mean] + percentiles_to_aggregation_funcs(percentiles), key=lambda x: -x.order
+    aggregation_funcs = tuple(
+        sorted(
+            [
+                label_func,
+                AggregationFunc(lambda x: x.mean(), "mean", 49.5, metric.field_name),
+            ]
+            + percentiles_to_aggregation_funcs(percentiles, metric),
+            key=lambda x: -x.order,
+        )
     )
     trace_groups: list[list[AggregationTrace]] = []
     for run in runs:
         run_folder = os.path.join(results_folder, run)
-        trace_groups.append([])
-        for f in aggregation_funcs:
-            trace_groups[-1].append(aggregate_data(run_folder, metric, f, label_func))  # type: ignore[arg-type]
+        trace_groups.append(aggregate_data(run_folder, metric, aggregation_funcs))
     return trace_groups
 
 

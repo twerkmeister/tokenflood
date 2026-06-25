@@ -204,33 +204,43 @@ def is_load_test_result_folder(folder) -> bool:
 
 class FileSink:
     def __init__(self, destination: str):
-        self.queue: asyncio.Queue[str] = asyncio.Queue()
+        self.queue: asyncio.Queue[str | None] = asyncio.Queue()
         self.destination = destination
         self.consumer_task = None
         self.closed = False
 
     async def _consume(self):
         async with aiofiles.open(self.destination, "w", encoding="utf-8") as f:
-            while not self.closed:
+            while True:
                 try:
                     item = await asyncio.wait_for(self.queue.get(), timeout=2)
-                    await f.write(item)
-                    await f.flush()
+                    if isinstance(item, str):
+                        await f.write(item)
+                        await f.flush()
+                        self.queue.task_done()
+                    else:
+                        self.queue.task_done()
+                        break
                 except asyncio.TimeoutError:
                     pass
 
     def write(self, item: str):
+        if self.closed:
+            raise RuntimeError(
+                f"Cannot write to FileSink for {self.destination} that was already closed"
+            )
         self.queue.put_nowait(item)
 
     def close(self):
         self.closed = True
+        self.queue.put_nowait(None)
 
     def activate(self):
         self.consumer_task = asyncio.create_task(self._consume())
 
     async def wait_for_pending_writes(self):
-        while not self.queue.empty():
-            await asyncio.sleep(0.01)
+        await self.queue.join()
+        # await self.consumer_task
 
 
 class CSVFileSink(FileSink):

@@ -56,7 +56,7 @@ async def run_observation(
     for poll_idx in range(observation_spec.num_polls):
         log.info(f"Starting poll {poll_idx + 1}.")
         error_context = ErrorContext(
-            requests_per_second_phase=request_per_second_phase, group_id=str(poll_idx)
+            requests_per_second_phase=request_per_second_phase, group_id=poll_idx
         )
         for burst_idx in range(observation_spec.num_requests):
             request_context = LLMRequestContext(
@@ -68,7 +68,7 @@ async def run_observation(
                 request_number=i,
                 model=endpoint_spec.provider_model_str,
                 prompt=message_lists[i][0]["content"],
-                group_id=str(poll_idx),
+                group_id=poll_idx,
             )
             log.info(
                 f"starting request number {i + 1} (number {burst_idx + 1} within current poll)"
@@ -92,7 +92,7 @@ async def run_observation(
                     datetime=get_exact_date_str(),
                     endpoint_url=str(url_observer.url),
                     requests_per_second_phase=request_per_second_phase,
-                    group_id=str(poll_idx),
+                    group_id=poll_idx,
                 )
                 pt = asyncio.create_task(
                     time_async_func(
