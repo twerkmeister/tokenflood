@@ -42,16 +42,16 @@ def cache_if_run_data_stayed_the_same(func):
 def cache_if_csv_stayed_the_same(func):
     # Base cache that will store the actual results
     @lru_cache(maxsize=None)
-    def cached_wrapper(path, csv_file, file_size, *args, **kwargs):
+    def cached_wrapper(path, file_size, csv_file="", *args, **kwargs):
         return func(path, csv_file, *args, **kwargs)
 
     @wraps(func)
-    def wrapper(path, csv_file, *args, **kwargs):
+    def wrapper(path, csv_file="", *args, **kwargs):
         real_path = path
         if csv_file:
             real_path = os.path.join(path, csv_file)
         file_size = get_file_size(real_path)
         # Pass the size into the cache key automatically
-        return cached_wrapper(path, csv_file, file_size, *args, **kwargs)
+        return cached_wrapper(path, file_size, csv_file, *args, **kwargs)
 
     return wrapper
