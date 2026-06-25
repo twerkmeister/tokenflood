@@ -98,8 +98,7 @@ def test_load_test(
     assert len(run_folders) == 1
     assert is_load_test_result_folder(run_folders[0])
 
-    llm_requests_df_file = os.path.join(run_folders[0], LLM_REQUESTS_FILE)
-    llm_requests_df = read_dataframe(llm_requests_df_file)
+    llm_requests_df = read_dataframe(run_folders[0], LLM_REQUESTS_FILE)
     assert len(llm_requests_df) == tiny_load_test_spec.total_num_requests
 
 
@@ -134,8 +133,7 @@ def test_observe_endpoint(
     assert len(run_folders) == 1
     assert is_observation_result_folder(run_folders[0])
 
-    llm_requests_df_file = os.path.join(run_folders[0], LLM_REQUESTS_FILE)
-    llm_requests_df = read_dataframe(llm_requests_df_file)
+    llm_requests_df = read_dataframe(run_folders[0], LLM_REQUESTS_FILE)
     assert len(llm_requests_df) == superfast_observation_spec.total_num_requests
 
 
