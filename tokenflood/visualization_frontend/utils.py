@@ -11,7 +11,7 @@ def get_file_size(path) -> int:
 
 
 def cache_if_run_data_stayed_the_same(func):
-    @lru_cache(maxsize=None)
+    @lru_cache(maxsize=256)
     def cached_wrapper(
         filename, request_file_size, error_file_size, latency_file_size, *args, **kwargs
     ):
@@ -41,7 +41,7 @@ def cache_if_run_data_stayed_the_same(func):
 
 def cache_if_csv_stayed_the_same(func):
     # Base cache that will store the actual results
-    @lru_cache(maxsize=None)
+    @lru_cache(maxsize=128)
     def cached_wrapper(path, file_size, csv_file="", *args, **kwargs):
         return func(path, csv_file, *args, **kwargs)
 
