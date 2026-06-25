@@ -29,3 +29,5 @@ DEFAULT_PERCENTILES_STR = "95, 99"
 
 DEFAULT_HEURISTIC_TASK = "Task: Write a 3-page essay on Popperian falsification."
 DEFAULT_PROMPT_FILLER_TOKENS = tuple([" " + chr(c) for c in range(65, 91)])
+GROUP_ID = "group_id"
+PERCENTILE_PREFIX = "p"

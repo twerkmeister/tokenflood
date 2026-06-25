@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import re
-from typing import List
+from typing import List, Type
 
-from tokenflood.analysis import AggregationFunc, calculate_percentile
+from tokenflood.visualization_frontend.aggregation_func import AggregationFunc
+from tokenflood.visualization_frontend.metrics import Metric
 
 PERCENTILES_SEPARATOR = ","
 
@@ -25,6 +26,11 @@ def clean_percentiles_input(text: str) -> str:
     return re.sub(rf"[^{PERCENTILES_SEPARATOR}0-9]", "", text)
 
 
-def percentiles_to_aggregation_funcs(percentiles_text: str) -> list[AggregationFunc]:
+def percentiles_to_aggregation_funcs(
+    percentiles_text: str, metric: Type[Metric]
+) -> list[AggregationFunc]:
     percentiles = str_to_percentiles(percentiles_text)
-    return [calculate_percentile(p) for p in percentiles]
+    return [
+        AggregationFunc(lambda x: x.quantile(p / 100), f"p{p}", p, metric.field_name)
+        for p in percentiles
+    ]
