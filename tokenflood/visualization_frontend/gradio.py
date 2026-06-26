@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import json
 import logging
 import os
 from typing import Tuple, TypeVar, Callable, Type
@@ -93,6 +94,7 @@ custom_css = """
     border-color: var(--border-color-primary);
     border-radius: 4px;
 }
+#sel_box{ display: none !important; }
 """
 
 
@@ -301,6 +303,69 @@ def get_runs_and_type(results_folder) -> tuple[list[str], list[str], str]:
         run_type = OBSERVATION_TEST
     return latest_runs, runs, run_type
 
+custom_js = """
+    const waitForElement = async (selector, interval = 500) => {
+      while (true) {
+        const element = document.querySelector(selector);
+        if (element) return element;
+        await new Promise(resolve => setTimeout(resolve, interval));
+      }
+    };
+    
+    const initSelectionHook = () => {
+      const attach = () => {
+        const gd = document.querySelector('#main_plot .js-plotly-plot');
+        if (!gd || gd._selHooked) return;
+        gd._selHooked = true;
+        gd.original_names = gd.data.map(({name}) => name);
+        console.log("attached");
+        gd.on('plotly_selected', (ev) => {
+          console.log("selected event fired");
+          console.log(ev);
+            if (ev && ev.points) {
+              const grouped = Object.groupBy(ev.points, point => point.curveNumber);
+              console.log(grouped);
+              const averages = Object.entries(grouped).map(([curveNumber, points]) => {
+                const total = points.reduce((sum, item) => sum + item.y, 0);
+                const average = Math.round((total / points.length) * 100)/100;
+                return {
+                  curveNumber,
+                  average
+                  }
+                });
+              console.log(averages);
+              averages.forEach(({curveNumber, average}) => {
+                window.Plotly.restyle(gd, { name: gd.original_names[curveNumber] + " (selection average: " + average.toString() + ")" }, [curveNumber]);    
+              });
+          } else {
+            window.Plotly.restyle(gd, { name: gd.original_names }, Array(gd.original_names.length).keys())
+          }
+            
+          /*
+           const pts = (ev && ev.points ? ev.points : []).map(p => ({
+            run: p.data.legendgroup, aggregation: p.data.name, y: p.y
+          }));
+          
+          document.querySelector('#main_plot .js-plotly-plot')
+          
+          console.log(pts);
+          const box = document.querySelector('#sel_box textarea');
+          console.log(box);
+          box.value = JSON.stringify(pts);
+          box.dispatchEvent(new Event('input', { bubbles: true }));
+          */
+        });
+      };
+      waitForElement('#main_plot').then(el => {
+        attach();
+        new MutationObserver(attach).observe(el, { childList: true, subtree: true });
+      });
+    }
+    
+    initSelectionHook();
+    
+"""
+
 
 def create_gradio_blocks(results_folder: str) -> Blocks:
     latest_runs, all_runs, starter_run_type = get_runs_and_type(results_folder)
@@ -374,6 +439,8 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             RequestLatency.name,
             DEFAULT_PERCENTILES_STR,
         )
+        sel = gr.Textbox(elem_id="sel_box")
+        out = gr.JSON(label="Selected points")
         data_table = gr.DataFrame(
             make_table(
                 results_folder,
@@ -461,7 +528,12 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                                 show_search="filter",
                             )
 
+
         # interactions
+        def on_selectx(raw):
+            return json.loads(raw) if raw else []
+
+        sel.change(on_selectx, sel, out)
         runs_dropdown.focus(lambda: gr.Timer(active=False), outputs=[timer])
         runs_dropdown.blur(lambda: gr.Timer(active=True), outputs=[timer])
         timer.tick(
@@ -505,6 +577,7 @@ def visualize_results(
         inbrowser=go_to_browser,
         favicon_path=favicon_path,
         css=custom_css,
+        js=custom_js,
     )
     log.info(f"Gradio server running at [blue]{url}[/]")
     if keep_running:

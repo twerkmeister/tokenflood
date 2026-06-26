@@ -60,7 +60,7 @@ def make_observation_latency_plot(
         xaxis_title="datetime", title=make_title(f"{metric.name} over time")
     )
     fig.update_xaxes(tickangle=45)
-    return gr.Plot(fig)
+    return gr.Plot(fig, elem_id="main_plot")
 
 
 def make_run_latency_plot(
@@ -72,4 +72,4 @@ def make_run_latency_plot(
         title=make_title(f"{metric.name} across request rates"),
         xaxis=dict(ticksuffix=" rps"),
     )
-    return gr.Plot(fig)
+    return gr.Plot(fig, elem_id="main_plot")
