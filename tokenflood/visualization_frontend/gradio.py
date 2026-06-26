@@ -342,8 +342,8 @@ custom_js = """
               });
               gd.isUpdatingPlotly = false;
             } else {
-              window.Plotly.restyle(gd, { name: gd.original_names }, Array(gd.original_names.length).keys()).then(() => {
-                gd.isUpdatingPlotly.false;
+              window.Plotly.restyle(gd, { name: gd.original_names }, [...Array(gd.original_names.length).keys()]).then(() => {
+                gd.isUpdatingPlotly = false;
               })
             }
           });
