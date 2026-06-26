@@ -301,6 +301,7 @@ def get_runs_and_type(results_folder) -> tuple[list[str], list[str], str]:
         run_type = OBSERVATION_TEST
     return latest_runs, runs, run_type
 
+
 custom_js = """
     const waitForElement = async (selector, interval = 500) => {
       while (true) {

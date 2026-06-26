@@ -16,6 +16,7 @@ from tokenflood.visualization_frontend.metrics import Metric
 
 PLOT_ELEMENT_ID = "main_plot"
 
+
 def plot_base(trace_groups: list[list[AggregationTrace]]) -> go.Figure:
     fig = go.Figure()
     traces = []
