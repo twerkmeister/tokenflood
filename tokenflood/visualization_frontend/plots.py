@@ -14,6 +14,7 @@ from tokenflood.visualization_frontend.graph_style import (
 )
 from tokenflood.visualization_frontend.metrics import Metric
 
+PLOT_ELEMENT_ID = "main_plot"
 
 def plot_base(trace_groups: list[list[AggregationTrace]]) -> go.Figure:
     fig = go.Figure()
@@ -60,7 +61,7 @@ def make_observation_latency_plot(
         xaxis_title="datetime", title=make_title(f"{metric.name} over time")
     )
     fig.update_xaxes(tickangle=45)
-    return gr.Plot(fig, elem_id="main_plot")
+    return gr.Plot(fig, elem_id=PLOT_ELEMENT_ID)
 
 
 def make_run_latency_plot(
@@ -72,4 +73,4 @@ def make_run_latency_plot(
         title=make_title(f"{metric.name} across request rates"),
         xaxis=dict(ticksuffix=" rps"),
     )
-    return gr.Plot(fig, elem_id="main_plot")
+    return gr.Plot(fig, elem_id=PLOT_ELEMENT_ID)
