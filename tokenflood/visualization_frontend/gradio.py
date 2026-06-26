@@ -302,6 +302,63 @@ def get_runs_and_type(results_folder) -> tuple[list[str], list[str], str]:
     return latest_runs, runs, run_type
 
 
+custom_js = """
+    const waitForElement = async (selector, interval = 500) => {
+      while (true) {
+        const element = document.querySelector(selector);
+        if (element) return element;
+        await new Promise(resolve => setTimeout(resolve, interval));
+      }
+    };
+    
+    const initPlotlySelectionHook = () => {
+      waitForElement('#main_plot').then(el => {
+        const attach = () => {
+          const gd = document.querySelector('#main_plot .js-plotly-plot');
+          if (!gd || gd._selHooked) return;
+          gd._selHooked = true;
+          gd.original_names = gd.data.map(({name}) => name);
+          gd.isUpdatingPlotly = false;
+          // console.log("attached");
+          gd.on('plotly_selected', (ev) => {
+            if (gd.isUpdatingPlotly) return;
+            // console.log("selected event fired");
+            // console.log(ev);
+            gd.isUpdatingPlotly = true;
+            if (ev && ev.points) {
+              const grouped = Object.groupBy(ev.points, point => point.curveNumber);
+              // console.log(grouped);
+              const averages = Object.entries(grouped).map(([curveNumber, points]) => {
+                const total = points.reduce((sum, item) => sum + item.y, 0);
+                const average = Math.round((total / points.length) * 100)/100;
+                return {
+                  curveNumber,
+                  average,
+                  numberOfPoints: points.length
+                }
+              });
+              // console.log(averages);
+              averages.forEach(({curveNumber, average, numberOfPoints}) => {
+                window.Plotly.restyle(gd, { name: gd.original_names[curveNumber] + " (selection average based on " + numberOfPoints.toString() + " points: " + average.toString() + "ms)" }, [curveNumber]);    
+              });
+              gd.isUpdatingPlotly = false;
+            } else {
+              window.Plotly.restyle(gd, { name: gd.original_names }, [...Array(gd.original_names.length).keys()]).then(() => {
+                gd.isUpdatingPlotly = false;
+              })
+            }
+          });
+        };
+        attach();
+        new MutationObserver(attach).observe(el, { childList: true, subtree: true });
+      });
+    }
+    
+    initPlotlySelectionHook();
+    
+"""
+
+
 def create_gradio_blocks(results_folder: str) -> Blocks:
     latest_runs, all_runs, starter_run_type = get_runs_and_type(results_folder)
     title = f"Tokenflood v{__version__}"
@@ -461,7 +518,6 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                                 show_search="filter",
                             )
 
-        # interactions
         runs_dropdown.focus(lambda: gr.Timer(active=False), outputs=[timer])
         runs_dropdown.blur(lambda: gr.Timer(active=True), outputs=[timer])
         timer.tick(
@@ -505,6 +561,7 @@ def visualize_results(
         inbrowser=go_to_browser,
         favicon_path=favicon_path,
         css=custom_css,
+        js=custom_js,
     )
     log.info(f"Gradio server running at [blue]{url}[/]")
     if keep_running:
