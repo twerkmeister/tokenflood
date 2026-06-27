@@ -1,6 +1,8 @@
 import datetime
 import math
-from typing import Callable, Optional, Sequence, TypeVar
+import random
+from itertools import product
+from typing import Callable, Optional, Sequence, TypeVar, Generator
 import numpy as np
 
 from tokenflood.models.endpoint_spec import EndpointSpec
@@ -56,3 +58,28 @@ def find_idx(s: Sequence[T], predicate: Callable[[T], bool]) -> Optional[int]:
 
 def roughly_estimated_token_cost(s: str) -> int:
     return math.ceil(len(s) / 3.5)
+
+
+def empty_generator():
+    yield from ()
+
+
+def sample_exhaustively(population: Sequence[T]) -> Generator[T, None, None]:
+    if len(population) == 0:
+        raise ValueError("Sampling population must be non-empty.")
+    pool = list(population)
+    while True:
+        random.shuffle(pool)
+        for item in pool:
+            yield item
+
+
+def sample_unique_concatenations_exhaustively(
+    population: Sequence[str],
+) -> Generator[str, None, None]:
+    product_base = [population]
+    while True:
+        iterator = product(*product_base)
+        for item in iterator:
+            yield "".join(item)
+        product_base.append(population)

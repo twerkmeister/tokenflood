@@ -77,7 +77,7 @@ async def run_observation(
                 send_llm_request(
                     endpoint_spec,
                     message_lists[i],
-                    load_type.get_expected_output_length(),
+                    load_type.get_max_output_length(),
                 )
             )
             t.add_done_callback(
