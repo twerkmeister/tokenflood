@@ -9,6 +9,7 @@ from typing import List, Tuple, Callable, Coroutine, TypeVar, Any
 import gradio.routes
 from rich import print
 import logging
+import warnings
 
 from rich.highlighter import NullHighlighter
 from rich.logging import RichHandler
@@ -44,7 +45,7 @@ from tokenflood.io import (
     read_file,
     read_jsonl_messages,
 )
-from tokenflood.logging_utils import global_warn_once_filter
+from tokenflood.logging_utils import global_warn_once_filter, TextFilter
 from tokenflood.networking import (
     patch_aiohttp_client_session,
     unpatch_aiohttp_client_session,
@@ -93,6 +94,9 @@ def configure_logging():
     for handler in tokenflood_logger.handlers:
         handler.addFilter(global_warn_once_filter)
 
+    # for sagemaker endpoints streaming answer
+    logging.getLogger("LiteLLM").addFilter(TextFilter("Warning: Unparseable JSON data remained: [DONE]"))
+    warnings.filterwarnings("ignore", message=".*HTTP_422_UNPROCESSABLE_ENTITY.*")
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
