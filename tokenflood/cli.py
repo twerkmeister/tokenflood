@@ -96,7 +96,7 @@ def configure_logging():
 
     # for sagemaker endpoints streaming answer
     logging.getLogger("LiteLLM").addFilter(TextFilter("Warning: Unparseable JSON data remained: [DONE]"))
-    warnings.filterwarnings("ignore", message=".*HTTP_422_UNPROCESSABLE_ENTITY.*")
+    warnings.filterwarnings("ignore", message=".*HTTP_422_UNPROCESSABLE_ENTITY.*", module="gradio")
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
