@@ -93,14 +93,14 @@ def initialize_runs_from_url(
     results_folder: str, run_type: str, query_params: dict
 ) -> tuple[list[str], list[str]]:
     valid_runs = []
-    results_folder_abs_path = os.path.abspath(results_folder)
+    results_folder_abs_path = os.path.realpath(results_folder)
 
     raw_runs = [run.strip() for run in query_params.get("runs", "").split(",")]
     for run in raw_runs:
         safe_name = os.path.basename(run)
         if not safe_name or safe_name in {".", ".."}:
             continue
-        full_path = os.path.abspath(os.path.join(results_folder_abs_path, safe_name))
+        full_path = os.path.realpath(os.path.join(results_folder_abs_path, safe_name))
 
         try:
             is_inside = (

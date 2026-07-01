@@ -130,6 +130,8 @@ def test_initialize_run_type_from_url(
         ("both", LOAD_TEST, {RUNS_QUERY_PARAM: ""}, ["load2"]),
         ("both", LOAD_TEST, {RUNS_QUERY_PARAM: "/"}, ["load2"]),
         ("both", LOAD_TEST, {RUNS_QUERY_PARAM: "// > /dev/null"}, ["load2"]),
+        # symlinks ignored
+        ("only_observation_tests", OBSERVATION_TEST, {}, ["observation1"]),
         # Special characters and empty parts
         ("both", LOAD_TEST, {RUNS_QUERY_PARAM: "load1, , ,"}, ["load1"]),
         ("both", LOAD_TEST, {RUNS_QUERY_PARAM: "."}, ["load2"]),
