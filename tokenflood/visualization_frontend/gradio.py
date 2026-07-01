@@ -172,19 +172,11 @@ def initialize_with_folder(
 def create_url_update_js_code():
     return f"""
     (runs, runType, metric, percentiles) => {{
-        console.log('run');
-        console.log(runs)
-        console.log(runType)
-        console.log(metric)
-        console.log(percentiles)
         const url = new URL(window.location.href);
         url.searchParams.set('{RUN_TYPE_QUERY_PARAM}', runType);
         url.searchParams.set('{METRIC_QUERY_PARAM}', metric);
-        console.log(url);
         url.searchParams.set('{PERCENTILES_QUERY_PARAM}', percentiles);
-        console.log(url);
         url.searchParams.set('{RUNS_QUERY_PARAM}', runs.join(','));
-        console.log(url);
         // Push the state silently without triggering a page reload
         window.history.pushState({{}}, '', url.toString());
     }}
