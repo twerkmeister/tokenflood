@@ -74,18 +74,6 @@ METRIC_QUERY_PARAM = "metric"
 PERCENTILES_QUERY_PARAM = "percentiles"
 
 
-def get_runs_and_type(results_folder) -> tuple[list[str], list[str], str]:
-    load_tests = get_load_test_runs(results_folder)
-    latest_runs = load_tests[:1]
-    runs = load_tests
-    run_type = LOAD_TEST
-    observation_tests = get_observation_runs(results_folder)
-    if len(load_tests) == 0 and len(observation_tests) > 0:
-        latest_runs = observation_tests[:1]
-        runs = observation_tests
-        run_type = OBSERVATION_TEST
-    return latest_runs, runs, run_type
-
 def initialize_run_type_from_url(results_folder: str, query_params: dict) -> str:
     run_type = query_params.get(RUN_TYPE_QUERY_PARAM, "")
     if run_type in {LOAD_TEST, OBSERVATION_TEST}:
@@ -100,7 +88,10 @@ def initialize_run_type_from_url(results_folder: str, query_params: dict) -> str
         return OBSERVATION_TEST
     return LOAD_TEST
 
-def initialize_runs_from_url(results_folder: str, run_type: str, query_params: dict) -> tuple[list[str], list[str]]:
+
+def initialize_runs_from_url(
+    results_folder: str, run_type: str, query_params: dict
+) -> tuple[list[str], list[str]]:
     valid_runs = []
     results_folder_abs_path = os.path.abspath(results_folder)
 
@@ -112,7 +103,10 @@ def initialize_runs_from_url(results_folder: str, run_type: str, query_params: d
         full_path = os.path.abspath(os.path.join(results_folder_abs_path, safe_name))
 
         try:
-            is_inside = os.path.commonpath([results_folder_abs_path, full_path]) == results_folder_abs_path
+            is_inside = (
+                os.path.commonpath([results_folder_abs_path, full_path])
+                == results_folder_abs_path
+            )
             is_dir = os.path.isdir(full_path)
             is_not_same = not os.path.samefile(full_path, results_folder_abs_path)
             is_proper_type_dir = False
@@ -137,11 +131,13 @@ def initialize_runs_from_url(results_folder: str, run_type: str, query_params: d
     else:
         return options[:1], options
 
+
 def initialize_metric_from_url(query_params: dict) -> str:
     metric = query_params.get(METRIC_QUERY_PARAM, RequestLatency.name)
     if metric in metric_mapping:
         return metric
     return RequestLatency.name
+
 
 def initialize_percentiles_from_url(query_params: dict) -> str:
     percentiles = query_params.get(PERCENTILES_QUERY_PARAM, DEFAULT_PERCENTILES_STR)
@@ -149,7 +145,10 @@ def initialize_percentiles_from_url(query_params: dict) -> str:
     percentiles = percentiles_to_str(percentiles)
     return percentiles
 
-def initialize_with_folder(results_folder: str) -> Callable[[gr.Request], tuple[dict, dict, dict, dict, dict, dict]]:
+
+def initialize_with_folder(
+    results_folder: str,
+) -> Callable[[gr.Request], tuple[dict, dict, dict, dict, dict, dict]]:
     def initialize_values_from_url(request: gr.Request):
         params = request.query_params
 
@@ -158,9 +157,17 @@ def initialize_with_folder(results_folder: str) -> Callable[[gr.Request], tuple[
         metric = initialize_metric_from_url(params)
         percentiles = initialize_percentiles_from_url(params)
 
-        return gr.Dropdown(choices=run_choices, value=runs), gr.update(value=runs), gr.update(value=run_type), gr.update(value=metric), gr.update(value=percentiles), gr.update(value=percentiles)
+        return (
+            gr.Dropdown(choices=run_choices, value=runs),
+            runs,
+            gr.Dropdown(value=run_type),
+            gr.Dropdown(value=metric),
+            gr.Textbox(value=percentiles),
+            percentiles,
+        )
 
     return initialize_values_from_url
+
 
 def create_url_update_js_code():
     return f"""
@@ -182,6 +189,7 @@ def create_url_update_js_code():
         window.history.pushState({{}}, '', url.toString());
     }}
     """
+
 
 def create_debounce_js_code(timer_name: str, delay_ms: int = 500):
     return f"""
@@ -264,10 +272,12 @@ def poll_latest_runs(results_folder: str, run_type: str) -> gr.Dropdown:
     return gr.Dropdown(load_runs_for_type(results_folder, run_type))
 
 
-def update_runs_for_type(results_folder: str, run_type: str) -> gr.Dropdown:
+def update_runs_for_type(
+    results_folder: str, run_type: str
+) -> tuple[gr.Dropdown, list[str]]:
     runs = load_runs_for_type(results_folder, run_type)
     value = runs[:1]
-    return gr.Dropdown(runs, value=value)
+    return gr.Dropdown(runs, value=value), value
 
 
 def get_plot_func(
@@ -319,7 +329,10 @@ def make_plot(
     run_type: str,
     metric_name: str,
     percentiles: str,
+    loading_finished: bool,
 ) -> gr.Plot:
+    if not loading_finished:
+        return gr.Plot()
     metric = metric_mapping[metric_name]
     trace_groups = collect_trace_groups(
         results_folder, runs, run_type, metric, percentiles
@@ -355,7 +368,10 @@ def make_table(
     run_type: str,
     metric_name: str,
     percentiles: str,
+    loading_finished: bool,
 ) -> pd.DataFrame:
+    if not loading_finished or run_type == OBSERVATION_TEST:
+        return pd.DataFrame()
     metric = metric_mapping[metric_name]
     trace_groups = collect_trace_groups(
         results_folder, runs, run_type, metric, percentiles
@@ -387,18 +403,22 @@ def update_data(
     run_type: str,
     metric_name: str,
     percentiles: str,
+    loading_finished: bool,
 ) -> tuple[gr.Plot, gr.DataFrame]:
-    df = make_table(results_folder, runs, run_type, metric_name, percentiles)
-    if run_type == OBSERVATION_TEST:
-        df = df.iloc[:, :50]
+    df = make_table(
+        results_folder, runs, run_type, metric_name, percentiles, loading_finished
+    )
     return (
-        make_plot(results_folder, runs, run_type, metric_name, percentiles),
-        gr.DataFrame(df, visible=False)
+        make_plot(
+            results_folder, runs, run_type, metric_name, percentiles, loading_finished
+        ),
+        gr.DataFrame(df, visible=False),
     )
 
 
-def make_frame_visible(data) -> gr.DataFrame:
-    return gr.DataFrame(data, visible=True)
+def make_frame_visible(data, run_type) -> gr.DataFrame:
+    visible = run_type == LOAD_TEST
+    return gr.DataFrame(data, visible=visible)
 
 
 def make_yaml_code_element(text: str, label: str) -> gr.Code:
@@ -407,7 +427,6 @@ def make_yaml_code_element(text: str, label: str) -> gr.Code:
 
 def on_select(evt: gr.SelectData):
     return evt.index
-
 
 
 custom_js = """
@@ -468,13 +487,13 @@ custom_js = """
 
 
 def create_gradio_blocks(results_folder: str) -> Blocks:
-    latest_runs, all_runs, starter_run_type = get_runs_and_type(results_folder)
     title = f"Tokenflood v{__version__}"
     with gr.Blocks(title=title, analytics_enabled=False) as blocks:
         timer = gr.Timer(10)
         stored_percentiles = gr.State(DEFAULT_PERCENTILES_STR)
         stored_results_folder = gr.State(results_folder)
-        stored_runs = gr.State(latest_runs)
+        stored_runs = gr.State([])
+        loading_finished = gr.State(False)
         dummy_state = gr.State(
             None
         )  # needed for debounce js of runs dropdown to make array return possible
@@ -498,13 +517,13 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             with gr.Column(scale=1):
                 run_type_dropdown = gr.Dropdown(
                     [LOAD_TEST, OBSERVATION_TEST],
-                    value=starter_run_type,
+                    value=LOAD_TEST,
                     label="Run type",
                 )
             with gr.Column(scale=3):
                 runs_dropdown = gr.Dropdown(
-                    all_runs,
-                    value=latest_runs,
+                    [],
+                    value=[],
                     multiselect=True,
                     filterable=True,
                     interactive=True,
@@ -534,18 +553,20 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
 
         data_plot = make_plot(
             results_folder,
-            latest_runs,
-            starter_run_type,
+            [],
+            LOAD_TEST,
             RequestLatency.name,
             DEFAULT_PERCENTILES_STR,
+            False,
         )
         data_table = gr.DataFrame(
             make_table(
                 results_folder,
-                latest_runs,
-                starter_run_type,
+                [],
+                LOAD_TEST,
                 RequestLatency.name,
                 DEFAULT_PERCENTILES_STR,
+                False,
             ),
             label="tabulated data",
             interactive=False,
@@ -560,23 +581,30 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                 run_type_dropdown,
                 metric_dropdown,
                 stored_percentiles,
+                loading_finished,
             ],
             outputs=[data_plot, data_table],
             trigger_mode="always_last",
             concurrency_limit=1,
-        ).then(make_frame_visible, inputs=[data_table], outputs=[data_table])
+        ).then(
+            make_frame_visible,
+            inputs=[data_table, run_type_dropdown],
+            outputs=[data_table],
+        )
 
         @gr.render(
-            inputs=[stored_runs, run_type_dropdown],
-            triggers=[stored_runs.change],
+            inputs=[stored_runs, run_type_dropdown, loading_finished],
+            triggers=[stored_runs.change, loading_finished.change],
             concurrency_limit=1,
             trigger_mode="always_last",
         )
         def render_tabs(
             selected_runs: list[str],
             run_type: str,
-            evt: gr.EventData
+            loading_finished: bool,
         ):
+            if not loading_finished:
+                return
             with gr.Tabs():
                 for i, run in enumerate(selected_runs):
                     run_folder = os.path.join(results_folder, run)
@@ -602,15 +630,17 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                                         get_endpoint_spec_file(run_folder),
                                         ENDPOINT_SPEC_FILE,
                                     )
-                        with gr.Accordion("Raw Request Data", open=False):
+                        with gr.Accordion(
+                            "Raw Request Data (first 25 rows)", open=False
+                        ):
                             gr.DataFrame(
-                                llm_request_data.head(50),
+                                llm_request_data.head(25),
                                 label="llm request data",
                                 buttons=["fullscreen", "copy"],
                                 show_row_numbers=True,
                                 show_search="filter",
                             )
-                        with gr.Accordion("Raw ping Data", open=False):
+                        with gr.Accordion("Raw ping Data (first 25 rows)", open=False):
                             gr.DataFrame(
                                 get_network_dataframe(run_folder).head(50),
                                 label="Ping data",
@@ -634,33 +664,58 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
             inputs=[stored_results_folder, run_type_dropdown],
             outputs=[runs_dropdown],
         )
-        run_type_dropdown.change(
+        run_type_dropdown.input(
             update_runs_for_type,
             inputs=[stored_results_folder, run_type_dropdown],
-            outputs=[runs_dropdown],
+            outputs=[runs_dropdown, stored_runs],
         )
-        runs_dropdown.change(
+        runs_dropdown.input(
             id_func_list,
             inputs=[runs_dropdown],
             outputs=[stored_runs, dummy_state],
             js=create_debounce_array_js_code("runs_dropdown_debounce", 500),
         )
-        percentiles_textbox.change(
+        percentiles_textbox.input(
             id_func,
             inputs=[percentiles_textbox],
             outputs=stored_percentiles,
             js=create_debounce_js_code("percentiles_textbox_timer", 400),
         )
-        metric_dropdown.change(
+        metric_dropdown.input(
             lambda m: gr.Dropdown(info=metric_mapping[m].explanation),
             inputs=metric_dropdown,
             outputs=metric_dropdown,
         )
 
-        gr.on(triggers=[stored_runs.change, run_type_dropdown.change, metric_dropdown.change, stored_percentiles.change],
-              fn=None, inputs=[runs_dropdown, run_type_dropdown, metric_dropdown, percentiles_textbox], js=create_url_update_js_code())
+        gr.on(
+            triggers=[
+                stored_runs.change,
+                run_type_dropdown.change,
+                metric_dropdown.change,
+                stored_percentiles.change,
+            ],
+            fn=None,
+            inputs=[
+                runs_dropdown,
+                run_type_dropdown,
+                metric_dropdown,
+                percentiles_textbox,
+            ],
+            js=create_url_update_js_code(),
+        )
 
-        blocks.load(fn=initialize_with_folder(results_folder), inputs=None, outputs=[runs_dropdown, stored_runs, run_type_dropdown, metric_dropdown, percentiles_textbox, stored_percentiles])
+        blocks.load(
+            fn=initialize_with_folder(results_folder),
+            inputs=None,
+            outputs=[
+                runs_dropdown,
+                stored_runs,
+                run_type_dropdown,
+                metric_dropdown,
+                percentiles_textbox,
+                stored_percentiles,
+            ],
+        ).then(lambda: True, inputs=None, outputs=[loading_finished])
     return blocks
 
 
