@@ -103,7 +103,7 @@ async def test_run_tiny_suite_openai_missing_api_key(
     df = pd.read_csv(file_io_context.llm_request_sink.destination)
     assert len(df) == 0
     assert len(run_specs) > 1
-    assert "API key" in caplog.text
+    assert "API_KEY" in caplog.text
 
 
 @pytest.mark.asyncio

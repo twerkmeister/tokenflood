@@ -146,7 +146,7 @@ def list_dir_relative(folder_name: str) -> List[str]:
 
 def get_relative_file_path(reference_file: str, target_file_name: str):
     """Return the path to another file from a python file's __file__ path."""
-    file_path = os.path.abspath(reference_file)
+    file_path = os.path.realpath(reference_file)
     module_dir = os.path.dirname(file_path)
     return os.path.join(module_dir, target_file_name)
 
@@ -180,7 +180,12 @@ def read_jsonl_messages(file_name: str) -> list[MessageList]:
 
 def folder_contains_file(folder: str, filename: str) -> bool:
     target_file = os.path.join(folder, filename)
-    return os.path.isdir(folder) and os.path.isfile(target_file)
+    return (
+        os.path.isdir(folder)
+        and os.path.isfile(target_file)
+        and not os.path.islink(target_file)
+        and not os.path.islink(folder)
+    )
 
 
 def folder_contains_files(folder: str, filenames: Set[str]) -> bool:
