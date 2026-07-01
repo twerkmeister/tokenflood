@@ -14,9 +14,12 @@ from tokenflood.visualization_frontend.graph_style import (
 )
 from tokenflood.visualization_frontend.metrics import Metric
 
+PLOT_ELEMENT_ID = "main_plot"
+
 
 def plot_base(trace_groups: list[list[AggregationTrace]]) -> go.Figure:
     fig = go.Figure()
+    traces = []
     for i, trace_group in enumerate(trace_groups):
         base_color = BASE_COLORS[i % len(BASE_COLORS)]
         for trace in trace_group:
@@ -24,7 +27,7 @@ def plot_base(trace_groups: list[list[AggregationTrace]]) -> go.Figure:
                 base_color, aggregation_name_to_color_step(trace.aggregation_name)
             )
             style = aggregation_name_to_line_style(trace.aggregation_name)
-            fig.add_trace(
+            traces.append(
                 go.Scatter(
                     x=trace.x,
                     y=trace.y,
@@ -35,6 +38,7 @@ def plot_base(trace_groups: list[list[AggregationTrace]]) -> go.Figure:
                     hovertemplate="<b>%{fullData.name}</b>: %{y:.2f} ms<extra></extra>",
                 )
             )
+    fig.add_traces(traces)
     fig.update_traces(mode="markers+lines")
     fig.update_layout(
         yaxis_title="latency in ms",
@@ -58,7 +62,7 @@ def make_observation_latency_plot(
         xaxis_title="datetime", title=make_title(f"{metric.name} over time")
     )
     fig.update_xaxes(tickangle=45)
-    return gr.Plot(fig)
+    return gr.Plot(fig, elem_id=PLOT_ELEMENT_ID)
 
 
 def make_run_latency_plot(
@@ -70,4 +74,4 @@ def make_run_latency_plot(
         title=make_title(f"{metric.name} across request rates"),
         xaxis=dict(ticksuffix=" rps"),
     )
-    return gr.Plot(fig)
+    return gr.Plot(fig, elem_id=PLOT_ELEMENT_ID)

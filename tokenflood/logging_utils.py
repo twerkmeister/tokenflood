@@ -21,3 +21,12 @@ class WarnOnceLogFilter(logging.Filter):
 
 
 global_warn_once_filter = WarnOnceLogFilter()
+
+
+class TextFilter(logging.Filter):
+    def filter(self, record):
+        return self.message_to_filter not in record.getMessage()
+
+    def __init__(self, message_to_filter: str):
+        super().__init__()
+        self.message_to_filter = message_to_filter

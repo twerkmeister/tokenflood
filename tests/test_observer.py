@@ -73,7 +73,7 @@ async def test_run_observation_openai_missing_api_key(
         await run_observation(
             openai_endpoint_spec, superfast_observation_spec, file_io_context
         )
-    assert "API key" in caplog.text
+    assert "API_KEY" in caplog.text
 
     await file_io_context.wait_for_pending_writes()
 

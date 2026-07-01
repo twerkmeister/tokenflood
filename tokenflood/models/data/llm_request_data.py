@@ -6,7 +6,7 @@ from pydantic import BaseModel, NonNegativeFloat, NonNegativeInt
 
 from tokenflood.constants import WARNING_LIMIT
 from tokenflood.logging_utils import WARN_ONCE_KEY
-from tokenflood.models.validation_types import NonEmptyString
+from tokenflood.models.validation_types import NonEmptyString, GroupID
 from tokenflood.util import calculate_relative_error
 
 log = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class LLMRequestContext(BaseModel, frozen=True):
     requests_per_second_phase: NonNegativeFloat
     request_number: NonNegativeInt
     model: NonEmptyString
-    group_id: NonEmptyString
+    group_id: GroupID
     prompt: str
 
 
@@ -79,7 +79,7 @@ class LLMRequestData(BaseModel, frozen=True):
     expected_output_tokens: NonNegativeInt
     measured_output_tokens: NonNegativeInt
     measured_reasoning_tokens: NonNegativeInt
-    group_id: NonEmptyString
+    group_id: GroupID
     generated_text: str
     generated_reasoning: str
     prompt: str

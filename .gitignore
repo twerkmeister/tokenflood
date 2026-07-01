@@ -5,6 +5,7 @@ run_suite*.yml
 load*.yml
 observation*.yml
 results/
+results_*/
 .idea/
 .DS_Store
 # Byte-compiled / optimized / DLL files

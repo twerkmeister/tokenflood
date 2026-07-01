@@ -114,7 +114,7 @@ async def run_load_test_phase(
     load_type = load_test_spec.load_type
     message_lists = load_type.create_message_lists(len(schedule))
     error_context = ErrorContext(
-        requests_per_second_phase=load_phase.requests_per_second, group_id=str(phase)
+        requests_per_second_phase=load_phase.requests_per_second, group_id=phase
     )
     error_threshold_tripped = False
     error_rate = 0.0
@@ -139,7 +139,7 @@ async def run_load_test_phase(
             request_number=i,
             model=endpoint_spec.provider_model_str,
             prompt=message_lists[i][0]["content"],
-            group_id=str(phase),
+            group_id=phase,
         )
         t = asyncio.create_task(
             send_llm_request(
@@ -160,7 +160,7 @@ async def run_load_test_phase(
                 datetime=get_exact_date_str(),
                 endpoint_url=str(url_observer.url),
                 requests_per_second_phase=load_phase.requests_per_second,
-                group_id=str(phase),
+                group_id=phase,
             )
             pt = asyncio.create_task(
                 time_async_func(
@@ -285,7 +285,7 @@ async def get_warm_session(
     endpoint_spec: EndpointSpec, io_context: IOContext
 ) -> Optional[str]:
     error = None
-    error_context = ErrorContext(requests_per_second_phase=-1.0, group_id="warmup")
+    error_context = ErrorContext(requests_per_second_phase=-1.0, group_id=-1)
     for i in range(20):
         t = asyncio.create_task(warm_up_session(endpoint_spec, i))
         t.add_done_callback(handle_error(io_context, error_context))
