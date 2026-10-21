@@ -52,6 +52,7 @@ from tokenflood.visualization_frontend.metrics import (
     TimeToFirstToken,
     AverageTimePerOutputToken,
     DecodingLatency,
+    TimeToFirstNonReasoningToken,
 )
 from tokenflood.visualization_frontend.percentiles import (
     percentiles_to_aggregation_funcs,
@@ -528,6 +529,7 @@ def create_gradio_blocks(results_folder: str) -> Blocks:
                     [
                         RequestLatency.name,
                         TimeToFirstToken.name,
+                        TimeToFirstNonReasoningToken.name,
                         DecodingLatency.name,
                         AverageTimePerOutputToken.name,
                         NetworkLatency.name,

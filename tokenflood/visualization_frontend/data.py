@@ -35,10 +35,13 @@ def aggregate_data(
     aggregations = {
         aggregation_func.name: pd.NamedAgg(aggregation_func.field, aggregation_func.f)
         for aggregation_func in aggregation_funcs
+        if aggregation_func.field in df.columns
     }
     aggregated_df = df.groupby(GROUP_ID).agg(**aggregations)
     traces = []
     for func in aggregation_funcs:
+        if func.field not in df.columns:
+            continue
         if func.name == "label":
             continue
         traces.append(
