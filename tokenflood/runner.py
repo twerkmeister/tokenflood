@@ -145,7 +145,7 @@ async def run_load_test_phase(
             send_llm_request(
                 endpoint_spec,
                 message_lists[i],
-                load_type.get_expected_output_length(),
+                load_type.get_max_output_length(),
             )
         )
         t.add_done_callback(
@@ -203,12 +203,13 @@ async def send_llm_request(
     num_generation_tokens: int,
 ) -> ModelResponse:
     first_token_time = None
+    first_non_reasoning_token_time = None
     start_time = time.time()
     start = datetime.datetime.now()
     response = await acompletion(
         model=endpoint_spec.provider_model_str,
         messages=messages,
-        max_tokens=num_generation_tokens,
+        max_tokens=num_generation_tokens if num_generation_tokens > 0 else None,
         base_url=endpoint_spec.base_url,
         api_key=os.getenv(endpoint_spec.api_key_env_var)
         if endpoint_spec.api_key_env_var is not None
@@ -231,6 +232,12 @@ async def send_llm_request(
             and delta.reasoning_content
         ):
             first_token_time = time.time()
+        if (
+            first_non_reasoning_token_time is None
+            and hasattr(delta, "content")
+            and delta.content
+        ):
+            first_non_reasoning_token_time = time.time()
         chunks.append(chunk)
     end_time = time.time()
     end = datetime.datetime.now()
@@ -241,6 +248,10 @@ async def send_llm_request(
     else:
         time_to_first_token = 0
         decoding_latency = 0
+    if first_non_reasoning_token_time is not None:
+        time_to_first_non_reasoning_token = first_non_reasoning_token_time - start_time
+    else:
+        time_to_first_non_reasoning_token = total_duration
 
     model_response = litellm.stream_chunk_builder(
         chunks, messages, start_time=start, end_time=end
@@ -264,6 +275,9 @@ async def send_llm_request(
     model_response._hidden_params[LLMRequestData.F.time_to_first_token] = (
         time_to_first_token * 1000
     )
+    model_response._hidden_params[
+        LLMRequestData.F.time_to_first_non_reasoning_token
+    ] = time_to_first_non_reasoning_token * 1000
     model_response._hidden_params[LLMRequestData.F.decoding_latency] = (
         decoding_latency * 1000
     )

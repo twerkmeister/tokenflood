@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 class LLMRequestResult(BaseModel, frozen=True):
     latency: NonNegativeInt
     time_to_first_token: NonNegativeInt
+    time_to_first_non_reasoning_token: NonNegativeInt
     decoding_latency: NonNegativeInt
     average_time_per_output_token: NonNegativeFloat
     measured_input_tokens: NonNegativeInt
@@ -32,6 +33,9 @@ class LLMRequestResult(BaseModel, frozen=True):
         return cls(
             latency=int(hp[LLMRequestData.F.latency]),
             time_to_first_token=int(hp[LLMRequestData.F.time_to_first_token]),
+            time_to_first_non_reasoning_token=int(
+                hp[LLMRequestData.F.time_to_first_non_reasoning_token]
+            ),
             decoding_latency=int(hp[LLMRequestData.F.decoding_latency]),
             average_time_per_output_token=hp[
                 LLMRequestData.F.average_time_per_output_token
@@ -70,6 +74,7 @@ class LLMRequestData(BaseModel, frozen=True):
     model: NonEmptyString
     latency: NonNegativeInt
     time_to_first_token: NonNegativeInt
+    time_to_first_non_reasoning_token: NonNegativeInt
     decoding_latency: NonNegativeInt
     average_time_per_output_token: NonNegativeFloat
     expected_input_tokens: NonNegativeInt
@@ -127,5 +132,6 @@ class LLMRequestData(BaseModel, frozen=True):
     class F:
         latency = "latency"
         time_to_first_token = "time_to_first_token"
+        time_to_first_non_reasoning_token = "time_to_first_non_reasoning_token"
         decoding_latency = "decoding_latency"
         average_time_per_output_token = "average_time_per_output_token"

@@ -38,3 +38,23 @@ def test_heuristic_load_validation(
 ):
     with expectation:
         HeuristicLoad(**{**default_heuristic_load_kwargs, **kwargs_override})
+
+
+def test_dynamic_prompt_based_load_(prompt_based_dynamic_load_test_spec):
+    n = 28
+    prompts = prompt_based_dynamic_load_test_spec.load_type.create_message_lists(n)
+    assert len(prompts) == n
+    assert all([len(prompt) == 1 for prompt in prompts])
+    contents = [prompt[0]["content"] for prompt in prompts]
+    assert "dynamic_part: A B" in contents[-1]
+    assert "dynamic_part: A" in contents[0]
+
+
+def test_static_prompt_based_load(prompt_based_static_load_test_spec):
+    n = 28
+    prompts = prompt_based_static_load_test_spec.load_type.create_message_lists(n)
+    assert len(prompts) == n
+    assert all([len(prompt) == 1 for prompt in prompts])
+    contents = [prompt[0]["content"] for prompt in prompts]
+    # all identical
+    assert all([content == contents[0] for content in contents])

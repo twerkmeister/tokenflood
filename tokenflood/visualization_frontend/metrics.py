@@ -26,7 +26,16 @@ class TimeToFirstToken(Metric):
     field_name = LLMRequestData.F.time_to_first_token
     file = LLM_REQUESTS_FILE
     name = "Time to first token"
-    explanation = "Time to first token including network latency."
+    explanation = "Time to first token (includes network latency)."
+
+
+class TimeToFirstNonReasoningToken(Metric):
+    field_name = LLMRequestData.F.time_to_first_non_reasoning_token
+    file = LLM_REQUESTS_FILE
+    name = "Time to first non-reasoning token"
+    explanation = (
+        "Time to first token that is not reasoning (includes network latency)."
+    )
 
 
 class DecodingLatency(Metric):
@@ -55,6 +64,7 @@ class NetworkLatency(Metric):
 metric_mapping = {
     RequestLatency.name: RequestLatency,
     TimeToFirstToken.name: TimeToFirstToken,
+    TimeToFirstNonReasoningToken.name: TimeToFirstNonReasoningToken,
     AverageTimePerOutputToken.name: AverageTimePerOutputToken,
     DecodingLatency.name: DecodingLatency,
     NetworkLatency.name: NetworkLatency,

@@ -25,10 +25,12 @@ from tokenflood.io import (
     is_observation_result_folder,
     is_load_test_result_folder,
     list_dir_relative,
-    read_endpoint_spec,
-    read_observation_spec,
-    read_load_test_spec,
+)
+from tokenflood.io_typed import (
     write_pydantic_yaml,
+    read_endpoint_spec,
+    read_load_test_spec,
+    read_observation_spec,
 )
 from tokenflood.starter_pack import (
     starter_endpoint_spec_vllm,

@@ -17,12 +17,14 @@ from tokenflood.io import (
     list_dir_relative,
     make_run_folder,
     read_file,
-    read_pydantic_yaml_list,
-    read_load_test_spec,
     write_file,
+    read_jsonl_messages,
+)
+from tokenflood.io_typed import (
+    read_pydantic_yaml_list,
     write_pydantic_yaml,
     write_pydantic_yaml_list,
-    read_jsonl_messages,
+    read_load_test_spec,
 )
 from tokenflood.models.run_specs.load_test_spec import LoadTestSpec
 

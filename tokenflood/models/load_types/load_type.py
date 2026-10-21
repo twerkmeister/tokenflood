@@ -1,10 +1,15 @@
 import random
-from typing import Literal, Annotated
+from typing import Literal, Annotated, Any, Generator
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from tokenflood.constants import DEFAULT_HEURISTIC_TASK, DEFAULT_PROMPT_FILLER_TOKENS
-from tokenflood.messages import create_message_list_from_prompt
+from tokenflood.io import read_prompts
+from tokenflood.messages import (
+    create_message_list_from_prompt,
+    split_off_last_assistant_answer,
+    inject_into_prompt,
+)
 from tokenflood.models.message_list import MessageList
 from tokenflood.models.validation_types import (
     NonNegativeInteger,
@@ -12,14 +17,15 @@ from tokenflood.models.validation_types import (
     AtLeastTwoUniqueStrings,
     NonEmptyString,
 )
-from tokenflood.util import roughly_estimated_token_cost
+from tokenflood.util import (
+    roughly_estimated_token_cost,
+    sample_exhaustively,
+    sample_unique_concatenations_exhaustively,
+)
 
 
 class LoadType(BaseModel, frozen=True):
     type: str
-
-    def create_prompts(self, n: int) -> list[str]:
-        raise NotImplementedError
 
     def create_message_lists(self, n: int) -> list[MessageList]:
         raise NotImplementedError
@@ -31,6 +37,9 @@ class LoadType(BaseModel, frozen=True):
         raise NotImplementedError
 
     def get_expected_output_length(self) -> int:
+        raise NotImplementedError
+
+    def get_max_output_length(self) -> int:
         raise NotImplementedError
 
 
@@ -88,5 +97,64 @@ class HeuristicLoad(LoadType, frozen=True):
     def get_expected_prefix_length(self) -> int:
         return self.prefix_length
 
+    def get_max_output_length(self) -> int:
+        return self.get_expected_output_length()
 
-SpecificLoadType = Annotated[HeuristicLoad, Field(discriminator="type")]
+
+class PromptBasedLoad(LoadType, frozen=True):
+    type: Literal["prompts"] = "prompts"
+    format: Literal["chat", "text"] = "chat"
+    sources: list[str]
+    inject_tokens: bool = False
+    inject_after_str: str = ""
+    inject_after_occurrence: Literal["first", "last"] = "last"
+    prompt_filler_tokens: AtLeastTwoUniqueStrings = DEFAULT_PROMPT_FILLER_TOKENS
+    _prompts: list[MessageList] = PrivateAttr()
+    _prompt_sampler: Generator[MessageList, None, None] = PrivateAttr()
+    _filler_sampler: Generator[str, None, None] = PrivateAttr()
+    expected_prompt_length: int = 0
+    expected_output_length: int = 0
+    expected_prefix_length: int = 0
+    max_output_length: int = 0
+
+    def model_post_init(self, context: Any, /) -> None:
+        object.__setattr__(self, "_prompts", read_prompts(self.sources, self.format))
+        object.__setattr__(self, "_prompt_sampler", sample_exhaustively(self._prompts))
+        object.__setattr__(
+            self,
+            "_filler_sampler",
+            sample_unique_concatenations_exhaustively(self.prompt_filler_tokens),
+        )
+
+    def create_message_lists(self, n: int) -> list[MessageList]:
+        message_lists = []
+        for _ in range(n):
+            prompt = next(self._prompt_sampler)
+            prompt = split_off_last_assistant_answer(prompt)[0]
+            if self.inject_tokens:
+                fill_tokens = next(self._filler_sampler)
+                prompt = inject_into_prompt(
+                    prompt,
+                    self.inject_after_str,
+                    self.inject_after_occurrence,
+                    fill_tokens,
+                )
+            message_lists.append(prompt)
+        return message_lists
+
+    def get_expected_prompt_length(self) -> int:
+        return self.expected_prompt_length
+
+    def get_expected_output_length(self) -> int:
+        return self.expected_output_length
+
+    def get_expected_prefix_length(self) -> int:
+        return self.expected_prefix_length
+
+    def get_max_output_length(self) -> int:
+        return self.max_output_length
+
+
+SpecificLoadType = Annotated[
+    HeuristicLoad | PromptBasedLoad, Field(discriminator="type")
+]
